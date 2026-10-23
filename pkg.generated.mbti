@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn changes_from_json(Json) -> Array[Change] raise
+
 pub fn check_inventory(Array[SteamLibrary], Array[InventoryRecord]) -> Array[InventoryIssue]
 
 pub fn decode_binary(Bytes, options? : BinaryOptions) -> Array[BinaryEntry] raise BinaryError
@@ -37,6 +39,11 @@ pub fn select_inventory(Array[InventoryRecord], filter? : String, sort? : String
 pub fn stringify(Document) -> String raise WriteError
 
 // Errors
+pub suberror AccessError {
+  InvalidAccess(Array[Selector], String)
+} derive(@debug.Debug)
+pub fn AccessError::to_repr(Self) -> @debug.Repr
+
 pub suberror BinaryError {
   InvalidBinary(Int, String)
 } derive(@debug.Debug)
@@ -112,6 +119,12 @@ pub fn BinaryValue::equal(Self, Self) -> Bool
 pub fn BinaryValue::not_equal(Self, Self) -> Bool
 pub fn BinaryValue::to_repr(Self) -> @debug.Repr
 
+pub(all) struct Change {
+  path : Array[Selector]
+  operation : Edit
+} derive(@debug.Debug)
+pub fn Change::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Diagnostic {
   code : String
   message : String
@@ -126,14 +139,23 @@ pub fn Diagnostic::to_repr(Self) -> @debug.Repr
 pub(all) struct Document {
   entries : Array[Entry]
 } derive(Eq, @debug.Debug)
+pub fn Document::apply(Self, Array[Change], options? : ParseOptions) -> Self raise
 pub fn Document::edit(Self, Array[Selector], Edit) -> Self raise EditError
 pub fn Document::equal(Self, Self) -> Bool
+pub fn Document::find(Self, String) -> Array[LocatedValue] raise
 pub fn Document::get(Self, String) -> Value?
 pub fn Document::get_all(Self, String) -> Array[Value]
 pub fn Document::lookup(Self, Array[String]) -> Value?
+pub fn Document::lookup_all(Self, Array[String]) -> Array[Value] raise AccessError
+pub fn Document::lookup_at(Self, Array[Selector]) -> Value raise AccessError
 pub fn Document::not_equal(Self, Self) -> Bool
+pub fn Document::read_bool(Self, Array[Selector]) -> Bool raise AccessError
+pub fn Document::read_double(Self, Array[Selector]) -> Double raise AccessError
+pub fn Document::read_int64(Self, Array[Selector]) -> Int64 raise AccessError
+pub fn Document::read_text(Self, Array[Selector]) -> String raise AccessError
 pub fn Document::to_json(Self) -> Json
 pub fn Document::to_repr(Self) -> @debug.Repr
+pub fn Document::walk(Self, (Array[Selector], Value) -> Bool raise) -> Unit raise
 
 pub(all) enum Edit {
   Replace(Value)
@@ -178,6 +200,14 @@ pub fn InventoryTotal::equal(Self, Self) -> Bool
 pub fn InventoryTotal::not_equal(Self, Self) -> Bool
 pub fn InventoryTotal::to_repr(Self) -> @debug.Repr
 
+pub(all) struct LocatedValue {
+  path : Array[Selector]
+  value : Value
+} derive(Eq, @debug.Debug)
+pub fn LocatedValue::equal(Self, Self) -> Bool
+pub fn LocatedValue::not_equal(Self, Self) -> Bool
+pub fn LocatedValue::to_repr(Self) -> @debug.Repr
+
 pub(all) struct ParseOptions {
   escape_sequences : Bool
   max_depth : Int
@@ -205,6 +235,7 @@ pub struct SourceDocument {
   spans : Array[SourceSpan]
   options : ParseOptions
 }
+pub fn SourceDocument::apply(Self, Array[Change]) -> Self raise
 pub fn SourceDocument::document(Self) -> Document
 pub fn SourceDocument::edit(Self, Array[Selector], Edit) -> Self raise
 pub fn SourceDocument::text(Self) -> String
