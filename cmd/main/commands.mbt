@@ -220,8 +220,22 @@ fn run(args : Array[String]) -> Unit raise {
   } else {
     args
   }
+  if args.length() > 2 && (args[2] == "version" || args[2] == "--version") {
+    if args.length() != 3 {
+      raise InvalidArgument("version accepts no arguments")
+    }
+    println(
+      Json::object({
+        "name": Json::string("MoonValve"),
+        "version": Json::string(@valve.version()),
+        "minimum_moonc": Json::string("0.10.14"),
+      }).stringify(),
+    )
+    return
+  }
   if args.length() <= 2 || args[2] == "help" || args[2] == "--help" {
     help()
+    println("  version                 Show version information")
     println("  query-all FILE KEY...    Follow all duplicate matches")
     println("  resolve FILE --root DIR  Expand references inside DIR")
     println("  edit FILE PLAN.json [--dry-run|--in-place]")

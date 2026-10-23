@@ -26,13 +26,13 @@ CLI：`moon run cmd/main --target js -- from-json data.json`。输出为可重�
 
 `encode_binary` / `decode_binary` 使用独立的有序 `BinaryEntry` / `BinaryValue` 模型，支持对象、UTF-8 字符串、Int32、Float32、32 位指针数据、UTF-16LE 字符串、RGBA 原始数据、UInt64 和 Int64。浮点以 `Float32Bits(UInt)` 保存全部原始位，包含负零和 NaN 载荷；指针字段仅作为数值处理。
 
-使用小端数字与标准结束标记 8。解码严格检查完整终止、尾随数据及字符串编码；双向遵守深度、条目、字符串字节和总字节限制。此 API 不解析 appinfo 文件容器、外部字符串表或使用其他结束标记的 VBKV 变体。
+使用小端数字与标准结束标记 8。解码严格检查完整终止、尾随数据及字符串编码；双向遵守深度、条目、字符串字节和总字节限制。可通过显式 string_table 参数读写外部键表；Steam 容器使用独立的 open_steam_cache API。VBKV 仍不支持。
 
 ## 保留原文的编辑
 
 `parse_preserving` 返回 `SourceDocument`，通过 `text()` 读取原文、`document()` 读取语义模型。`SourceDocument::edit` 支持同一套 `Selector` 和 `Edit` 操作：精确替换值、重命名、删除与按位置插入。修改范围以外的字符保持原样，包括 BOM、中文、注释、CRLF 和缩进；每次编辑后重新解析并核对语义结果。
 
-新写入的结构使用规范化转义格式。删除条目保留周围注释；替换整个对象会替换对象内部的注释。此 API 接受未展开文件引用、未启用平台条件的标准转义文本；普通 `Document::edit` 可用于已求值的模型。
+源模型保留未求值条件、根级引用与字面路径。插入条目沿用周围缩进、换行与键的引号风格；替换标量保留其引号方式。删除条目移除尾随条件并保留周围注释；替换整个对象会替换内部注释。evaluate 提供独立条件视图，apply 提供顺序事务。详见 [API 导览](api.md)。
 
 ## Steam 清单分析
 

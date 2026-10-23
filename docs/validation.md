@@ -17,7 +17,7 @@ moon build --target native --release
 node scripts/test-cli.cjs --native
 ```
 
-目前 79 项测试覆盖文本/二进制、重复项、Unicode、资源限制、四类编辑、原文保留、条件、引用与 Steam 分析，四个后端均运行同一套核心测试。两个 CLI 各运行 14 项端到端验收；测试数据在临时目录创建并清理。另有一万项本地条目与两万项默认条目的有序合并测试，覆盖大规模重复匹配路径。
+目前 93 项测试覆盖文本/二进制、重复项、Unicode、资源限制、编辑事务、原文条件保留、查询遍历、类型读取、Steam 快捷方式、缓存及分块解析，四个后端均运行同一套核心测试。两个 CLI 各运行 21 项端到端验收；编辑器另有 6 项共用核心检查。另有大规模默认项合并测试与百万条目分块示例。
 
 生成式测试包含 300 份文本模型的文本/JSON往返与源编辑、300 份二进制模型的类型往返与尾随数据拒绝，以及 200 份文本的三种结构破坏。所有生成过程固定种子或确定公式，失败可以复现。
 
@@ -52,3 +52,20 @@ moon coverage report -f summary
 ```
 
 报告按 MoonBit 插桩点统计；CLI 的进程验收不计入核心单元测试的覆盖数字。原生 C 宿主代码另由两平台的端到端检查覆盖。
+
+## 第二参考、模糊测试与发行包
+
+```sh
+node scripts/build-editor.cjs
+node scripts/test-editor.cjs
+dotnet restore tools/reference-dotnet/Reference.csproj --locked-mode
+dotnet build tools/reference-dotnet/Reference.csproj --no-restore -c Release
+node scripts/check-dotnet.cjs
+node scripts/fuzz.cjs
+moon run examples/streaming --target native --release
+moon -C integration/consumer run cmd/main --target js
+node scripts/package.cjs
+python scripts/test-package.py
+```
+
+.NET 参考有 104 项共同子集一致、3 项已发布版本差异被明确断言；变异测试默认 3000 份文本与 3000 份二进制输入，并自动缩减文本性质失败样本。细节见 [参考差异](reference-differences.md)。发行包校验 ZIP、逐文件 SHA-256、版本及在隔离目录运行的原生程序，确保下载包可直接使用；说明见 [发行包](distribution.md)。

@@ -26,9 +26,9 @@ jobs:
           core-version: '0.10.14+7d59c7ec9'
       - run: moon version --all
       - run: moon fmt --check
-      - run: moon check --target ${{ matrix.target }}
+      - run: moon check --target ${{ matrix.target }} --deny-warn
       - run: moon build --target ${{ matrix.target }}
-      - run: moon test --target ${{ matrix.target }}
+      - run: moon test --target ${{ matrix.target }} --deny-warn
       - run: moon run examples/demo --target ${{ matrix.target }}
       - run: moon run examples/advanced --target ${{ matrix.target }}
       - if: matrix.target == 'js'
@@ -51,6 +51,31 @@ jobs:
         run: node scripts/test-cli.cjs --native
       - if: matrix.target == 'native'
         run: node scripts/benchmark.cjs --native
+      - if: matrix.target == 'native'
+        run: moon run examples/streaming --target native --release
+      - if: matrix.target == 'native'
+        run: moon -C integration/consumer run cmd/main --target native
+      - if: matrix.target == 'native'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - if: matrix.target == 'native'
+        run: moon build --target js --release
+      - if: matrix.target == 'native'
+        run: node scripts/build-editor.cjs
+      - if: matrix.target == 'native'
+        run: node scripts/test-editor.cjs
+      - if: matrix.target == 'native'
+        run: node scripts/package.cjs
+      - if: matrix.target == 'native'
+        run: python scripts/test-package.py
+      - if: matrix.target == 'native'
+        uses: actions/upload-artifact@v4
+        with:
+          name: moonvalve-linux-x64
+          path: |
+            _build/packages/*.zip
+            _build/packages/*.sha256
 
   windows-cli:
     runs-on: windows-latest
@@ -76,3 +101,33 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install vdf==3.4
       - run: python scripts/check-reference.py --native
+      - run: node scripts/build-editor.cjs
+      - run: node scripts/test-editor.cjs
+      - run: node scripts/package.cjs
+      - run: python scripts/test-package.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moonvalve-windows-x64
+          path: |
+            _build/packages/*.zip
+            _build/packages/*.sha256
+
+  reference-and-fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: hustcer/setup-moonbit@v1
+        with:
+          version: '0.10.14+7d59c7ec9'
+          core-version: '0.10.14+7d59c7ec9'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: node scripts/build-editor.cjs
+      - run: dotnet restore tools/reference-dotnet/Reference.csproj --locked-mode
+      - run: dotnet build tools/reference-dotnet/Reference.csproj --no-restore -c Release
+      - run: node scripts/check-dotnet.cjs
+      - run: node scripts/fuzz.cjs

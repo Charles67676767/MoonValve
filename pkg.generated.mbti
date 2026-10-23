@@ -52,6 +52,8 @@ pub fn shortcut_app_id(String, String) -> UInt
 
 pub fn stringify(Document) -> String raise WriteError
 
+pub fn version() -> String
+
 // Errors
 pub suberror AccessError {
   InvalidAccess(Array[Selector], String)

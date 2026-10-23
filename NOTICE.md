@@ -11,3 +11,7 @@ Compatibility references:
 No upstream implementation source files or upstream test suites are distributed in this repository. The included fixtures are synthetic examples. The binary reference vectors are generated from synthetic values with ValvePython/vdf 3.4; the optional differential test imports that MIT-licensed package at test runtime. No Python dependency is required by the library or CLI. The MoonBit standard library is supplied by the MoonBit toolchain rather than vendored here.
 
 Valve and Steam names identify the supported ecosystem. MoonValve is an independent project and is not affiliated with Valve.
+
+Additional compatibility references: xPaw/SteamAppInfo (Steam cache headers), Corecii/steam-binary-vdf-ts (shortcut format and identifier behavior), and ValveKeyValue 0.70.0.499 (optional .NET test runtime). MoonValve does not vendor their implementation files. The CRC-32 checksum is implemented independently from the standard polynomial and checked against a known vector.
+
+Binary distributions include the MoonBit native runtime and compiled standard-library code. The distribution script supplies Apache-2.0, the standard library's original NOTICE and native-runtime attribution in licenses/. Python and .NET reference dependencies are not included in product packages.

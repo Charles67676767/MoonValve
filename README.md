@@ -4,7 +4,7 @@
 
 MoonValve 让 MoonBit 程序可以读取、查询和写出 VDF/ACF 文本，同时保留键的顺序与重复项。核心库没有第三方依赖，也不调用 Python、Valve SDK 或外部解析器。Steam 数据模型和命令行工具建立在同一份解析实现上。
 
-当前版本为开发中的 `0.1.0`，已提供可运行的库、示例、命令行和测试。尚未发布到 Mooncakes。
+当前版本为开发中的 `0.2.0`，提供库、命令行、本地可视化工作台和跨平台下载包。尚未发布到 Mooncakes。
 
 ## 为什么需要它
 
@@ -22,8 +22,14 @@ Steam 和 Source 生态使用 KeyValues 保存配置和资源信息。这种格�
 - 包含错误码、行列号和 Unicode 字符偏移的解析诊断。
 - Steam `appmanifest_*.acf` 和新旧 `libraryfolders.vdf` 数据模型。
 - JavaScript 与原生命令行；Steam 清单筛选、排序、精确容量汇总、重复及缺失检查与 CSV 导出。
+- 全重复项路径查询、树遍历、严格类型读取与有序编辑事务。
+- 保留条件、引用与字面路径的源编辑，插入沿用相邻缩进、换行和键的引号方式。
+- `shortcuts.vdf` 增删改、appinfo/packageinfo 多版本索引、二进制外部字符串表。
+- 增量 UTF-8 解析与事件回调，可跳过对象交付而继续验证语法，附百万条目示例。
+- 命令行编辑预览、带备份的原子保存、受选定目录约束的引用展开和结构化错误。
+- 本机可视化工作台，提供文本/二进制树形浏览、编辑预览、撤销和下载副本。
 
-完整的格式边界见 [兼容性说明](docs/compatibility.md)，新增 API 见 [扩展说明](docs/extensions.md)。
+完整格式边界见 [兼容性说明](docs/compatibility.md)，库接口见 [API 导览](docs/api.md)，工具用法见 [命令行](docs/commands.md)、[本地工作台](docs/editor.md) 和 [发行包](docs/distribution.md)。
 
 ## 环境与获取代码
 
@@ -59,13 +65,13 @@ let normalized = @valve.stringify(doc)
 let same = @valve.parse(normalized) == doc
 ```
 
-`parse` 和 `stringify` 会抛出结构化错误，需要由调用方处理。可直接运行的完整错误处理示例在 [examples/demo](examples/demo/main.mbt)。Mooncakes 发布前，使用上面的源码仓库运行方式。
+`parse` 和 `stringify` 会抛出结构化错误，需要由调用方处理。可直接运行的完整错误处理示例在 [examples/demo](examples/demo/main.mbt)。Mooncakes 发布前，也可通过 [独立模块示例](integration/consumer/README.md) 的 moon.work 引入源码依赖。
 
 对象由 `Array[Entry]` 表示，`Value` 为 `Text(String)` 或 `Object(Array[Entry])`。查询默认区分大小写，遇到重复键时返回第一项；`Document::get_all` 返回所有顶层同名项。Steam 数据模型单独采用 ASCII 不区分大小写的字段查询。
 
 ## 命令行
 
-以下命令在仓库根目录执行；输入文件保持只读，结果写到标准输出。
+以下命令在仓库根目录执行，默认向标准输出写结果；只有显式 `--in-place` 才保存到文件并创建备份。
 
 ```sh
 moon run cmd/main --target js -- help
@@ -94,7 +100,7 @@ moon run cmd/main --target js -- inventory "/path/to/libraryfolders.vdf" --filte
 
 `inventory` 扫描该文件列出的库中的 `steamapps/appmanifest_*.acf`，返回 `games`、`errors` 和筛选结果的 `summary`。相对库路径以输入文件的目录为基准。它读取清单记录，不计算实际文件夹大小，也不验证游戏下载是否完整。库路径和清单名可能出现在本机输出中。
 
-除 `inventory` 外，可以把文件名换成 `-` 从标准输入读取。CLI 严格解码 UTF-8，输入上限为 16 MiB。退出码为 `0`（成功）、`1`（inventory 部分失败）或 `2`（参数、输入或解析错误）。
+除 `inventory`、文件引用展开及原地保存外，可以把文件名换成 `-` 从标准输入读取。文本按 UTF-8 严格解码，普通输入上限 16 MiB，缓存命令上限 512 MiB。退出码为 `0`（成功）、`1`（inventory 部分失败）或 `2`（参数、输入或解析错误）。
 
 也可以先构建，再直接使用 Node.js：
 
@@ -128,7 +134,7 @@ node scripts/benchmark.cjs --native
 moon info
 ```
 
-核心测试覆盖文本与二进制、编辑、条件、引用、Steam 分析与资源边界，并包含生成式往返和独立参考向量。CLI 测试使用临时目录构造清单。差分脚本在文本的共同支持范围内与 `vdf==3.4` 双向比对；Python 仅为可选测试依赖。持续集成执行四后端检查、构建、测试、示例，以及 Windows/Linux 命令行验收。复现细节见 [验证说明](docs/validation.md)。
+核心测试覆盖文本与二进制、编辑事务、格式保留、条件、引用、流解析、Steam 快捷方式、缓存及资源边界。CLI 使用临时目录验收；Python vdf 与 .NET ValveKeyValue 是独立测试参考，不参与产品运行。另有带失败样本缩减的确定性模糊测试。持续集成执行四后端验证、Windows/Linux 命令行、编辑器核心、独立参考和发行包校验。复现细节见 [验证说明](docs/validation.md)。
 
 ## 目录
 
@@ -154,7 +160,7 @@ docs/                 兼容性、设计与路线图
 
 ## 后续方向
 
-当前重点是稳定已实现 API、扩充实际兼容性样例并准备首个 Mooncakes 发布版本。KV2、KV3 和 appinfo 容器不在当前范围内。详见 [路线图](docs/roadmap.md)。
+当前重点是稳定已实现 API、扩充实际兼容性样例并准备首个 Mooncakes 发布版本。KV2、KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
 
 ## 许可证与参考
 

@@ -11,7 +11,7 @@
 
 name = "Charles67676767/moonvalve"
 
-version = "0.1.0"
+version = "0.2.0"
 
 readme = "README.md"
 
@@ -23,4 +23,4 @@ keywords = [ "valve", "keyvalues", "vdf", "steam", "parser" ]
 
 preferred_target = "wasm-gc"
 
-description = "Valve KeyValues 1 parsing, writing, ordered queries and Steam manifest models in MoonBit"
+description = "Ordered Valve KeyValues tooling, source editing, streaming and Steam metadata in MoonBit"

@@ -1,5 +1,9 @@
 /* Minimal native host: bounded byte IO and regular directory entries.
  * KV1 parsing, Steam models, filtering and serialization live in MoonBit. */
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 700
+#endif
 #include "moonbit.h"
 #include <stdio.h>
 #include <stdlib.h>
