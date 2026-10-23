@@ -28,6 +28,8 @@ pub fn inventory_total(Array[InventoryRecord]) -> InventoryTotal raise SteamErro
 
 pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> Document raise
 
+pub fn new_shortcut_file() -> ShortcutFile
+
 pub fn open_steam_cache(Bytes, max_bytes? : Int, max_records? : Int) -> SteamCache raise BinaryError
 
 pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
@@ -40,7 +42,11 @@ pub fn read_app_manifest(Document) -> SteamApp raise SteamError
 
 pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
 
+pub fn read_shortcut_file(Array[BinaryEntry]) -> ShortcutFile raise SteamError
+
 pub fn select_inventory(Array[InventoryRecord], filter? : String, sort? : String) -> Array[InventoryRecord] raise SteamError
+
+pub fn shortcut_app_id(String, String) -> UInt
 
 pub fn stringify(Document) -> String raise WriteError
 
@@ -258,6 +264,13 @@ pub fn Selector::equal(Self, Self) -> Bool
 pub fn Selector::not_equal(Self, Self) -> Bool
 pub fn Selector::to_repr(Self) -> @debug.Repr
 
+type ShortcutFile
+pub fn ShortcutFile::add(Self, String, String, start_dir? : String, launch_options? : String, tags? : Array[String]) -> Self raise SteamError
+pub fn ShortcutFile::remove(Self, String) -> Self raise SteamError
+pub fn ShortcutFile::set(Self, SteamShortcut) -> Self raise SteamError
+pub fn ShortcutFile::shortcuts(Self) -> Array[SteamShortcut] raise SteamError
+pub fn ShortcutFile::to_binary(Self) -> Array[BinaryEntry]
+
 type SourceDocument
 pub fn SourceDocument::apply(Self, Array[Change]) -> Self raise
 pub fn SourceDocument::document(Self) -> Document
@@ -292,6 +305,20 @@ pub(all) struct SteamLibrary {
 pub fn SteamLibrary::equal(Self, Self) -> Bool
 pub fn SteamLibrary::not_equal(Self, Self) -> Bool
 pub fn SteamLibrary::to_repr(Self) -> @debug.Repr
+
+pub(all) struct SteamShortcut {
+  index : String
+  app_id : UInt
+  name : String
+  exe : String
+  start_dir : String
+  launch_options : String
+  tags : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn SteamShortcut::equal(Self, Self) -> Bool
+pub fn SteamShortcut::not_equal(Self, Self) -> Bool
+pub fn SteamShortcut::to_repr(Self) -> @debug.Repr
+pub fn SteamShortcut::url(Self) -> String
 
 pub(all) enum Value {
   Text(String)
