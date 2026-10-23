@@ -21,3 +21,9 @@ CLI：`moon run cmd/main --target js -- from-json data.json`。输出为可重�
 `load_resolved(source, loader, options?, max_files?)` 使用显式回调读取文件，核心库不自行访问文件系统。根级 `#include` 在本地条目之后按引用顺序追加；`#base` 递归补充缺失项，本地值优先，重复键按出现次数配对。对象内部同名指令键是普通数据。
 
 引用路径相对当前文件，统一斜杠并折叠点段；不允许绝对引用及越过虚拟根。调用方仍需根据自身宿主限制实际文件访问范围。循环引用、文件数、累计输入字符和累计解析条目均受限；被条件过滤的语法条目也计入预算。
+
+## 标准二进制 KV1
+
+`encode_binary` / `decode_binary` 使用独立的有序 `BinaryEntry` / `BinaryValue` 模型，支持对象、UTF-8 字符串、Int32、Float32、32 位指针数据、UTF-16LE 字符串、RGBA 原始数据、UInt64 和 Int64。浮点以 `Float32Bits(UInt)` 保存全部原始位，包含负零和 NaN 载荷；指针字段仅作为数值处理。
+
+使用小端数字与标准结束标记 8。解码严格检查完整终止、尾随数据及字符串编码；双向遵守深度、条目、字符串字节和总字节限制。此 API 不解析 appinfo 文件容器、外部字符串表或使用其他结束标记的 VBKV 变体。

@@ -1,4 +1,7 @@
 import {
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/utf16",
   "moonbitlang/core/debug",
   "moonbitlang/core/json",
   "moonbitlang/core/string" @strconv,

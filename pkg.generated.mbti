@@ -6,7 +6,11 @@ import {
 }
 
 // Values
+pub fn decode_binary(Bytes, options? : BinaryOptions) -> Array[BinaryEntry] raise BinaryError
+
 pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonImportError
+
+pub fn encode_binary(Array[BinaryEntry], options? : BinaryOptions) -> Bytes raise BinaryError
 
 pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
 
@@ -23,6 +27,11 @@ pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
 pub fn stringify(Document) -> String raise WriteError
 
 // Errors
+pub suberror BinaryError {
+  InvalidBinary(Int, String)
+} derive(@debug.Debug)
+pub fn BinaryError::to_repr(Self) -> @debug.Repr
+
 pub suberror ConditionError {
   InvalidCondition(String)
 } derive(@debug.Debug)
@@ -59,6 +68,40 @@ pub suberror WriteError {
 pub fn WriteError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) struct BinaryEntry {
+  key : String
+  value : BinaryValue
+} derive(Eq, @debug.Debug)
+pub fn BinaryEntry::equal(Self, Self) -> Bool
+pub fn BinaryEntry::not_equal(Self, Self) -> Bool
+pub fn BinaryEntry::to_repr(Self) -> @debug.Repr
+
+pub(all) struct BinaryOptions {
+  max_depth : Int
+  max_entries : Int
+  max_bytes : Int
+  max_string_bytes : Int
+} derive(Eq, @debug.Debug)
+pub fn BinaryOptions::default() -> Self
+pub fn BinaryOptions::equal(Self, Self) -> Bool
+pub fn BinaryOptions::not_equal(Self, Self) -> Bool
+pub fn BinaryOptions::to_repr(Self) -> @debug.Repr
+
+pub(all) enum BinaryValue {
+  ObjectValue(Array[BinaryEntry])
+  StringValue(String)
+  Int32Value(Int)
+  Float32Bits(UInt)
+  Pointer32(UInt)
+  WideString(String)
+  Color32(UInt)
+  UInt64Value(UInt64)
+  Int64Value(Int64)
+} derive(Eq, @debug.Debug)
+pub fn BinaryValue::equal(Self, Self) -> Bool
+pub fn BinaryValue::not_equal(Self, Self) -> Bool
+pub fn BinaryValue::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Diagnostic {
   code : String
   message : String
