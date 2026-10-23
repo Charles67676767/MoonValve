@@ -72,6 +72,7 @@ fn help() -> Unit {
     "Usage: moon run cmd/main --target js -- <command> <file|-> [keys...]",
   )
   println("  parse FILE           Export ordered, duplicate-preserving JSON")
+  println("  from-json FILE       Import ordered JSON and emit KV1")
   println("  format FILE          Write canonical escaped KV1 to stdout")
   println(
     "  query FILE KEY...    Look up an exact path (each key is an argument)",
@@ -175,7 +176,8 @@ fn run(args : Array[String]) -> Unit raise {
     command != "query" &&
     command != "app" &&
     command != "libraries" &&
-    command != "inventory" {
+    command != "inventory" &&
+    command != "from-json" {
     raise InvalidArgument("Unknown command: \{command}")
   }
   if args.length() < 4 {
@@ -187,7 +189,12 @@ fn run(args : Array[String]) -> Unit raise {
   if command == "query" && args.length() < 5 {
     raise InvalidArgument("query needs at least one key")
   }
-  let doc = @valve.parse(read_text(args[3]))
+  let input = read_text(args[3])
+  if command == "from-json" {
+    host_output(@valve.stringify(@valve.parse_json_document(input)))
+    return
+  }
+  let doc = @valve.parse(input)
   match command {
     "parse" => println(doc.to_json().stringify())
     "format" => host_output(@valve.stringify(doc))

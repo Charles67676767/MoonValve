@@ -6,7 +6,11 @@ import {
 }
 
 // Values
+pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonImportError
+
 pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
+
+pub fn parse_json_document(String, options? : ParseOptions) -> Document raise JsonImportError
 
 pub fn read_app_manifest(Document) -> SteamApp raise SteamError
 
@@ -19,6 +23,11 @@ pub suberror EditError {
   InvalidEdit(String)
 } derive(@debug.Debug)
 pub fn EditError::to_repr(Self) -> @debug.Repr
+
+pub suberror JsonImportError {
+  InvalidJsonDocument(String)
+} derive(@debug.Debug)
+pub fn JsonImportError::to_repr(Self) -> @debug.Repr
 
 pub suberror ParseError {
   ParseError(Diagnostic)
