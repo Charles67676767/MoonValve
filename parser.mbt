@@ -7,6 +7,9 @@ priv struct Parser {
   mut column : Int
   mut entry_count : Int
   allow_directives : Bool
+  capture : Bool
+  path : Array[Int]
+  spans : Array[SourceSpan]
 }
 
 ///|
@@ -25,6 +28,19 @@ fn parse_internal(
   options : ParseOptions,
   allow_directives : Bool,
 ) -> (Document, Int) raise ParseError {
+  let (doc, count, _) = parse_with_spans(
+    input, options, allow_directives, false,
+  )
+  (doc, count)
+}
+
+///|
+fn parse_with_spans(
+  input : String,
+  options : ParseOptions,
+  allow_directives : Bool,
+  capture : Bool,
+) -> (Document, Int, Array[SourceSpan]) raise ParseError {
   if options.max_depth < 0 ||
     options.max_depth > 256 ||
     options.max_entries < 0 ||
@@ -55,12 +71,15 @@ fn parse_internal(
     column: 1,
     entry_count: 0,
     allow_directives,
+    capture,
+    path: [],
+    spans: [],
   }
   if p.chars.get(0) is Some(c) && c.to_int() == 0xFEFF {
     p.advance()
   }
   let doc = Document::{ entries: p.read_entries(0, false), }
-  (doc, p.entry_count)
+  (doc, p.entry_count, p.spans)
 }
 
 ///|
@@ -228,7 +247,9 @@ fn Parser::read_entries(
     if self.entry_count >= self.options.max_entries {
       self.fail("entry_limit", "Document exceeds max_entries")
     }
+    let key_start = self.pos
     let key = self.read_string()
+    let key_end = self.pos
     if key.is_empty() && self.peek() == Some('=') {
       self.fail("expected_string", "Unexpected equals sign")
     }
@@ -259,6 +280,10 @@ fn Parser::read_entries(
         self.skip_trivia()
       }
     }
+    let value_start = self.pos
+    if self.capture {
+      self.path.push(entries.length())
+    }
     let value = match self.peek() {
       Some('{') => {
         if depth >= self.options.max_depth {
@@ -272,6 +297,17 @@ fn Parser::read_entries(
         Value::Text("")
       }
       _ => Value::Text(self.read_string())
+    }
+    let value_end = self.pos
+    if self.capture {
+      self.spans.push({
+        path: self.path.map(i => i),
+        key_start,
+        key_end,
+        value_start,
+        value_end,
+      })
+      self.path.pop() |> ignore
     }
     self.skip_trivia()
     while self.peek() == Some('[') {

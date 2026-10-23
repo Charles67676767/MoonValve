@@ -20,6 +20,8 @@ pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
 
 pub fn parse_json_document(String, options? : ParseOptions) -> Document raise JsonImportError
 
+pub fn parse_preserving(String, options? : ParseOptions) -> SourceDocument raise
+
 pub fn read_app_manifest(Document) -> SteamApp raise SteamError
 
 pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
@@ -161,6 +163,18 @@ pub(all) struct Selector {
 pub fn Selector::equal(Self, Self) -> Bool
 pub fn Selector::not_equal(Self, Self) -> Bool
 pub fn Selector::to_repr(Self) -> @debug.Repr
+
+pub struct SourceDocument {
+  source : String
+  doc : Document
+  spans : Array[SourceSpan]
+  options : ParseOptions
+}
+pub fn SourceDocument::document(Self) -> Document
+pub fn SourceDocument::edit(Self, Array[Selector], Edit) -> Self raise
+pub fn SourceDocument::text(Self) -> String
+
+type SourceSpan
 
 pub(all) struct SteamApp {
   app_id : String
