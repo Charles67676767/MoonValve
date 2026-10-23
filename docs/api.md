@@ -32,6 +32,7 @@
 - `binary_to_json` / `binary_from_json`：有序 `{key,type,value}`，数字是字符串，Float32 使用原始位，不丢失 64 位精度或 NaN 载荷。
 - `read_app_manifest` / `read_library_folders`：Steam 清单与库目录，`select_inventory` / `inventory_total` / `check_inventory` / `inventory_csv` 提供盘点分析。
 - `open_steam_cache`：支持 appinfo 39/40/41、packageinfo 39/40。`records()` 返回元数据；`read(id)` 使用索引定位并解码目标，不存在返回 None；`format/version/universe` 提供头部信息。AppInfo 建索引时检查边界、头部和字符串表，目标数据延迟验证；PackageInfo 为定位记录边界需要解析各树。
+- `SteamCache::page(query="", offset=0, limit=100)`：按十进制 ID 子串过滤元数据，返回匹配总数与当前页；每页 1–200 条，偏移非负。不会为搜索解码记录正文。
 - `new_shortcut_file` / `read_shortcut_file`：读写快捷方式模型。`shortcuts` 返回建模字段；`add/set/remove` 返回新文件，保留未知字段；`to_binary` 交给二进制编码器。`set` 保留传入 App ID，允许调用方决定是否重新计算；`shortcut_app_id` 与 `SteamShortcut::url` 提供计算辅助。
 
 缓存输入默认上限 512 MiB、最多 1000000 条记录。标准二进制默认上限 16 MiB、100000 条条目、128 层、单字符串 1 MiB；缓存索引使用独立的更大累计条目预算。未知缓存版本拒绝解析。
@@ -43,6 +44,14 @@
 事件为 Pair、BeginObject、EndObject、Condition。BeginObject 回调返回 false 可停止交付其后代事件，但语法和预算仍检查，匹配的 EndObject 仍交付。事件是原文视图：条件只验证并交付、不求值；根级指令作为普通 Pair 交付，不进行文件读取。它与需要回看对象尾部条件的文档求值是不同接口。
 
 解析器自身保留当前 token、对象栈与不完整 UTF-8 字节，不构建文档树；调用方可以流式处理或自行累积事件。错误或 finish 后不可继续 feed。`entries_seen/characters_seen` 提供累计计数；百万条目示例见 examples/streaming。
+
+`new_stream_writer(sink)` 返回事件写出器，`write(event)` 逐条交付规范化文本到调用方 sink，`finish()` 检查对象是否闭合。sink 可抛错，失败后不能继续使用写出器。最大对象深度 128；拒绝条件和根级引用，避免把尚未求值的数据误写成普通配置。详细文件命令与部分输出约定见 [流式处理](streaming.md)。
+
+## 工程与来源
+
+`load_project(source, loader, options?, max_files?)` 使用与 `load_resolved` 相同的条件、引用、预算和合并语义，返回 `ResolvedProject`，包含最终 `document`、逐字段 `origins` 和生效的 `references`。来源路径为区分大小写且感知重复项的 `Array[Selector]`；位置包含原虚拟文件名、从 0 开始的 Unicode 标量偏移，以及从 1 开始的行列号，定位原文件中的键开头。原文件编辑后应重新分析。
+
+本地对象保留本地键位置，继承的子字段指向默认文件；include 追加条目保留被引用文件的位置。被过滤条件分支不产生最终来源。`SourceDocument::locations(source)` 则返回未经条件过滤的原文位置。`ResolvedProject::to_json()` 提供有序树、来源与引用边的便携表达。见 [工程说明](projects.md)。
 
 ## 安装与版本
 

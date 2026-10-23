@@ -4,7 +4,7 @@
 
 MoonValve 让 MoonBit 程序可以读取、查询和写出 VDF/ACF 文本，同时保留键的顺序与重复项。核心库没有第三方依赖，也不调用 Python、Valve SDK 或外部解析器。Steam 数据模型和命令行工具建立在同一份解析实现上。
 
-当前版本为开发中的 `0.2.0`，提供库、命令行、本地可视化工作台和跨平台下载包。尚未发布到 Mooncakes。
+当前版本为开发中的 `0.3.0`，提供库、命令行、本地可视化工作台和跨平台下载包。尚未发布到 Mooncakes。
 
 ## 为什么需要它
 
@@ -28,6 +28,9 @@ Steam 和 Source 生态使用 KeyValues 保存配置和资源信息。这种格�
 - 增量 UTF-8 解析与事件回调，可跳过对象交付而继续验证语法，附百万条目示例。
 - 命令行编辑预览、带备份的原子保存、受选定目录约束的引用展开和结构化错误。
 - 本机可视化工作台，提供文本/二进制树形浏览、编辑预览、撤销和下载副本。
+- 分块文件命令，支持 JSON Lines 原文事件、原始标量路径查询、CSV 和无条件文本的流式规范化；输出处理慢速接收端的背压。
+- 快捷方式专用表单、批量修改预览；缓存按 ID 搜索、分页和记录按需解码。
+- 多文件工程切换、草稿快照、引用关系及展开字段到原文件行列的来源导航。
 
 完整格式边界见 [兼容性说明](docs/compatibility.md)，库接口见 [API 导览](docs/api.md)，工具用法见 [命令行](docs/commands.md)、[本地工作台](docs/editor.md) 和 [发行包](docs/distribution.md)。
 
@@ -100,7 +103,7 @@ moon run cmd/main --target js -- inventory "/path/to/libraryfolders.vdf" --filte
 
 `inventory` 扫描该文件列出的库中的 `steamapps/appmanifest_*.acf`，返回 `games`、`errors` 和筛选结果的 `summary`。相对库路径以输入文件的目录为基准。它读取清单记录，不计算实际文件夹大小，也不验证游戏下载是否完整。库路径和清单名可能出现在本机输出中。
 
-除 `inventory`、文件引用展开及原地保存外，可以把文件名换成 `-` 从标准输入读取。文本按 UTF-8 严格解码，普通输入上限 16 MiB，缓存命令上限 512 MiB。退出码为 `0`（成功）、`1`（inventory 部分失败）或 `2`（参数、输入或解析错误）。
+除 `inventory`、文件引用展开及原地保存外，可以把文件名换成 `-` 从标准输入读取。文本按 UTF-8 严格解码，普通输入上限 16 MiB，缓存命令上限 512 MiB；流式命令默认 64 MiB，可显式设定预算，见 [流式文件处理](docs/streaming.md)。退出码为 `0`（成功）、`1`（inventory 部分失败）或 `2`（参数、输入或解析错误）。
 
 也可以先构建，再直接使用 Node.js：
 
@@ -149,6 +152,8 @@ source_edit.mbt       保留原文的局部编辑
 json_codec.mbt        有序 JSON 导入
 conditions.mbt        平台条件表达式
 resolve.mbt           文件引用解析
+project.mbt           引用关系与原文来源
+stream_writer.mbt     有界事件写出
 binary.mbt            标准二进制 KV1
 cmd/main/             JS/C 宿主适配与 MoonBit CLI
 examples/demo/        跨后端最小使用示例

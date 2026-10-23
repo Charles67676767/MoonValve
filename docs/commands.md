@@ -1,5 +1,7 @@
 # 命令行工具
 
+大文件的 `stream-json`、`stream-query`、`stream-csv`、`stream-format` 用法及部分输出约定见 [流式处理](streaming.md)。`project FILE --root DIR` 的字段来源与引用关系输出见 [多文件工程](projects.md)。
+
 构建：`moon build --target native --release`，或 `moon build --target js --release`。以下用 `moonvalve` 指代生成的程序；源码运行可替换为 `moon run cmd/main --target native --release --`。默认读取文件、向标准输出写结果。
 
 ## 文本与引用

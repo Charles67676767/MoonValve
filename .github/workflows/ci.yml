@@ -36,6 +36,8 @@ jobs:
       - if: matrix.target == 'js'
         run: node scripts/test-cli.cjs
       - if: matrix.target == 'js'
+        run: node scripts/test-stream-pipe.cjs
+      - if: matrix.target == 'js'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -49,6 +51,8 @@ jobs:
         run: moon build --target native --release
       - if: matrix.target == 'native'
         run: node scripts/test-cli.cjs --native
+      - if: matrix.target == 'native'
+        run: node scripts/test-stream-pipe.cjs --native
       - if: matrix.target == 'native'
         run: node scripts/benchmark.cjs --native
       - if: matrix.target == 'native'
@@ -92,10 +96,12 @@ jobs:
       - run: moon test --target js
       - run: moon build --target js --release
       - run: node scripts/test-cli.cjs
+      - run: node scripts/test-stream-pipe.cjs
       - run: moon check --target native
       - run: moon test --target native
       - run: moon build --target native --release
       - run: node scripts/test-cli.cjs --native
+      - run: node scripts/test-stream-pipe.cjs --native
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
