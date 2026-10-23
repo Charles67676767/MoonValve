@@ -14,6 +14,8 @@
   </header>
   <main>
     <section class="intro"><div><span class="eyebrow">配置与数据，从容掌握</span><h1>每一个键，都有迹可循。</h1><p>浏览重复项、保留原文修改，也能检查二进制数据。</p></div><div class="intro-note"><strong>MoonBit 驱动</strong><span>解析 · 编辑 · 转换</span></div></section>
+    <nav class="mode-tabs" aria-label="工具"><button data-panel="config" class="active">配置编辑</button><button data-panel="shortcuts">快捷方式</button><button data-panel="cache">缓存浏览</button><button data-panel="project">多文件工程</button></nav>
+    <div id="panel-config">
     <div class="toolbar">
       <div class="file-label"><span id="file-icon">◫</span><strong id="filename">example.vdf</strong><span id="modified" hidden>已修改</span></div>
       <div class="toolbar-actions"><label class="select-label">格式<select id="kind"><option value="text">文本 KV1</option><option value="binary">二进制 KV1</option></select></label><select id="example" aria-label="加载示例"><option value="">加载示例…</option><option value="duplicates">重复键与嵌套对象</option><option value="conditions">平台条件与引用</option><option value="binary">二进制快捷方式</option></select><button id="undo" disabled>撤销应用</button><button id="export-json">导出 JSON</button></div>
@@ -24,10 +26,29 @@
       <aside class="inspector"><div class="pane-heading"><strong>条目详情</strong><span id="value-type">—</span></div><div id="selection-empty"><span class="empty-symbol">↖</span><h2>从左侧选择一个键</h2><p>同名条目按出现次序分别定位，修改前可先预览结果。</p></div><div id="selection" hidden><div id="selected-path" class="path"></div><label class="field">键名<input id="key-name"></label><label class="field">值<textarea id="value" rows="5" spellcheck="false"></textarea></label><div class="stack-actions"><button id="replace" class="primary">预览替换</button><button id="rename">预览重命名</button><button id="remove" class="danger">预览删除</button></div><div id="insert-fields"><h3>向对象添加条目</h3><label class="field">新键名<input id="new-key" placeholder="例如：resource_path"></label><label class="field">文本值<input id="new-value" placeholder="新条目的值"></label><button id="insert">预览插入</button></div></div></aside>
     </div>
     <section class="advanced"><details><summary>条件预览与文件引用 <span>显式选择输入，原文保持可编辑</span></summary><div class="advanced-grid"><label class="field">启用的条件符号<input id="symbols" placeholder="WIN32, DESKTOP" value="WIN32"></label><button id="evaluate">预览条件求值</button><label class="field">引用入口相对路径<input id="source-name" value="example.vdf"></label><div class="reference-actions"><button id="load-references">载入引用目录</button><button id="resolve">预览引用展开</button><span id="reference-count">未载入</span></div></div></details></section>
+    </div>
+    <section id="panel-shortcuts" class="tool-panel" hidden>
+      <div class="tool-header"><div><h2>非 Steam 游戏快捷方式</h2><p>编辑启动入口、参数与标签，预览后下载副本。</p></div><div class="tool-actions"><button id="sc-open">打开 shortcuts.vdf</button><button id="sc-new">新建文件</button><button id="sc-demo">加载示例</button><button id="sc-download">下载快捷方式</button></div></div>
+      <div class="tool-grid"><div><label class="field">搜索名称、路径或标签<input id="sc-search" placeholder="搜索快捷方式"></label><p id="sc-summary"></p><div id="sc-list" class="record-list"></div><div class="tool-actions"><button id="sc-bulk">批量修改所选项…</button><button id="sc-delete" class="danger">预览删除所选项</button></div></div>
+        <form id="sc-form"><h3 id="sc-heading">新增快捷方式</h3><label class="field">名称<input id="sc-name" required></label><label class="field">启动程序<input id="sc-exe" required placeholder='"D:\Games\game.exe"'></label><label class="field">工作目录<input id="sc-dir"></label><label class="field">启动参数<input id="sc-args"></label><label class="field">标签（每行一个）<textarea id="sc-tags" rows="3"></textarea></label><p id="sc-id"></p><div class="tool-actions"><button type="submit" class="primary">预览保存条目</button><button type="button" id="sc-reset">新增条目</button></div></form></div>
+    </section>
+    <section id="panel-cache" class="tool-panel" hidden>
+      <div class="tool-header"><div><h2>Steam 缓存浏览器</h2><p>先浏览记录索引，选择 ID 后才解码内容。</p></div><div class="tool-actions"><button id="cache-open" class="primary">打开 appinfo / packageinfo</button><button id="cache-demo">加载示例</button><button id="cache-close">关闭缓存</button></div></div>
+      <p id="cache-summary">选择本地缓存文件，最大 128 MiB。文件不会上传。</p><label class="field">按 ID 搜索<input id="cache-query" placeholder="例如：480"></label>
+      <div class="tool-grid"><div><div id="cache-list" class="record-list"></div><div class="tool-actions"><button id="cache-prev">上一页</button><span id="cache-page"></span><button id="cache-next">下一页</button></div></div><div><h3 id="cache-record-title">记录内容</h3><div id="cache-detail-tree" class="detail-tree"></div><pre id="cache-detail" class="data-preview">选择一条记录查看。</pre><div class="tool-actions"><button id="cache-export" disabled>导出此条 JSON</button><button id="cache-edit" disabled>在配置编辑器打开</button></div></div></div>
+    </section>
+    <section id="panel-project" class="tool-panel" hidden>
+      <div class="tool-header"><div><h2>多文件工程与来源导航</h2><p>保留各文件编辑内容，追踪展开后字段的原始位置。</p></div><div class="tool-actions"><button id="project-open" class="primary">打开工程目录</button><button id="project-import">恢复快照</button><button id="project-demo">加载示例工程</button><button id="project-export">导出工程快照</button></div></div>
+      <div class="project-controls"><label class="field">入口文件<select id="project-entry"></select></label><label class="field">启用的条件符号<input id="project-symbols" value="WIN32" placeholder="WIN32, DESKTOP"></label><button id="project-resolve">分析引用与字段来源</button></div>
+      <div class="tool-grid"><div><h3>工程文件</h3><div id="project-files" class="record-list"></div><h3>引用关系</h3><div id="project-graph" class="reference-graph">载入目录后分析入口。</div></div><div><label class="field">搜索展开后的键或来源文件<input id="project-filter" placeholder="键名 / 文件路径"></label><p id="project-state"></p><div id="project-origins" class="record-list"></div></div></div>
+    </section>
     <footer class="status"><div id="status" role="status" aria-live="polite"><span class="dot"></span>正在加载解析器…</div><span id="size">0 字节</span></footer>
   </main>
   <div id="drop-overlay" hidden>将配置文件拖到这里<div>文本与标准二进制 KV1 · 最大 16 MiB</div></div>
   <dialog id="preview"><form method="dialog"><div class="dialog-header"><div><span class="eyebrow">修改预览</span><h2 id="preview-title">确认后应用到编辑区</h2></div><button aria-label="关闭预览" value="cancel">×</button></div><div class="comparison"><div><h3>修改前</h3><pre id="before"></pre></div><div><h3>修改后</h3><pre id="after"></pre></div></div><p>应用只改变编辑区内容，原始文件保持不变。使用“下载结果”保存副本。</p><div class="dialog-actions"><button value="cancel">取消</button><button id="apply" type="button" class="primary">应用到编辑区</button></div></form></dialog>
   <input id="file-input" type="file" accept=".vdf,.acf,.res,.txt,.bin,.json" hidden><input id="references-input" type="file" webkitdirectory multiple hidden>
+  <input id="cache-input" type="file" accept=".vdf,.bin" hidden><input id="project-input" type="file" webkitdirectory multiple hidden>
+  <input id="project-snapshot" type="file" accept=".json" hidden>
+  <dialog id="sc-bulk-dialog"><form method="dialog" id="sc-bulk-form"><h2>批量修改所选快捷方式</h2><p>勾选需要替换的字段；未勾选的内容保持不变。</p><label class="field"><span><input type="checkbox" id="bulk-dir-on">替换工作目录</span><input id="bulk-dir"></label><label class="field"><span><input type="checkbox" id="bulk-args-on">替换启动参数</span><input id="bulk-args"></label><label class="field"><span><input type="checkbox" id="bulk-tags-on">替换标签（每行一个）</span><textarea id="bulk-tags" rows="3"></textarea></label><div class="dialog-actions"><button value="cancel">取消</button><button type="button" id="sc-bulk-preview" class="primary">预览批量修改</button></div></form></dialog>
   <script type="module" src="app.mjs"></script>
 </body></html>

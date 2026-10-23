@@ -2,6 +2,7 @@ import {
   "Charles67676767/moonvalve" @valve,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/base64",
+  "moonbitlang/core/string" @strconv,
 }
 
 supported_targets = "js"

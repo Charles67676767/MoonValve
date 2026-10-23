@@ -18,11 +18,68 @@ fn execute(request : Json) -> Json raise {
     escape_sequences: !literal,
   }
   match action {
+    "cache-page" => cache_page(fields)
+    "cache-read" => cache_record(fields)
+    "cache-close" => {
+      browser_cache.val = None
+      Json::null()
+    }
+    "shortcuts-new" | "shortcuts-list" | "shortcuts-edit" =>
+      shortcut_tools(action, fields)
+    "project" => {
+      guard fields.get("files") is Some(Object(files)) else {
+        raise Failure("Expected project files")
+      }
+      let symbols = match fields.get("symbols") {
+        Some(Array(values)) =>
+          values.map(v => {
+            match v {
+              String(s) => s
+              _ => raise Failure("Symbols must be strings")
+            }
+          })
+        _ => []
+      }
+      let project = @valve.load_project(
+        field(fields, "source"),
+        path => {
+          match files.get(path) {
+            Some(String(s)) => s
+            _ => raise Failure("Missing virtual file: " + path)
+          }
+        },
+        options={ ..options, conditions: Some(symbols), },
+      )
+      project.to_json()
+    }
     "parse" => {
       let source = @valve.parse_preserving(field(fields, "text"), options~)
+      let name = match fields.get("source") {
+        Some(String(s)) => s
+        _ => ""
+      }
       Json::object({
         "tree": source.document().to_json(),
         "text": Json::string(source.text()),
+        "origins": Json::array(
+          source
+          .locations(name)
+          .map(o => {
+            Json::object({
+              "path": Json::array(
+                o.path.map(p => {
+                  Json::object({
+                    "key": Json::string(p.key),
+                    "occurrence": Json::number(p.occurrence.to_double()),
+                  })
+                }),
+              ),
+              "offset": Json::number(o.location.offset.to_double()),
+              "line": Json::number(o.location.line.to_double()),
+              "column": Json::number(o.location.column.to_double()),
+            })
+          }),
+        ),
       })
     }
     "evaluate" => {
