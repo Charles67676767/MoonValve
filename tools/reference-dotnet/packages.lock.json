@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "ValveKeyValue": {
+        "type": "Direct",
+        "requested": "[0.70.0.499, )",
+        "resolved": "0.70.0.499",
+        "contentHash": "4s1Sj71jxgxAbqs1wzkN2CuikKPsUEZE3/ZV6wsbMWnkzwO0elIbnQH4wMUXnRmAYG5GaYcdZ80sUcD5BWkGyw=="
+      }
+    }
+  }
+}
