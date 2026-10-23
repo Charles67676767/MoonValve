@@ -6,15 +6,19 @@ import {
 }
 
 // Values
+pub fn binary_from_json(Json, options? : BinaryOptions) -> Array[BinaryEntry] raise BinaryError
+
+pub fn binary_to_json(Array[BinaryEntry]) -> Json
+
 pub fn changes_from_json(Json) -> Array[Change] raise
 
 pub fn check_inventory(Array[SteamLibrary], Array[InventoryRecord]) -> Array[InventoryIssue]
 
-pub fn decode_binary(Bytes, options? : BinaryOptions) -> Array[BinaryEntry] raise BinaryError
+pub fn decode_binary(Bytes, options? : BinaryOptions, string_table? : Array[String]?) -> Array[BinaryEntry] raise BinaryError
 
 pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonImportError
 
-pub fn encode_binary(Array[BinaryEntry], options? : BinaryOptions) -> Bytes raise BinaryError
+pub fn encode_binary(Array[BinaryEntry], options? : BinaryOptions, string_table? : Array[String]?) -> Bytes raise BinaryError
 
 pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
 
@@ -23,6 +27,8 @@ pub fn inventory_csv(Array[InventoryRecord]) -> String
 pub fn inventory_total(Array[InventoryRecord]) -> InventoryTotal raise SteamError
 
 pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> Document raise
+
+pub fn open_steam_cache(Bytes, max_bytes? : Int, max_records? : Int) -> SteamCache raise BinaryError
 
 pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
 
@@ -118,6 +124,29 @@ pub(all) enum BinaryValue {
 pub fn BinaryValue::equal(Self, Self) -> Bool
 pub fn BinaryValue::not_equal(Self, Self) -> Bool
 pub fn BinaryValue::to_repr(Self) -> @debug.Repr
+
+pub(all) enum CacheFormat {
+  AppInfo
+  PackageInfo
+} derive(Eq, @debug.Debug)
+pub fn CacheFormat::equal(Self, Self) -> Bool
+pub fn CacheFormat::not_equal(Self, Self) -> Bool
+pub fn CacheFormat::to_repr(Self) -> @debug.Repr
+
+pub(all) struct CacheRecord {
+  id : UInt
+  change_number : UInt
+  token : UInt64
+  sha1 : Bytes
+  binary_sha1 : Bytes?
+  info_state : UInt?
+  last_updated : UInt?
+  offset : Int
+  length : Int
+} derive(Eq, @debug.Debug)
+pub fn CacheRecord::equal(Self, Self) -> Bool
+pub fn CacheRecord::not_equal(Self, Self) -> Bool
+pub fn CacheRecord::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Change {
   path : Array[Selector]
@@ -246,6 +275,13 @@ pub(all) struct SteamApp {
 pub fn SteamApp::equal(Self, Self) -> Bool
 pub fn SteamApp::not_equal(Self, Self) -> Bool
 pub fn SteamApp::to_repr(Self) -> @debug.Repr
+
+type SteamCache
+pub fn SteamCache::format(Self) -> CacheFormat
+pub fn SteamCache::read(Self, UInt) -> Array[BinaryEntry]? raise BinaryError
+pub fn SteamCache::records(Self) -> Array[CacheRecord]
+pub fn SteamCache::universe(Self) -> UInt
+pub fn SteamCache::version(Self) -> Int
 
 pub(all) struct SteamLibrary {
   index : String

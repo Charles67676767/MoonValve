@@ -9,4 +9,5 @@ import {
 
 import {
   "moonbitlang/core/json",
+  "moonbitlang/core/buffer",
 } for "test"

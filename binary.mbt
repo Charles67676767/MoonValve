@@ -80,6 +80,7 @@ priv struct BinaryReader {
   options : BinaryOptions
   mut pos : Int
   mut count : Int
+  table : Array[String]?
 }
 
 ///|
@@ -88,12 +89,20 @@ priv struct BinaryReader {
 pub fn decode_binary(
   bytes : Bytes,
   options? : BinaryOptions = BinaryOptions::default(),
+  string_table? : Array[String]? = None,
 ) -> Array[BinaryEntry] raise BinaryError {
   check_binary_options(options)
   if bytes.length() > options.max_bytes {
     raise InvalidBinary(0, "Input exceeds byte limit")
   }
-  let reader = BinaryReader::{ bytes, options, pos: 0, count: 0, }
+  validate_string_table(string_table, options) |> ignore
+  let reader = BinaryReader::{
+    bytes,
+    options,
+    pos: 0,
+    count: 0,
+    table: string_table,
+  }
   let entries = reader.read_binary_entries(0)
   if reader.pos != bytes.length() {
     raise InvalidBinary(reader.pos, "Trailing bytes after root terminator")
@@ -170,7 +179,19 @@ fn BinaryReader::read_binary_entries(
       raise InvalidBinary(offset, "Entry limit exceeded")
     }
     self.count += 1
-    let key = self.cstring(false)
+    let key = match self.table {
+      None => self.cstring(false)
+      Some(table) => {
+        let index = self.number(4)
+        if index >= table.length().to_uint64() {
+          raise InvalidBinary(
+            self.pos - 4,
+            "String table index is out of range",
+          )
+        }
+        table[index.to_int()]
+      }
+    }
     let value = match tag {
       0 => {
         if depth >= self.options.max_depth {
@@ -198,6 +219,7 @@ priv struct BinaryWriter {
   buffer : @buffer.Buffer
   options : BinaryOptions
   mut count : Int
+  table : Map[String, Int]?
 }
 
 ///|
@@ -245,9 +267,16 @@ fn BinaryWriter::string(
 pub fn encode_binary(
   entries : Array[BinaryEntry],
   options? : BinaryOptions = BinaryOptions::default(),
+  string_table? : Array[String]? = None,
 ) -> Bytes raise BinaryError {
   check_binary_options(options)
-  let writer = BinaryWriter::{ buffer: @buffer.Buffer(), options, count: 0, }
+  let table = validate_string_table(string_table, options)
+  let writer = BinaryWriter::{
+    buffer: @buffer.Buffer(),
+    options,
+    count: 0,
+    table,
+  }
   writer.write_binary_entries(entries, 0)
   writer.buffer.to_bytes()
 }
@@ -276,7 +305,19 @@ fn BinaryWriter::write_binary_entries(
     }
     self.check_size(1)
     self.buffer.write_byte(tag.to_byte())
-    self.string(entry.key, false)
+    match self.table {
+      None => self.string(entry.key, false)
+      Some(table) => {
+        guard table.get(entry.key) is Some(index) else {
+          raise InvalidBinary(
+            self.buffer.length(),
+            "Key is absent from string table",
+          )
+        }
+        self.check_size(4)
+        self.buffer.write_uint_le(index.reinterpret_as_uint())
+      }
+    }
     match entry.value {
       ObjectValue(children) => {
         if depth >= self.options.max_depth {
@@ -309,4 +350,33 @@ fn BinaryWriter::write_binary_entries(
   }
   self.check_size(1)
   self.buffer.write_byte(8)
+}
+
+///|
+fn validate_string_table(
+  table : Array[String]?,
+  options : BinaryOptions,
+) -> Map[String, Int]? raise BinaryError {
+  guard table is Some(strings) else { return None }
+  if strings.length() > 1000000 {
+    raise InvalidBinary(0, "String table has too many entries")
+  }
+  let result : Map[String, Int] = Map([])
+  let mut total = 0
+  for i in 0..<strings.length() {
+    let text = strings[i]
+    if text.char_length() > options.max_string_bytes || text.contains("\u0000") {
+      raise InvalidBinary(0, "Invalid string table entry")
+    }
+    let length = @utf8.encode(text[:]).length()
+    if length > options.max_string_bytes || length > options.max_bytes - total {
+      raise InvalidBinary(0, "String table exceeds byte budget")
+    }
+    total += length
+    if result.contains(text) {
+      raise InvalidBinary(0, "Duplicate string table entry")
+    }
+    result[text] = i
+  }
+  Some(result)
 }
