@@ -21,6 +21,46 @@ test "nested directive-like keys are ordinary data" {
 }
 
 ///|
+test "base occurrence merge retains local values and ASCII case rules" {
+  let files : Map[String, String] = {
+    "main": "#base defaults Key own key { a local } Ä upper",
+    "defaults": "KEY ignored kEy { a base b default } key third ä lower",
+  }
+  let doc = @moonvalve.load_resolved("main", p => files.get(p).unwrap())
+  assert_eq(doc.entries.map(e => e.key), ["Key", "key", "Ä", "key", "ä"])
+  assert_eq(doc.entries[0].value, @moonvalve.Text("own"))
+  assert_eq(
+    doc.entries[1].value,
+    @moonvalve.Object([
+      { key: "a", value: @moonvalve.Text("local"), },
+      { key: "b", value: @moonvalve.Text("default"), },
+    ]),
+  )
+}
+
+///|
+test "large base merge keeps stable order without repeated whole-array scans" {
+  let current = StringBuilder()
+  let defaults = StringBuilder()
+  current.write_string("#base defaults ")
+  for i in 0..<10000 {
+    current.write_string("key\{i} own ")
+    defaults.write_string("KEY\{i} default extra\{i} value ")
+  }
+  let doc = @moonvalve.load_resolved("main", path => {
+    if path == "main" {
+      current.to_string()
+    } else {
+      defaults.to_string()
+    }
+  })
+  assert_eq(doc.entries.length(), 20000)
+  assert_eq(doc.entries[9999].key, "key9999")
+  assert_eq(doc.entries[10000].key, "extra0")
+  assert_eq(doc.get("key9999"), Some(@moonvalve.Text("own")))
+}
+
+///|
 test "file cycles path escapes and cumulative budgets are rejected" {
   let files : Map[String, String] = { "a": "#include b", "b": "#include ./a" }
   try @moonvalve.load_resolved("a", p => files.get(p).unwrap()) catch {

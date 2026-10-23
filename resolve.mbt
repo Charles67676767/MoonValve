@@ -157,27 +157,31 @@ fn resolve_file(
 /// Pair duplicate keys by occurrence when merging; existing scalar values win.
 fn merge_base(current : Array[Entry], base : Array[Entry]) -> Array[Entry] {
   let result = current.map(e => e)
-  for base_index in 0..<base.length() {
-    let entry = base[base_index]
-    let mut occurrence = 0
-    for i in 0..<base_index {
-      if base[i].key.equal_ignore_ascii_case(entry.key) {
-        occurrence += 1
-      }
+  let positions : Map[String, Array[Int]] = Map([])
+  let occurrences : Map[String, Int] = Map([])
+  for i in 0..<result.length() {
+    let key = reference_key(result[i].key)
+    match positions.get(key) {
+      Some(indices) => indices.push(i)
+      None => positions[key] = [i]
     }
-    let mut seen = 0
-    let mut found : Int? = None
-    for i in 0..<result.length() {
-      if result[i].key.equal_ignore_ascii_case(entry.key) {
-        if seen == occurrence {
-          found = Some(i)
-          break
-        }
-        seen += 1
-      }
+  }
+  for entry in base {
+    let key = reference_key(entry.key)
+    let occurrence = occurrences.get(key).unwrap_or(0)
+    occurrences[key] = occurrence + 1
+    let found = match positions.get(key) {
+      Some(indices) => indices.get(occurrence)
+      None => None
     }
     match found {
-      None => result.push(entry)
+      None => {
+        match positions.get(key) {
+          Some(indices) => indices.push(result.length())
+          None => positions[key] = [result.length()]
+        }
+        result.push(entry)
+      }
       Some(i) =>
         match (result[i].value, entry.value) {
           (Object(children), Object(defaults)) =>
@@ -190,4 +194,19 @@ fn merge_base(current : Array[Entry], base : Array[Entry]) -> Array[Entry] {
     }
   }
   result
+}
+
+///|
+fn reference_key(key : String) -> String {
+  let builder = StringBuilder()
+  for c in key {
+    builder.write_char(
+      if c >= 'A' && c <= 'Z' {
+        (c.to_int() + 32).to_char().unwrap()
+      } else {
+        c
+      },
+    )
+  }
+  builder.to_string()
 }
