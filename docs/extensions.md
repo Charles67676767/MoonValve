@@ -39,3 +39,9 @@ CLI：`moon run cmd/main --target js -- from-json data.json`。输出为可重�
 `select_inventory` 按名称或 App ID 过滤，支持 `id`（十进制数值顺序）、`name`（忽略大小写）和 `size`（降序、未知值最后）排序。`inventory_total` 用 Int64 精确统计已知容量并报告未知容量数量，溢出报错。`check_inventory` 识别 App ID 与文件名不符、重复 App ID、重复库路径及声明中缺失的可读清单；路径比较为精确字符串比较。
 
 CLI 示例：`inventory libraryfolders.vdf --filter portal --sort size --csv`。默认输出 JSON，包括筛选后汇总、扫描数量和全量异常；CSV 输出至标准输出、异常写入标准错误。包含异常时退出码为 1，致命错误为 2。CSV 字段按 RFC 4180 转义，原样保留内容，导入电子表格时应使用文本列类型。
+
+## 原生命令行
+
+`moon build --target native --release` 生成 `_build/native/release/build/cmd/main/main`（Windows 为 `main.exe`），运行时无需 Node。命令和退出码与 JavaScript 版本一致。原生版本通过少量 C 宿主代码提供有界字节读取、标准输出和目录枚举；解析与业务逻辑均为 MoonBit。Windows 路径转换为 UTF-16 调用系统接口，文件内容严格按 UTF-8 解码。
+
+构建需要 MoonBit 原生后端支持的 C 编译器。输入最多 16 MiB；目录枚举最多 100000 个普通文件和 16 MiB 文件名数据，不跟随清单文件符号链接。JavaScript 与原生版本共用同一套 CLI 验收脚本。

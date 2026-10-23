@@ -5,12 +5,13 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
-const executable = path.join(root, '_build/js/release/build/cmd/main/main.js');
+const native = process.argv.includes('--native');
+const executable = path.join(root, native ? '_build/native/release/build/cmd/main/main' + (process.platform === 'win32' ? '.exe' : '') : '_build/js/release/build/cmd/main/main.js');
 if (!fs.existsSync(executable)) throw new Error('Run moon build --target js --release first');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'moonvalve-test-'));
 let cases = 0;
 function run(args, input) {
-  const result = spawnSync(process.execPath, [executable, ...args], {
+  const result = spawnSync(native ? executable : process.execPath, native ? args : [executable, ...args], {
     cwd: root, encoding: 'utf8', input, maxBuffer: 4 * 1024 * 1024,
   });
   if (result.error) throw result.error;

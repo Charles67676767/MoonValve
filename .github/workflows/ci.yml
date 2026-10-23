@@ -34,6 +34,10 @@ jobs:
         run: moon build --target js --release
       - if: matrix.target == 'js'
         run: node scripts/test-cli.cjs
+      - if: matrix.target == 'native'
+        run: moon build --target native --release
+      - if: matrix.target == 'native'
+        run: node scripts/test-cli.cjs --native
 
   windows-cli:
     runs-on: windows-latest
@@ -50,3 +54,7 @@ jobs:
       - run: moon test --target js
       - run: moon build --target js --release
       - run: node scripts/test-cli.cjs
+      - run: moon check --target native
+      - run: moon test --target native
+      - run: moon build --target native --release
+      - run: node scripts/test-cli.cjs --native

@@ -1,8 +1,13 @@
 import {
   "Charles67676767/moonvalve" @valve,
   "moonbitlang/core/env",
+  "moonbitlang/core/encoding/utf8",
 }
 
-supported_targets = "js"
-
 pkgtype(kind: "executable")
+
+options(
+  supported_targets: "+js+native",
+  "native-stub": [ "host_native.c" ],
+  targets: { "host_js.mbt": [ "js" ], "host_native.mbt": [ "native" ] },
+)
