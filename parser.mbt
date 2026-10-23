@@ -299,6 +299,13 @@ fn Parser::read_entries(
       _ => Value::Text(self.read_string())
     }
     let value_end = self.pos
+    let mut entry_end = value_end
+    self.skip_trivia()
+    while self.peek() == Some('[') {
+      keep = self.read_condition()
+      entry_end = self.pos
+      self.skip_trivia()
+    }
     if self.capture {
       self.spans.push({
         path: self.path.map(i => i),
@@ -306,16 +313,12 @@ fn Parser::read_entries(
         key_end,
         value_start,
         value_end,
+        entry_end,
       })
       self.path.pop() |> ignore
     }
-    self.skip_trivia()
-    while self.peek() == Some('[') {
-      keep = self.read_condition()
-      self.skip_trivia()
-    }
     if keep {
-      if override_previous {
+      if override_previous && !self.capture {
         let mut index = 0
         while index < entries.length() {
           if entries[index].key.equal_ignore_ascii_case(key) {
@@ -333,11 +336,15 @@ fn Parser::read_entries(
 
 ///|
 fn Parser::read_condition(self : Parser) -> Bool raise ParseError {
-  guard self.options.conditions is Some(symbols) else {
-    self.fail(
-      "unsupported_conditional", "Pass an explicit conditions array to evaluate platform conditions",
-    )
-    return false
+  let symbols = match self.options.conditions {
+    Some(symbols) => symbols
+    None if self.capture => []
+    None => {
+      self.fail(
+        "unsupported_conditional", "Pass an explicit conditions array to evaluate platform conditions",
+      )
+      return false
+    }
   }
   self.advance()
   let text = StringBuilder()
@@ -354,10 +361,15 @@ fn Parser::read_condition(self : Parser) -> Bool raise ParseError {
     self.fail("invalid_condition", "Missing closing bracket")
   }
   self.advance()
-  evaluate_condition(text.to_string(), symbols) catch {
+  let result = evaluate_condition(text.to_string(), symbols) catch {
     InvalidCondition(message) => {
       self.fail("invalid_condition", message)
       false
     }
+  }
+  if self.capture {
+    true
+  } else {
+    result
   }
 }

@@ -1,20 +1,24 @@
 ///|
-struct SourceSpan {
+priv struct SourceSpan {
   path : Array[Int]
   key_start : Int
   key_end : Int
   value_start : Int
   value_end : Int
+  entry_end : Int
 }
 
 ///|
 /// A parsed source with scalar-index spans. Edit returns a new, reparsed source;
 /// all characters outside the selected replacement range remain unchanged.
-pub struct SourceDocument {
+struct SourceDocument {
   source : String
   doc : Document
   spans : Array[SourceSpan]
   options : ParseOptions
+  chars : Array[Char]
+  linebreak : String
+  unit : String
 }
 
 ///|
@@ -22,13 +26,28 @@ pub fn parse_preserving(
   input : String,
   options? : ParseOptions = ParseOptions::default(),
 ) -> SourceDocument raise {
-  if !options.escape_sequences || options.conditions is Some(_) {
+  if options.conditions is Some(_) {
     raise InvalidEdit(
-      "Source editing requires escaped strings and disabled condition evaluation",
+      "Source documents retain all conditions; call evaluate for a filtered view",
     )
   }
-  let (doc, _, spans) = parse_with_spans(input, options, false, true)
-  { source: input, doc, spans, options, }
+  let (doc, _, spans) = parse_with_spans(input, options, true, true)
+  let result = SourceDocument::{
+    source: input,
+    doc,
+    spans,
+    options,
+    chars: input.to_array(),
+    linebreak: if input.contains("\r\n") {
+      "\r\n"
+    } else if input.contains("\r") {
+      "\r"
+    } else {
+      "\n"
+    },
+    unit: "  ",
+  }
+  { ..result, unit: result.detect_indent_unit(), }
 }
 
 ///|
@@ -39,6 +58,16 @@ pub fn SourceDocument::text(self : SourceDocument) -> String {
 ///|
 pub fn SourceDocument::document(self : SourceDocument) -> Document {
   self.doc
+}
+
+///|
+/// Evaluate a source without changing its raw view. Root file directives still
+/// require load_resolved with an explicitly supplied loader.
+pub fn SourceDocument::evaluate(
+  self : SourceDocument,
+  symbols : Array[String],
+) -> Document raise ParseError {
+  parse(self.source, options={ ..self.options, conditions: Some(symbols), })
 }
 
 ///|
@@ -83,24 +112,31 @@ pub fn SourceDocument::edit(
       }
     }
   }
-  let chars = self.source.to_array()
+  let chars = self.chars
   let mut start = 0
   let mut end = chars.length()
   let builder = StringBuilder()
   match operation {
     Replace(value) =>
       if indices.is_empty() {
-        builder.write_string(stringify(expected))
+        self.render_entries(builder, expected.entries, "", true)
       } else {
         let span = self.span(indices)
         start = span.value_start
         end = span.value_end
         match value {
-          Text(s) => write_quoted(builder, s)
+          Text(s) =>
+            self.render_string(builder, s, chars[span.value_start] == '"')
           Object(children) => {
-            builder.write_string("{\n")
-            write_entries(builder, children, indices.length())
-            write_indent(builder, indices.length() - 1)
+            let indent = self.line_indent(span.key_start)
+            builder.write_string("{" + self.newline())
+            self.render_entries(
+              builder,
+              children,
+              indent + self.indent_unit(),
+              true,
+            )
+            builder.write_string(indent)
             builder.write_string("}")
           }
         }
@@ -109,12 +145,12 @@ pub fn SourceDocument::edit(
       let span = self.span(indices)
       start = span.key_start
       end = span.key_end
-      write_quoted(builder, key)
+      self.render_string(builder, key, chars[span.key_start] == '"')
     }
     Remove => {
       let span = self.span(indices)
       start = span.key_start
-      end = span.value_end
+      end = span.entry_end
     }
     Insert(index, entry) => {
       guard selected is Object(entries) else {
@@ -130,8 +166,34 @@ pub fn SourceDocument::edit(
         self.span(indices).value_end - 1
       }
       end = start
-      builder.write_string("\n")
-      write_entries(builder, [entry], indices.length())
+      let indent = if index < entries.length() {
+        let child = [..indices, index]
+        self.line_indent(self.span(child).key_start)
+      } else if indices.is_empty() {
+        ""
+      } else {
+        self.line_indent(self.span(indices).key_start) + self.indent_unit()
+      }
+      // Insertion starts on its own line; existing trivia stays attached to its
+      // original entry. Only the newly written text adopts surrounding style.
+      builder.write_string(self.newline())
+      let quoted = if !entries.is_empty() {
+        let neighbor = [
+          ..indices,
+          if index < entries.length() {
+            index
+          } else {
+            entries.length() - 1
+          },
+        ]
+        chars[self.span(neighbor).key_start] == '"'
+      } else {
+        true
+      }
+      self.render_entries(builder, [entry], indent, quoted)
+      if index < entries.length() {
+        builder.write_string(indent)
+      }
     }
   }
   let source = String::from_array(chars[:start].to_owned()) +
@@ -142,4 +204,114 @@ pub fn SourceDocument::edit(
     raise InvalidEdit("Source edit could not preserve requested semantics")
   }
   result
+}
+
+///|
+fn SourceDocument::newline(self : SourceDocument) -> String {
+  self.linebreak
+}
+
+///|
+fn SourceDocument::line_indent(self : SourceDocument, offset : Int) -> String {
+  let chars = self.chars
+  let mut start = offset
+  while start > 0 && chars[start - 1] != '\n' && chars[start - 1] != '\r' {
+    start -= 1
+  }
+  let prefix = chars[start:offset]
+  if prefix.all(c => c == ' ' || c == '\t') {
+    String::from_array(prefix.to_owned())
+  } else {
+    ""
+  }
+}
+
+///|
+fn SourceDocument::indent_unit(self : SourceDocument) -> String {
+  self.unit
+}
+
+///|
+fn SourceDocument::detect_indent_unit(self : SourceDocument) -> String {
+  for span in self.spans {
+    if span.path.length() > 1 {
+      let indent = self.line_indent(span.key_start)
+      let parent = self.span(span.path[:span.path.length() - 1].to_owned()) catch {
+        _ => continue
+      }
+      let parent_indent = self.line_indent(parent.key_start)
+      if indent.has_prefix(parent_indent) &&
+        indent.length() > parent_indent.length() {
+        return indent[parent_indent.length():].to_owned()
+      }
+    }
+  }
+  "  "
+}
+
+///|
+fn SourceDocument::render_string(
+  self : SourceDocument,
+  builder : StringBuilder,
+  text : String,
+  quoted : Bool,
+) -> Unit raise WriteError {
+  if text.contains("\u0000") {
+    raise InvalidDocument("NUL cannot be written")
+  }
+  let bare = !text.is_empty() &&
+    !text.has_prefix("//") &&
+    !text.has_prefix("[") &&
+    text.all(c => !is_space(c) && c != '{' && c != '}' && c != '"' && c != '=')
+  if !quoted && bare {
+    builder.write_string(text)
+    return
+  }
+  if self.options.escape_sequences {
+    write_quoted(builder, text)
+  } else {
+    if text.contains("\"") {
+      raise InvalidDocument("A quote cannot be represented in literal mode")
+    }
+    builder.write_string("\"" + text + "\"")
+  }
+}
+
+///|
+fn SourceDocument::render_entries(
+  self : SourceDocument,
+  builder : StringBuilder,
+  entries : Array[Entry],
+  indent : String,
+  quoted : Bool,
+  depth? : Int = 0,
+) -> Unit raise WriteError {
+  if depth > 128 {
+    raise InvalidDocument("Source rendering exceeds 128 levels")
+  }
+  for entry in entries {
+    builder.write_string(indent)
+    self.render_string(builder, entry.key, quoted)
+    match entry.value {
+      Text(s) => {
+        builder.write_string(" ")
+        self.render_string(builder, s, quoted)
+        builder.write_string(self.newline())
+      }
+      Object(children) => {
+        builder.write_string(self.newline() + indent + "{" + self.newline())
+        if indent.length() > 1024 {
+          raise InvalidDocument("Object indentation exceeds depth budget")
+        }
+        self.render_entries(
+          builder,
+          children,
+          indent + self.indent_unit(),
+          quoted,
+          depth=depth + 1,
+        )
+        builder.write_string(indent + "}" + self.newline())
+      }
+    }
+  }
 }
