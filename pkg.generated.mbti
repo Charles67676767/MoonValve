@@ -15,6 +15,11 @@ pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
 pub fn stringify(Document) -> String raise WriteError
 
 // Errors
+pub suberror EditError {
+  InvalidEdit(String)
+} derive(@debug.Debug)
+pub fn EditError::to_repr(Self) -> @debug.Repr
+
 pub suberror ParseError {
   ParseError(Diagnostic)
 } derive(@debug.Debug)
@@ -45,6 +50,7 @@ pub fn Diagnostic::to_repr(Self) -> @debug.Repr
 pub(all) struct Document {
   entries : Array[Entry]
 } derive(Eq, @debug.Debug)
+pub fn Document::edit(Self, Array[Selector], Edit) -> Self raise EditError
 pub fn Document::equal(Self, Self) -> Bool
 pub fn Document::get(Self, String) -> Value?
 pub fn Document::get_all(Self, String) -> Array[Value]
@@ -52,6 +58,14 @@ pub fn Document::lookup(Self, Array[String]) -> Value?
 pub fn Document::not_equal(Self, Self) -> Bool
 pub fn Document::to_json(Self) -> Json
 pub fn Document::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Edit {
+  Replace(Value)
+  Remove
+  Rename(String)
+  Insert(Int, Entry)
+} derive(@debug.Debug)
+pub fn Edit::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Entry {
   key : String
@@ -72,6 +86,14 @@ pub fn ParseOptions::default() -> Self
 pub fn ParseOptions::equal(Self, Self) -> Bool
 pub fn ParseOptions::not_equal(Self, Self) -> Bool
 pub fn ParseOptions::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Selector {
+  key : String
+  occurrence : Int
+} derive(Eq, @debug.Debug)
+pub fn Selector::equal(Self, Self) -> Bool
+pub fn Selector::not_equal(Self, Self) -> Bool
+pub fn Selector::to_repr(Self) -> @debug.Repr
 
 pub(all) struct SteamApp {
   app_id : String
