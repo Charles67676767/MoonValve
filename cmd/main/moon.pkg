@@ -2,6 +2,8 @@ import {
   "Charles67676767/moonvalve" @valve,
   "moonbitlang/core/env",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/json",
+  "moonbitlang/core/string" @strconv,
 }
 
 pkgtype(kind: "executable")

@@ -1,0 +1,7 @@
+[
+  {
+    "path": [{"key": "root", "occurrence": 0}, {"key": "tag", "occurrence": 1}],
+    "op": "replace",
+    "value": "keyboard"
+  }
+]

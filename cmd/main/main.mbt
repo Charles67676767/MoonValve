@@ -177,7 +177,7 @@ fn inventory(
 }
 
 ///|
-fn run(args : Array[String]) -> Unit raise {
+fn run_basic(args : Array[String]) -> Unit raise {
   if args.length() <= 2 || args[2] == "help" || args[2] == "--help" {
     help()
     return
@@ -234,13 +234,19 @@ fn run(args : Array[String]) -> Unit raise {
 fn main {
   run(cli_args()) catch {
     @valve.ParseError(d) =>
-      host_error("\{d.code} at \{d.line}:\{d.column}: \{d.message}", 2)
+      report_error(
+        d.code,
+        "\{d.code} at \{d.line}:\{d.column}: \{d.message}",
+        Some(d),
+      )
     @valve.InvalidManifest(message) =>
-      host_error("invalid_manifest: \{message}", 2)
+      report_error("invalid_manifest", "invalid_manifest: \{message}", None)
     @valve.InvalidDocument(message) =>
-      host_error("invalid_document: \{message}", 2)
-    InvalidArgument(message) => host_error(message, 2)
-    error => host_error(error.to_string(), 2)
+      report_error("invalid_document", "invalid_document: \{message}", None)
+    @valve.InvalidBinary(offset, message) =>
+      report_error("invalid_binary", "byte \{offset}: \{message}", None)
+    InvalidArgument(message) => report_error("invalid_argument", message, None)
+    error => report_error("operation_failed", error.to_string(), None)
   }
   host_finish()
 }

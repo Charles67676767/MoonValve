@@ -1,0 +1,7 @@
+{
+  "name": "Moon Harbor",
+  "exe": "\"D:\\Games\\MoonHarbor\\game.exe\"",
+  "start_dir": "D:\\Games\\MoonHarbor",
+  "launch_options": "--windowed",
+  "tags": ["Local games"]
+}

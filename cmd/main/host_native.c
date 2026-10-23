@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <wchar.h>
+#include <sys/stat.h>
 #ifdef _WIN32
 #include <windows.h>
 #include <io.h>
@@ -13,6 +15,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
 #endif
 
 #define MV_LIMIT (16u * 1024u * 1024u)
@@ -37,8 +41,9 @@ static wchar_t *mv_wide(const char *text) {
 }
 #endif
 
-MOONBIT_FFI_EXPORT moonbit_bytes_t moonvalve_read(moonbit_bytes_t path) {
+MOONBIT_FFI_EXPORT moonbit_bytes_t moonvalve_read(moonbit_bytes_t path, int32_t limit) {
   mv_failed = 0;
+  if (limit < 1 || limit > 536870912) return mv_error();
   FILE *file;
   if (!strcmp((const char *)path, "-")) {
     file = stdin;
@@ -61,16 +66,16 @@ MOONBIT_FFI_EXPORT moonbit_bytes_t moonvalve_read(moonbit_bytes_t path) {
   if (!buffer) { if (file != stdin) fclose(file); return mv_error(); }
   for (;;) {
     if (used == capacity) {
-      if (capacity == MV_LIMIT + 1) { mv_failed = 1; break; }
+      if (capacity == (size_t)limit + 1) { mv_failed = 1; break; }
       size_t next = capacity * 2;
-      if (next > MV_LIMIT + 1) next = MV_LIMIT + 1;
+      if (next > (size_t)limit + 1) next = (size_t)limit + 1;
       void *grown = realloc(buffer, next);
       if (!grown) { mv_failed = 1; break; }
       buffer = grown; capacity = next;
     }
     size_t count = fread(buffer + used, 1, capacity - used, file);
     used += count;
-    if (used > MV_LIMIT || ferror(file)) { mv_failed = 1; break; }
+    if (used > (size_t)limit || ferror(file)) { mv_failed = 1; break; }
     if (!count) break;
   }
   if (file != stdin && fclose(file)) mv_failed = 1;
@@ -161,3 +166,142 @@ MOONBIT_FFI_EXPORT int moonvalve_write(moonbit_bytes_t bytes, int32_t length, in
   return fwrite(bytes, 1, (size_t)length, stream) != (size_t)length || fflush(stream);
 }
 MOONBIT_FFI_EXPORT void moonvalve_exit(int32_t code) { exit(code); }
+
+#ifdef _WIN32
+static wchar_t *mv_final_path(const wchar_t *path) {
+  HANDLE file=CreateFileW(path,FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,NULL,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,NULL);
+  if(file==INVALID_HANDLE_VALUE) return NULL;
+  DWORD n=GetFinalPathNameByHandleW(file,NULL,0,FILE_NAME_NORMALIZED);
+  wchar_t *result=n ? malloc(((size_t)n+1)*sizeof(wchar_t)) : NULL;
+  if(result && !GetFinalPathNameByHandleW(file,result,n+1,FILE_NAME_NORMALIZED)) {free(result);result=NULL;}
+  CloseHandle(file); return result;
+}
+#endif
+
+MOONBIT_FFI_EXPORT moonbit_bytes_t moonvalve_confined(moonbit_bytes_t root,moonbit_bytes_t relative) {
+  mv_failed=0;
+  size_t length=strlen((const char*)root)+strlen((const char*)relative)+2;
+  char *joined=malloc(length);
+  if(!joined) return mv_error();
+  snprintf(joined,length,"%s/%s",(const char*)root,(const char*)relative);
+#ifdef _WIN32
+  wchar_t *rw=mv_wide((const char*)root),*tw=mv_wide(joined);
+  free(joined);
+  wchar_t *base=rw ? mv_final_path(rw) : NULL,*target=tw ? mv_final_path(tw) : NULL;
+  free(rw);free(tw);
+  if(!base || !target) {free(base);free(target);return mv_error();}
+  size_t n=wcslen(base),m=wcslen(target);
+  while(n>0 && (base[n-1]==L'\\' || base[n-1]==L'/')) n--;
+  int valid=m>n && !_wcsnicmp(base,target,n) && (target[n]==L'\\' || target[n]==L'/');
+  free(base);
+  if(!valid) {free(target);return mv_error();}
+  int count=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,target,-1,NULL,0,NULL,NULL);
+  char *utf=count>0 ? malloc((size_t)count) : NULL;
+  if(!utf) {free(target);return mv_error();}
+  int converted=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,target,-1,utf,count,NULL,NULL);
+  free(target);
+  moonbit_bytes_t result=converted ? mv_result(utf,(size_t)count-1) : mv_error();
+  free(utf);return result;
+#else
+  char *base=realpath((const char*)root,NULL),*target=realpath(joined,NULL);
+  free(joined);
+  if(!base || !target) {free(base);free(target);return mv_error();}
+  size_t n=strlen(base);
+  while(n>1 && base[n-1]=='/') n--;
+  struct stat status;
+  int valid=!stat(base,&status) && S_ISDIR(status.st_mode) && !strncmp(base,target,n) && ((n==1 && base[0]=='/') || target[n]=='/');
+  free(base);
+  moonbit_bytes_t result=valid ? mv_result(target,strlen(target)) : mv_error();
+  free(target);return result;
+#endif
+}
+
+static int mv_matches(FILE *file,const unsigned char *bytes,size_t length) {
+  unsigned char chunk[65536];size_t offset=0;
+  if(!file) return 0;
+  for(;;) {
+    size_t n=fread(chunk,1,sizeof(chunk),file);
+    if(n>length-offset || memcmp(chunk,bytes+offset,n)) return 0;
+    offset+=n;
+    if(!n) return !ferror(file) && offset==length;
+  }
+}
+
+static int mv_flush_file(FILE *file) {
+  if(fflush(file)) return 0;
+#ifdef _WIN32
+  return !_commit(_fileno(file));
+#else
+  return !fsync(fileno(file));
+#endif
+}
+
+MOONBIT_FFI_EXPORT int moonvalve_save(moonbit_bytes_t path,moonbit_bytes_t before,int32_t old_length,moonbit_bytes_t after,int32_t new_length) {
+  if(old_length<0 || new_length<0) return 1;
+  static unsigned sequence=0;
+  size_t n=strlen((const char*)path);
+  char *temp=malloc(n+100),*backup=malloc(n+5);
+  if(!temp || !backup) {free(temp);free(backup);return 1;}
+  snprintf(backup,n+5,"%s.bak",(const char*)path);
+  int result=1,created=0;
+  FILE *original=NULL,*output=NULL,*backup_file=NULL;
+#ifdef _WIN32
+  wchar_t *target=mv_wide((const char*)path),*temp_w=NULL,*backup_w=mv_wide(backup);
+  if(!target || !backup_w) goto done;
+  DWORD attributes=GetFileAttributesW(target);
+  if(attributes==INVALID_FILE_ATTRIBUTES || (attributes&(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_REPARSE_POINT))) goto done;
+  original=_wfopen(target,L"rb");
+#else
+  struct stat status;
+  if(lstat((const char*)path,&status) || !S_ISREG(status.st_mode)) goto done;
+  original=fopen((const char*)path,"rb");
+#endif
+  if(!mv_matches(original,before,(size_t)old_length)) goto done;
+  fclose(original);original=NULL;
+  for(int attempt=0;attempt<32;attempt++) {
+#ifdef _WIN32
+    snprintf(temp,n+100,"%s.moonvalve-%lu-%u",(const char*)path,(unsigned long)GetCurrentProcessId(),++sequence);
+    free(temp_w);temp_w=mv_wide(temp);
+    int fd=temp_w ? _wopen(temp_w,_O_WRONLY|_O_CREAT|_O_EXCL|_O_BINARY,_S_IREAD|_S_IWRITE) : -1;
+    if(fd>=0) {output=_fdopen(fd,"wb");if(!output) _close(fd);created=1;break;}
+#else
+    snprintf(temp,n+100,"%s.moonvalve-%lu-%u",(const char*)path,(unsigned long)getpid(),++sequence);
+    int fd=open(temp,O_WRONLY|O_CREAT|O_EXCL,0600);
+    if(fd>=0) {fchmod(fd,status.st_mode&0777);output=fdopen(fd,"wb");if(!output) close(fd);created=1;break;}
+#endif
+  }
+  if(!output || fwrite(after,1,(size_t)new_length,output)!=(size_t)new_length || !mv_flush_file(output)) goto done;
+  if(fclose(output)) {output=NULL;goto done;} output=NULL;
+#ifdef _WIN32
+  int backup_fd=_wopen(backup_w,_O_WRONLY|_O_CREAT|_O_EXCL|_O_BINARY,_S_IREAD|_S_IWRITE);
+  if(backup_fd>=0) {backup_file=_fdopen(backup_fd,"wb");if(!backup_file) _close(backup_fd);}
+  original=_wfopen(target,L"rb");
+#else
+  int backup_fd=open(backup,O_WRONLY|O_CREAT|O_EXCL,0600);
+  if(backup_fd>=0) {fchmod(backup_fd,status.st_mode&0777);backup_file=fdopen(backup_fd,"wb");if(!backup_file) close(backup_fd);}
+  original=fopen((const char*)path,"rb");
+#endif
+  if(!backup_file || fwrite(before,1,(size_t)old_length,backup_file)!=(size_t)old_length || !mv_flush_file(backup_file)) goto done;
+  if(fclose(backup_file)) {backup_file=NULL;goto done;} backup_file=NULL;
+  if(!mv_matches(original,before,(size_t)old_length)) goto done;
+  fclose(original);original=NULL;
+#ifdef _WIN32
+  if(!ReplaceFileW(target,temp_w,NULL,0,NULL,NULL)) goto done;
+#else
+  struct stat current;
+  if(lstat((const char*)path,&current) || current.st_dev!=status.st_dev || current.st_ino!=status.st_ino) goto done;
+  if(rename(temp,(const char*)path)) goto done;
+#endif
+  created=0;result=0;
+done:
+  if(original) fclose(original);
+  if(output) fclose(output);
+  if(backup_file) fclose(backup_file);
+#ifdef _WIN32
+  if(created && temp_w) _wremove(temp_w);
+  free(target);free(temp_w);free(backup_w);
+#else
+  if(created) unlink(temp);
+#endif
+  free(temp);free(backup);return result;
+}

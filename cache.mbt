@@ -40,6 +40,7 @@ struct SteamCache {
   rows : Array[CacheRecord]
   strings : Array[String]?
   options : BinaryOptions
+  indices : Map[UInt, Int]
 }
 
 ///|
@@ -67,16 +68,15 @@ pub fn SteamCache::read(
   self : SteamCache,
   id : UInt,
 ) -> Array[BinaryEntry]? raise BinaryError {
-  for row in self.rows {
-    if row.id == id {
-      return Some(
-        decode_binary(
-          self.bytes[row.offset:row.offset + row.length].to_owned(),
-          options=self.options,
-          string_table=self.strings,
-        ),
-      )
-    }
+  if self.indices.get(id) is Some(index) {
+    let row = self.rows[index]
+    return Some(
+      decode_binary(
+        self.bytes[row.offset:row.offset + row.length].to_owned(),
+        options=self.options,
+        string_table=self.strings,
+      ),
+    )
   }
   None
 }
@@ -151,7 +151,7 @@ pub fn open_steam_cache(
     validate_string_table(strings, options) |> ignore
   }
   let rows : Array[CacheRecord] = []
-  let ids : Map[UInt, Bool] = Map([])
+  let ids : Map[UInt, Int] = Map([])
   while true {
     if r.pos + 4 > table_start {
       raise InvalidBinary(r.pos, "Missing cache sentinel")
@@ -164,7 +164,7 @@ pub fn open_steam_cache(
     if rows.length() >= max_records || ids.contains(id) {
       raise InvalidBinary(r.pos - 4, "Record limit or duplicate identifier")
     }
-    ids[id] = true
+    ids[id] = rows.length()
     let mut end = table_start
     let mut info_state = None
     let mut last_updated = None
@@ -213,5 +213,5 @@ pub fn open_steam_cache(
   if r.pos != table_start {
     raise InvalidBinary(r.pos, "Trailing cache bytes before string table")
   }
-  { bytes, kind, revision, universe_id, rows, strings, options, }
+  { bytes, kind, revision, universe_id, rows, strings, options, indices: ids, }
 }

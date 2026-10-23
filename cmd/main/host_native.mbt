@@ -1,6 +1,6 @@
 ///|
 #borrow(path)
-extern "C" fn native_read(path : Bytes) -> Bytes = "moonvalve_read"
+extern "C" fn native_read(path : Bytes, limit : Int) -> Bytes = "moonvalve_read"
 
 ///|
 #borrow(path)
@@ -29,12 +29,79 @@ fn host_read(path : String) -> FixedArray[String] {
   if path.contains("\u0000") || @utf8.encode(path[:]).length() > 32767 {
     return ["", "NUL in file path"]
   }
-  let bytes = native_read(os_path(path))
+  let bytes = native_read(os_path(path), 16777216)
   if native_failed() != 0 {
     return ["", "Unable to read input or input exceeds 16 MiB"]
   }
   [@utf8.decode(bytes[:], ignore_bom=true), ""] catch {
     _ => ["", "Input is not valid UTF-8"]
+  }
+}
+
+///|
+fn host_read_bytes(
+  path : String,
+  limit? : Int = 16777216,
+) -> Bytes raise CliError {
+  if path.contains("\u0000") || @utf8.encode(path[:]).length() > 32767 {
+    raise InvalidArgument("Invalid file path")
+  }
+  let bytes = native_read(os_path(path), limit)
+  if native_failed() != 0 {
+    raise InvalidArgument("Unable to read input or byte limit exceeded")
+  }
+  bytes
+}
+
+///|
+fn host_output_bytes(bytes : Bytes) -> Unit {
+  if native_write(bytes, bytes.length(), 0) != 0 {
+    exit_status.val = 2
+  }
+}
+
+///|
+#borrow(root, relative)
+extern "C" fn native_confined(root : Bytes, relative : Bytes) -> Bytes = "moonvalve_confined"
+
+///|
+fn host_confined(root : String, relative : String) -> String raise CliError {
+  validate_reference_path(root, relative)
+  let bytes = native_confined(os_path(root), os_path(relative))
+  if native_failed() != 0 {
+    raise InvalidArgument("Cannot resolve file within chosen root")
+  }
+  @utf8.decode(bytes[:]) catch {
+    _ => raise InvalidArgument("Invalid path encoding")
+  }
+}
+
+///|
+#borrow(path, before, after)
+extern "C" fn native_save(
+  path : Bytes,
+  before : Bytes,
+  before_length : Int,
+  after : Bytes,
+  after_length : Int,
+) -> Int = "moonvalve_save"
+
+///|
+fn host_save(
+  path : String,
+  before : Bytes,
+  after : Bytes,
+) -> Unit raise CliError {
+  if path == "-" ||
+    path.contains("\u0000") ||
+    @utf8.encode(path[:]).length() > 32767 {
+    raise InvalidArgument("Saving requires a valid file path")
+  }
+  if native_save(os_path(path), before, before.length(), after, after.length()) !=
+    0 {
+    raise InvalidArgument(
+      "Save failed: input changed, backup exists, or filesystem error",
+    )
   }
 }
 
