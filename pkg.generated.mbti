@@ -30,6 +30,8 @@ pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, 
 
 pub fn new_shortcut_file() -> ShortcutFile
 
+pub fn new_stream_parser((StreamEvent) -> Bool raise, options? : ParseOptions) -> StreamParser raise ParseError
+
 pub fn open_steam_cache(Bytes, max_bytes? : Int, max_records? : Int) -> SteamCache raise BinaryError
 
 pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
@@ -319,6 +321,23 @@ pub fn SteamShortcut::equal(Self, Self) -> Bool
 pub fn SteamShortcut::not_equal(Self, Self) -> Bool
 pub fn SteamShortcut::to_repr(Self) -> @debug.Repr
 pub fn SteamShortcut::url(Self) -> String
+
+pub(all) enum StreamEvent {
+  Pair(String, String)
+  BeginObject(String)
+  EndObject
+  Condition(String, String)
+} derive(Eq, @debug.Debug)
+pub fn StreamEvent::equal(Self, Self) -> Bool
+pub fn StreamEvent::not_equal(Self, Self) -> Bool
+pub fn StreamEvent::to_repr(Self) -> @debug.Repr
+
+type StreamParser
+pub fn StreamParser::characters_seen(Self) -> Int
+pub fn StreamParser::entries_seen(Self) -> Int
+pub fn StreamParser::feed(Self, String) -> Unit raise
+pub fn StreamParser::feed_bytes(Self, Bytes) -> Unit raise
+pub fn StreamParser::finish(Self) -> Unit raise
 
 pub(all) enum Value {
   Text(String)
