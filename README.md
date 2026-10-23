@@ -14,18 +14,21 @@ Steam 和 Source 生态使用 KeyValues 保存配置和资源信息。这种格�
 
 - KV1 文本解析：嵌套对象、带引号和不带引号的字符串、空值、空对象、`//` 注释、Unicode 和 UTF-8 BOM。
 - 有序条目模型，重复键不覆盖；支持首项查询、全部同名项查询和逐层路径查询。
-- 规范化写出与结构往返，提供保留重复键的 JSON 导出。
+- 规范化写出与结构往返，提供保留重复键的 JSON 双向转换。
+- 按同名键出现次序定位的插入、替换、删除与重命名，以及保留原文注释和排版的局部编辑。
+- 显式平台条件求值与调用方提供加载回调的 `#include`／`#base` 解析，含循环检测和全局资源预算。
+- 保留类型与浮点原始位的标准二进制 KV1 编解码。
 - 可选择的转义模式，以及输入长度、字符串长度、总条目数和嵌套深度限制。
 - 包含错误码、行列号和 Unicode 字符偏移的解析诊断。
 - Steam `appmanifest_*.acf` 和新旧 `libraryfolders.vdf` 数据模型。
-- 文件／标准输入命令行，以及多游戏库清单汇总；单个清单损坏时保留其他成功结果。
+- JavaScript 与原生命令行；Steam 清单筛选、排序、精确容量汇总、重复及缺失检查与 CSV 导出。
 
-完整的格式边界见 [兼容性说明](docs/compatibility.md)。
+完整的格式边界见 [兼容性说明](docs/compatibility.md)，新增 API 见 [扩展说明](docs/extensions.md)。
 
 ## 环境与获取代码
 
 - 已验证工具链：`moonc v0.10.14+7d59c7ec9`，配套 `moonbitlang/core` 同版本。
-- CLI 需要 Node.js 22 或更高版本；纯 MoonBit 示例不需要 Node.js。
+- JavaScript CLI 需要 Node.js 22 或更高版本；原生 CLI 构建需要 C 编译器，运行时无需 Node。
 
 ```sh
 git clone https://github.com/Charles67676767/MoonValve.git
@@ -34,6 +37,7 @@ moon version --all
 moon check
 moon test
 moon run examples/demo
+moon run examples/advanced
 ```
 
 示例输出以 `480: Moon Harbor (Moon Harbor)` 开头，随后输出规范化的 KV1。示例游戏、路径和清单均为合成数据。
@@ -66,6 +70,7 @@ let same = @valve.parse(normalized) == doc
 ```sh
 moon run cmd/main --target js -- help
 moon run cmd/main --target js -- parse fixtures/duplicates.vdf
+moon run cmd/main --target js -- from-json data.json
 moon run cmd/main --target js -- format fixtures/duplicates.vdf
 moon run cmd/main --target js -- query fixtures/appmanifest_480.acf AppState name
 moon run cmd/main --target js -- app fixtures/appmanifest_480.acf
@@ -84,9 +89,10 @@ moon run cmd/main --target js -- libraries fixtures/libraryfolders.vdf
 
 ```sh
 moon run cmd/main --target js -- inventory "/path/to/Steam/steamapps/libraryfolders.vdf"
+moon run cmd/main --target js -- inventory "/path/to/libraryfolders.vdf" --filter portal --sort size --csv
 ```
 
-`inventory` 扫描该文件列出的库中的 `steamapps/appmanifest_*.acf`，返回 `games` 和 `errors` 数组。相对库路径以输入文件的目录为基准。它读取清单记录，不计算实际文件夹大小，也不验证游戏下载是否完整。库路径和清单名可能出现在本机输出中。
+`inventory` 扫描该文件列出的库中的 `steamapps/appmanifest_*.acf`，返回 `games`、`errors` 和筛选结果的 `summary`。相对库路径以输入文件的目录为基准。它读取清单记录，不计算实际文件夹大小，也不验证游戏下载是否完整。库路径和清单名可能出现在本机输出中。
 
 除 `inventory` 外，可以把文件名换成 `-` 从标准输入读取。CLI 严格解码 UTF-8，输入上限为 16 MiB。退出码为 `0`（成功）、`1`（inventory 部分失败）或 `2`（参数、输入或解析错误）。
 
@@ -97,20 +103,32 @@ moon build --target js --release
 node _build/js/release/build/cmd/main/main.js help
 ```
 
+原生程序：
+
+```sh
+moon build --target native --release
+./_build/native/release/build/cmd/main/main help
+```
+
+Windows 使用同目录下的 `main.exe`。两种 CLI 的命令、输入格式与退出码一致。
+
 ## 检查与测试
 
 ```sh
 moon fmt --check
 moon check --target js
-moon test --target wasm
-moon test --target wasm-gc
-moon test --target js
+moon test --target all --deny-warn
 moon build --target js --release
 node scripts/test-cli.cjs
+moon build --target native --release
+node scripts/test-cli.cjs --native
+python -m pip install vdf==3.4
+python scripts/check-reference.py
+node scripts/benchmark.cjs --native
 moon info
 ```
 
-核心测试覆盖重复键、Unicode、转义、错误输入、资源边界、结构往返、Steam 字段及精确整数。CLI 测试使用临时目录构造库与清单，检查文件／标准输入、UTF-8、退出码和部分失败结果。持续集成执行格式、检查、构建、测试和示例。
+核心测试覆盖文本与二进制、编辑、条件、引用、Steam 分析与资源边界，并包含生成式往返和独立参考向量。CLI 测试使用临时目录构造清单。差分脚本在文本的共同支持范围内与 `vdf==3.4` 双向比对；Python 仅为可选测试依赖。持续集成执行四后端检查、构建、测试、示例，以及 Windows/Linux 命令行验收。复现细节见 [验证说明](docs/validation.md)。
 
 ## 目录
 
@@ -119,8 +137,16 @@ model.mbt             有序数据模型与查询
 parser.mbt            KV1 文本解析及诊断
 writer.mbt            规范化文本写出
 steam.mbt             Steam 清单模型
-cmd/main/             Node.js 文件 IO 适配与 MoonBit CLI
+inventory.mbt         筛选、排序、统计、检查与 CSV
+edit.mbt              重复键感知的文档编辑
+source_edit.mbt       保留原文的局部编辑
+json_codec.mbt        有序 JSON 导入
+conditions.mbt        平台条件表达式
+resolve.mbt           文件引用解析
+binary.mbt            标准二进制 KV1
+cmd/main/             JS/C 宿主适配与 MoonBit CLI
 examples/demo/        跨后端最小使用示例
+examples/advanced/    编辑、条件、引用与二进制示例
 fixtures/             合成示例数据
 scripts/test-cli.cjs   CLI 端到端测试
 docs/                 兼容性、设计与路线图
@@ -128,7 +154,7 @@ docs/                 兼容性、设计与路线图
 
 ## 后续方向
 
-当前重点是稳定文本 KV1 和 Steam 清单能力。后续计划评估显式文件解析器支持的 `#include`／`#base`、平台条件求值、保留注释的编辑模型和二进制 KV1。详见 [路线图](docs/roadmap.md)。
+当前重点是稳定已实现 API、扩充实际兼容性样例并准备首个 Mooncakes 发布版本。KV2、KV3 和 appinfo 容器不在当前范围内。详见 [路线图](docs/roadmap.md)。
 
 ## 许可证与参考
 

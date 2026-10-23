@@ -142,9 +142,9 @@ fn BinaryReader::cstring(
   let view = self.bytes[start:self.pos - width]
   try {
     if wide {
-      @utf16.decode(view, ignore_bom=true, endianness=@utf16.Little)
+      @utf16.decode(view, ignore_bom=false, endianness=@utf16.Little)
     } else {
-      @utf8.decode(view, ignore_bom=true)
+      @utf8.decode(view, ignore_bom=false)
     }
   } catch {
     _ => raise InvalidBinary(start, "Malformed string encoding")

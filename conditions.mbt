@@ -57,9 +57,10 @@ fn ConditionParser::read_or(
 ) -> Bool raise ConditionError {
   let mut value = self.read_and(depth)
   while self.take('|') {
-    if !self.take('|') {
+    if self.chars.get(self.pos) != Some('|') {
       raise InvalidCondition("Expected ||")
     }
+    self.pos += 1
     let rhs = self.read_and(depth)
     value = value || rhs
   }
@@ -73,9 +74,10 @@ fn ConditionParser::read_and(
 ) -> Bool raise ConditionError {
   let mut value = self.read_atom(depth)
   while self.take('&') {
-    if !self.take('&') {
+    if self.chars.get(self.pos) != Some('&') {
       raise InvalidCondition("Expected &&")
     }
+    self.pos += 1
     let rhs = self.read_atom(depth)
     value = value && rhs
   }
