@@ -79,7 +79,7 @@ fn help() -> Unit {
   )
   println("  app FILE             Read one Steam appmanifest_*.acf")
   println("  libraries FILE       Read libraryfolders.vdf")
-  println("  inventory FILE       List installed manifests in each library")
+  println("  inventory FILE [--filter TEXT] [--sort id|name|size] [--csv]")
   println("  help                 Show this message")
 }
 
@@ -118,13 +118,46 @@ fn libraries_json(libraries : Array[@valve.SteamLibrary]) -> Json {
 }
 
 ///|
-fn inventory(source : String, doc : @valve.Document) -> Unit raise {
+fn inventory(
+  source : String,
+  doc : @valve.Document,
+  args : Array[String],
+) -> Unit raise {
   if source == "-" {
     raise InvalidArgument("inventory requires a libraryfolders file path")
   }
-  let games : Array[Json] = []
+  let mut filter = ""
+  let mut sort = "id"
+  let mut csv = false
+  let mut option = 4
+  while option < args.length() {
+    match args[option] {
+      "--csv" => csv = true
+      "--filter" | "--sort" => {
+        if option + 1 >= args.length() {
+          raise InvalidArgument("Option needs a value")
+        }
+        if args[option] == "--filter" {
+          filter = args[option + 1]
+        } else {
+          sort = args[option + 1]
+        }
+        option += 1
+      }
+      other => raise InvalidArgument("Unknown inventory option: " + other)
+    }
+    option += 1
+  }
+  @valve.select_inventory([], filter~, sort~) |> ignore
+  let records : Array[@valve.InventoryRecord] = []
   let errors : Array[Json] = []
-  for library in @valve.read_library_folders(doc) {
+  let libraries = @valve.read_library_folders(doc)
+  let scanned : Map[String, Bool] = Map([])
+  for library in libraries {
+    if scanned.contains(library.path) {
+      continue
+    }
+    scanned[library.path] = true
     let paths = host_manifest_paths(source, library.path)
     if paths[0] != "" {
       errors.push(
@@ -138,13 +171,7 @@ fn inventory(source : String, doc : @valve.Document) -> Unit raise {
     for i in 1..<paths.length() {
       try {
         let app = @valve.read_app_manifest(@valve.parse(read_text(paths[i])))
-        games.push(
-          Json::object({
-            "library": Json::string(library.path),
-            "manifest": Json::string(paths[i]),
-            "app": app_json(app),
-          }),
-        )
+        records.push({ library: library.path, manifest: paths[i], app, })
       } catch {
         error =>
           errors.push(
@@ -156,9 +183,49 @@ fn inventory(source : String, doc : @valve.Document) -> Unit raise {
       }
     }
   }
-  println(
-    Json::object({ "games": Json::array(games), "errors": Json::array(errors) }).stringify(),
-  )
+  for issue in @valve.check_inventory(libraries, records) {
+    errors.push(
+      Json::object({
+        "code": Json::string(issue.code),
+        "library": Json::string(issue.library),
+        "manifest": match issue.manifest {
+          Some(s) => Json::string(s)
+          None => Json::null()
+        },
+        "error": Json::string(issue.message),
+      }),
+    )
+  }
+  let selected = @valve.select_inventory(records, filter~, sort~)
+  let total = @valve.inventory_total(selected)
+  if csv {
+    host_output(@valve.inventory_csv(selected))
+    for error in errors {
+      host_error(error.stringify(), 1)
+    }
+  } else {
+    let games = selected.map(record => {
+      Json::object({
+        "library": Json::string(record.library),
+        "manifest": Json::string(record.manifest),
+        "app": app_json(record.app),
+      })
+    })
+    println(
+      Json::object({
+        "games": Json::array(games),
+        "errors": Json::array(errors),
+        "summary": Json::object({
+          "count": Json::number(selected.length().to_double()),
+          "scanned_count": Json::number(records.length().to_double()),
+          "known_size_bytes": Json::string(total.known_size_bytes.to_string()),
+          "unknown_size_count": Json::number(
+            total.unknown_size_count.to_double(),
+          ),
+        }),
+      }).stringify(),
+    )
+  }
   if !errors.is_empty() {
     host_exit_code(1)
   }
@@ -183,7 +250,7 @@ fn run(args : Array[String]) -> Unit raise {
   if args.length() < 4 {
     raise InvalidArgument("A file path or - for stdin is required")
   }
-  if command != "query" && args.length() != 4 {
+  if command != "query" && command != "inventory" && args.length() != 4 {
     raise InvalidArgument("Unexpected extra arguments")
   }
   if command == "query" && args.length() < 5 {
@@ -213,7 +280,7 @@ fn run(args : Array[String]) -> Unit raise {
     "app" => println(app_json(@valve.read_app_manifest(doc)).stringify())
     "libraries" =>
       println(libraries_json(@valve.read_library_folders(doc)).stringify())
-    "inventory" => inventory(args[3], doc)
+    "inventory" => inventory(args[3], doc, args)
     _ => ()
   }
 }

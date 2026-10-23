@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn check_inventory(Array[SteamLibrary], Array[InventoryRecord]) -> Array[InventoryIssue]
+
 pub fn decode_binary(Bytes, options? : BinaryOptions) -> Array[BinaryEntry] raise BinaryError
 
 pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonImportError
@@ -13,6 +15,10 @@ pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonI
 pub fn encode_binary(Array[BinaryEntry], options? : BinaryOptions) -> Bytes raise BinaryError
 
 pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
+
+pub fn inventory_csv(Array[InventoryRecord]) -> String
+
+pub fn inventory_total(Array[InventoryRecord]) -> InventoryTotal raise SteamError
 
 pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> Document raise
 
@@ -25,6 +31,8 @@ pub fn parse_preserving(String, options? : ParseOptions) -> SourceDocument raise
 pub fn read_app_manifest(Document) -> SteamApp raise SteamError
 
 pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
+
+pub fn select_inventory(Array[InventoryRecord], filter? : String, sort? : String) -> Array[InventoryRecord] raise SteamError
 
 pub fn stringify(Document) -> String raise WriteError
 
@@ -142,6 +150,33 @@ pub(all) struct Entry {
 pub fn Entry::equal(Self, Self) -> Bool
 pub fn Entry::not_equal(Self, Self) -> Bool
 pub fn Entry::to_repr(Self) -> @debug.Repr
+
+pub(all) struct InventoryIssue {
+  code : String
+  library : String
+  manifest : String?
+  message : String
+} derive(Eq, @debug.Debug)
+pub fn InventoryIssue::equal(Self, Self) -> Bool
+pub fn InventoryIssue::not_equal(Self, Self) -> Bool
+pub fn InventoryIssue::to_repr(Self) -> @debug.Repr
+
+pub(all) struct InventoryRecord {
+  library : String
+  manifest : String
+  app : SteamApp
+} derive(Eq, @debug.Debug)
+pub fn InventoryRecord::equal(Self, Self) -> Bool
+pub fn InventoryRecord::not_equal(Self, Self) -> Bool
+pub fn InventoryRecord::to_repr(Self) -> @debug.Repr
+
+pub(all) struct InventoryTotal {
+  known_size_bytes : Int64
+  unknown_size_count : Int
+} derive(Eq, @debug.Debug)
+pub fn InventoryTotal::equal(Self, Self) -> Bool
+pub fn InventoryTotal::not_equal(Self, Self) -> Bool
+pub fn InventoryTotal::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ParseOptions {
   escape_sequences : Bool

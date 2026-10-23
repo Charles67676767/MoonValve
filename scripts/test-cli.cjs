@@ -75,6 +75,29 @@ try {
   test('inventory cannot silently use stdin as a file base', () => {
     const r = run(['inventory', '-'], 'libraryfolders {}'); assert.equal(r.status, 2);
   });
+  test('ordered JSON can be imported and invalid schemas fail', () => {
+    const rows = [{key: 'k', value: 'a'}, {key: 'k', value: [{key: '中文', value: '😀'}]}];
+    const imported = run(['from-json', '-'], JSON.stringify(rows)); assert.equal(imported.status, 0);
+    assert.deepEqual(JSON.parse(run(['parse', '-'], imported.stdout).stdout), rows);
+    assert.equal(run(['from-json', '-'], '{"k":1}').status, 2);
+  });
+  test('inventory sorts filters totals and exports CSV with anomaly diagnostics', () => {
+    const library = path.join(temporary, 'inventory-rich');
+    fs.mkdirSync(path.join(library, 'steamapps'), {recursive: true});
+    fs.writeFileSync(path.join(library, 'steamapps/appmanifest_2.acf'), 'AppState { appid 2 name "Alpha, Test" installdir game SizeOnDisk 9007199254740993 }');
+    fs.writeFileSync(path.join(library, 'steamapps/appmanifest_10.acf'), 'AppState { appid 10 name Zoo installdir game }');
+    const folders = path.join(temporary, 'rich.vdf');
+    fs.writeFileSync(folders, `libraryfolders { 0 { path ${JSON.stringify(library)} apps { 2 0 99 0 } } 1 ${JSON.stringify(library)} }`);
+    const r = run(['inventory', folders, '--filter', 'ALPHA', '--sort', 'size']); assert.equal(r.status, 1);
+    const report = JSON.parse(r.stdout); assert.equal(report.games.length, 1);
+    assert.equal(report.summary.known_size_bytes, '9007199254740993');
+    assert.equal(report.summary.scanned_count, 2);
+    assert.deepEqual(report.errors.map(e => e.code).sort(), ['duplicate_library', 'missing_manifest']);
+    const csv = run(['inventory', folders, '--csv', '--sort', 'name']);
+    assert.equal(csv.status, 1); assert.match(csv.stdout, /"Alpha, Test"/); assert.match(csv.stderr, /missing_manifest/);
+    assert.equal(run(['inventory', folders, '--sort', 'random']).status, 2);
+    assert.equal(run(['inventory', folders, '--filter']).status, 2);
+  });
   console.log(`${cases} CLI checks passed`);
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });

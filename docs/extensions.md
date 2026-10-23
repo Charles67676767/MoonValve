@@ -33,3 +33,9 @@ CLI：`moon run cmd/main --target js -- from-json data.json`。输出为可重�
 `parse_preserving` 返回 `SourceDocument`，通过 `text()` 读取原文、`document()` 读取语义模型。`SourceDocument::edit` 支持同一套 `Selector` 和 `Edit` 操作：精确替换值、重命名、删除与按位置插入。修改范围以外的字符保持原样，包括 BOM、中文、注释、CRLF 和缩进；每次编辑后重新解析并核对语义结果。
 
 新写入的结构使用规范化转义格式。删除条目保留周围注释；替换整个对象会替换对象内部的注释。此 API 接受未展开文件引用、未启用平台条件的标准转义文本；普通 `Document::edit` 可用于已求值的模型。
+
+## Steam 清单分析
+
+`select_inventory` 按名称或 App ID 过滤，支持 `id`（十进制数值顺序）、`name`（忽略大小写）和 `size`（降序、未知值最后）排序。`inventory_total` 用 Int64 精确统计已知容量并报告未知容量数量，溢出报错。`check_inventory` 识别 App ID 与文件名不符、重复 App ID、重复库路径及声明中缺失的可读清单；路径比较为精确字符串比较。
+
+CLI 示例：`inventory libraryfolders.vdf --filter portal --sort size --csv`。默认输出 JSON，包括筛选后汇总、扫描数量和全量异常；CSV 输出至标准输出、异常写入标准错误。包含异常时退出码为 1，致命错误为 2。CSV 字段按 RFC 4180 转义，原样保留内容，导入电子表格时应使用文本列类型。
