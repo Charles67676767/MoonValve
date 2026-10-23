@@ -1,0 +1,8 @@
+// Duplicate keys are intentional and remain in source order.
+"root"
+{
+  "tag" "singleplayer"
+  "tag" "controller"
+  "name" "Moon Harbor"
+  "empty" {}
+}

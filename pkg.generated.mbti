@@ -1,0 +1,109 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Charles67676767/moonvalve"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
+
+pub fn read_app_manifest(Document) -> SteamApp raise SteamError
+
+pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
+
+pub fn stringify(Document) -> String raise WriteError
+
+// Errors
+pub suberror ParseError {
+  ParseError(Diagnostic)
+} derive(@debug.Debug)
+pub fn ParseError::to_repr(Self) -> @debug.Repr
+
+pub suberror SteamError {
+  InvalidManifest(String)
+} derive(@debug.Debug)
+pub fn SteamError::to_repr(Self) -> @debug.Repr
+
+pub suberror WriteError {
+  InvalidDocument(String)
+} derive(@debug.Debug)
+pub fn WriteError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct Diagnostic {
+  code : String
+  message : String
+  offset : Int
+  line : Int
+  column : Int
+} derive(Eq, @debug.Debug)
+pub fn Diagnostic::equal(Self, Self) -> Bool
+pub fn Diagnostic::not_equal(Self, Self) -> Bool
+pub fn Diagnostic::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Document {
+  entries : Array[Entry]
+} derive(Eq, @debug.Debug)
+pub fn Document::equal(Self, Self) -> Bool
+pub fn Document::get(Self, String) -> Value?
+pub fn Document::get_all(Self, String) -> Array[Value]
+pub fn Document::lookup(Self, Array[String]) -> Value?
+pub fn Document::not_equal(Self, Self) -> Bool
+pub fn Document::to_json(Self) -> Json
+pub fn Document::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Entry {
+  key : String
+  value : Value
+} derive(Eq, @debug.Debug)
+pub fn Entry::equal(Self, Self) -> Bool
+pub fn Entry::not_equal(Self, Self) -> Bool
+pub fn Entry::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ParseOptions {
+  escape_sequences : Bool
+  max_depth : Int
+  max_entries : Int
+  max_input_chars : Int
+  max_token_chars : Int
+} derive(Eq, @debug.Debug)
+pub fn ParseOptions::default() -> Self
+pub fn ParseOptions::equal(Self, Self) -> Bool
+pub fn ParseOptions::not_equal(Self, Self) -> Bool
+pub fn ParseOptions::to_repr(Self) -> @debug.Repr
+
+pub(all) struct SteamApp {
+  app_id : String
+  name : String
+  install_dir : String
+  size_on_disk : Int64?
+  build_id : String?
+} derive(Eq, @debug.Debug)
+pub fn SteamApp::equal(Self, Self) -> Bool
+pub fn SteamApp::not_equal(Self, Self) -> Bool
+pub fn SteamApp::to_repr(Self) -> @debug.Repr
+
+pub(all) struct SteamLibrary {
+  index : String
+  path : String
+  label : String?
+  app_ids : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn SteamLibrary::equal(Self, Self) -> Bool
+pub fn SteamLibrary::not_equal(Self, Self) -> Bool
+pub fn SteamLibrary::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Value {
+  Text(String)
+  Object(Array[Entry])
+} derive(Eq, @debug.Debug)
+pub fn Value::as_object(Self) -> Array[Entry]?
+pub fn Value::as_text(Self) -> String?
+pub fn Value::equal(Self, Self) -> Bool
+pub fn Value::not_equal(Self, Self) -> Bool
+pub fn Value::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

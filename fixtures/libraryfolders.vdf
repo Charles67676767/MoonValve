@@ -1,0 +1,10 @@
+"libraryfolders"
+{
+  "0"
+  {
+    "path" "D:\\SteamLibrary"
+    "label" "Sample library"
+    "apps" { "480" "1048576" }
+  }
+  "1" "/mnt/games"
+}
