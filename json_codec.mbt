@@ -30,7 +30,7 @@ pub fn parse_json_document(
   if options.max_input_chars < 0 || text.char_length() > options.max_input_chars {
     raise InvalidJsonDocument("JSON input exceeds max_input_chars")
   }
-  let value = @json.parse(text[:], max_nesting_depth=1024) catch {
+  let value = @json.parse(text[:]) catch {
     _ => raise InvalidJsonDocument("Invalid JSON syntax or excessive nesting")
   }
   document_from_json(value, options~)

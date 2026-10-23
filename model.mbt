@@ -26,6 +26,7 @@ pub(all) struct ParseOptions {
   max_entries : Int
   max_input_chars : Int
   max_token_chars : Int
+  conditions : Array[String]?
 } derive(Eq, Debug)
 
 ///|
@@ -37,6 +38,7 @@ pub fn ParseOptions::default() -> ParseOptions {
     max_entries: 100000,
     max_input_chars: 8388608,
     max_token_chars: 1048576,
+    conditions: None,
   }
 }
 

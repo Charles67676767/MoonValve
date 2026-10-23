@@ -8,6 +8,8 @@ import {
 // Values
 pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonImportError
 
+pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
+
 pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
 
 pub fn parse_json_document(String, options? : ParseOptions) -> Document raise JsonImportError
@@ -19,6 +21,11 @@ pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
 pub fn stringify(Document) -> String raise WriteError
 
 // Errors
+pub suberror ConditionError {
+  InvalidCondition(String)
+} derive(@debug.Debug)
+pub fn ConditionError::to_repr(Self) -> @debug.Repr
+
 pub suberror EditError {
   InvalidEdit(String)
 } derive(@debug.Debug)
@@ -90,6 +97,7 @@ pub(all) struct ParseOptions {
   max_entries : Int
   max_input_chars : Int
   max_token_chars : Int
+  conditions : Array[String]?
 } derive(Eq, @debug.Debug)
 pub fn ParseOptions::default() -> Self
 pub fn ParseOptions::equal(Self, Self) -> Bool

@@ -138,7 +138,7 @@ fn Parser::read_string(self : Parser) -> String raise ParseError {
       self.advance()
       return builder.to_string()
     }
-    if !quoted && (is_space(c) || c == '{' || c == '}') {
+    if !quoted && (is_space(c) || c == '{' || c == '}' || c == '=') {
       return builder.to_string()
     }
     if c.to_int() == 0 {
@@ -217,6 +217,9 @@ fn Parser::read_entries(
       self.fail("entry_limit", "Document exceeds max_entries")
     }
     let key = self.read_string()
+    if key.is_empty() && self.peek() == Some('=') {
+      self.fail("expected_string", "Unexpected equals sign")
+    }
     if key.equal_ignore_ascii_case("#include") ||
       key.equal_ignore_ascii_case("#base") {
       self.fail(
@@ -225,6 +228,21 @@ fn Parser::read_entries(
     }
     self.entry_count = self.entry_count + 1
     self.skip_trivia()
+    let mut keep = true
+    while self.peek() == Some('[') {
+      keep = self.read_condition()
+      self.skip_trivia()
+    }
+    let mut override_previous = false
+    if self.peek() == Some('=') {
+      self.advance()
+      self.skip_trivia()
+      while self.peek() == Some('[') {
+        keep = self.read_condition()
+        override_previous = true
+        self.skip_trivia()
+      }
+    }
     let value = match self.peek() {
       Some('{') => {
         if depth >= self.options.max_depth {
@@ -239,7 +257,55 @@ fn Parser::read_entries(
       }
       _ => Value::Text(self.read_string())
     }
-    entries.push({ key, value, })
+    self.skip_trivia()
+    while self.peek() == Some('[') {
+      keep = self.read_condition()
+      self.skip_trivia()
+    }
+    if keep {
+      if override_previous {
+        let mut index = 0
+        while index < entries.length() {
+          if entries[index].key.equal_ignore_ascii_case(key) {
+            entries.remove(index) |> ignore
+          } else {
+            index += 1
+          }
+        }
+      }
+      entries.push({ key, value, })
+    }
   }
   entries
+}
+
+///|
+fn Parser::read_condition(self : Parser) -> Bool raise ParseError {
+  guard self.options.conditions is Some(symbols) else {
+    self.fail(
+      "unsupported_conditional", "Pass an explicit conditions array to evaluate platform conditions",
+    )
+    return false
+  }
+  self.advance()
+  let text = StringBuilder()
+  let mut count = 0
+  while self.peek() is Some(c) && c != ']' {
+    if count >= 4096 {
+      self.fail("condition_limit", "Conditional exceeds 4096 characters")
+    }
+    text.write_char(c)
+    count += 1
+    self.advance()
+  }
+  if self.peek() != Some(']') {
+    self.fail("invalid_condition", "Missing closing bracket")
+  }
+  self.advance()
+  evaluate_condition(text.to_string(), symbols) catch {
+    InvalidCondition(message) => {
+      self.fail("invalid_condition", message)
+      false
+    }
+  }
 }
