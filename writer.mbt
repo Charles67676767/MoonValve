@@ -53,8 +53,11 @@ fn write_entries(
     raise InvalidDocument("Object exceeds writer depth limit of 128")
   }
   for entry in entries {
-    if entry.key.equal_ignore_ascii_case("#include") ||
-      entry.key.equal_ignore_ascii_case("#base") {
+    if depth == 0 &&
+      (
+        entry.key.equal_ignore_ascii_case("#include") ||
+        entry.key.equal_ignore_ascii_case("#base")
+      ) {
       raise InvalidDocument(
         "Directive keys cannot be serialized as ordinary entries",
       )

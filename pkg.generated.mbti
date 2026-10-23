@@ -10,6 +10,8 @@ pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonI
 
 pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
 
+pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> Document raise
+
 pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
 
 pub fn parse_json_document(String, options? : ParseOptions) -> Document raise JsonImportError
@@ -40,6 +42,11 @@ pub suberror ParseError {
   ParseError(Diagnostic)
 } derive(@debug.Debug)
 pub fn ParseError::to_repr(Self) -> @debug.Repr
+
+pub suberror ResolveError {
+  InvalidReference(String)
+} derive(@debug.Debug)
+pub fn ResolveError::to_repr(Self) -> @debug.Repr
 
 pub suberror SteamError {
   InvalidManifest(String)

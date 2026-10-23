@@ -6,6 +6,7 @@ priv struct Parser {
   mut line : Int
   mut column : Int
   mut entry_count : Int
+  allow_directives : Bool
 }
 
 ///|
@@ -15,6 +16,15 @@ pub fn parse(
   input : String,
   options? : ParseOptions = ParseOptions::default(),
 ) -> Document raise ParseError {
+  parse_internal(input, options, false).0
+}
+
+///|
+fn parse_internal(
+  input : String,
+  options : ParseOptions,
+  allow_directives : Bool,
+) -> (Document, Int) raise ParseError {
   if options.max_depth < 0 ||
     options.max_depth > 256 ||
     options.max_entries < 0 ||
@@ -44,11 +54,13 @@ pub fn parse(
     line: 1,
     column: 1,
     entry_count: 0,
+    allow_directives,
   }
   if p.chars.get(0) is Some(c) && c.to_int() == 0xFEFF {
     p.advance()
   }
-  { entries: p.read_entries(0, false), }
+  let doc = Document::{ entries: p.read_entries(0, false), }
+  (doc, p.entry_count)
 }
 
 ///|
@@ -220,8 +232,12 @@ fn Parser::read_entries(
     if key.is_empty() && self.peek() == Some('=') {
       self.fail("expected_string", "Unexpected equals sign")
     }
-    if key.equal_ignore_ascii_case("#include") ||
-      key.equal_ignore_ascii_case("#base") {
+    if depth == 0 &&
+      !self.allow_directives &&
+      (
+        key.equal_ignore_ascii_case("#include") ||
+        key.equal_ignore_ascii_case("#base")
+      ) {
       self.fail(
         "unsupported_directive", "Include/base directives require an explicit file resolver",
       )
