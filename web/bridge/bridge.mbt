@@ -1,0 +1,197 @@
+///|
+fn field(fields : Map[String, Json], key : String) -> String raise {
+  guard fields.get(key) is Some(String(text)) else {
+    raise Failure("Expected text field: " + key)
+  }
+  text
+}
+
+///|
+fn execute(request : Json) -> Json raise {
+  guard request is Object(fields) else {
+    raise Failure("Expected a request object")
+  }
+  let action = field(fields, "action")
+  let literal = fields.get("literal") == Some(Json::boolean(true))
+  let options = {
+    ..@valve.ParseOptions::default(),
+    escape_sequences: !literal,
+  }
+  match action {
+    "parse" => {
+      let source = @valve.parse_preserving(field(fields, "text"), options~)
+      Json::object({
+        "tree": source.document().to_json(),
+        "text": Json::string(source.text()),
+      })
+    }
+    "evaluate" => {
+      let symbols = match fields.get("symbols") {
+        Some(Array(values)) =>
+          values.map(value => {
+            match value {
+              String(s) => s
+              _ => raise Failure("Symbols must be strings")
+            }
+          })
+        _ => []
+      }
+      let evaluated_options = { ..options, conditions: Some(symbols), }
+      let doc = if fields.get("files") is Some(Object(files)) &&
+        fields.get("source") is Some(String(source)) {
+        @valve.load_resolved(
+          source,
+          path => {
+            match files.get(path) {
+              Some(String(s)) => s
+              _ => raise Failure("Missing virtual file: " + path)
+            }
+          },
+          options=evaluated_options,
+        )
+      } else {
+        @valve.parse(field(fields, "text"), options=evaluated_options)
+      }
+      Json::object({
+        "tree": doc.to_json(),
+        "text": Json::string(@valve.stringify(doc)),
+      })
+    }
+    "resolve" => {
+      guard fields.get("files") is Some(Object(files)) else {
+        raise Failure("Expected virtual files")
+      }
+      let symbols = match fields.get("symbols") {
+        Some(Array(values)) =>
+          Some(
+            values.map(value => {
+              match value {
+                String(s) => s
+                _ => raise Failure("Symbols must be strings")
+              }
+            }),
+          )
+        _ => None
+      }
+      let doc = @valve.load_resolved(
+        field(fields, "source"),
+        path => {
+          match files.get(path) {
+            Some(String(s)) => s
+            _ => raise Failure("Missing virtual file: " + path)
+          }
+        },
+        options={ ..options, conditions: symbols, },
+      )
+      Json::object({
+        "tree": doc.to_json(),
+        "text": Json::string(@valve.stringify(doc)),
+      })
+    }
+    "apply" => {
+      guard fields.get("changes") is Some(changes) else {
+        raise Failure("Expected changes")
+      }
+      let source = @valve.parse_preserving(field(fields, "text"), options~)
+      let edited = source.apply(@valve.changes_from_json(changes))
+      Json::object({
+        "tree": edited.document().to_json(),
+        "text": Json::string(edited.text()),
+      })
+    }
+    "format" => {
+      let source = @valve.parse_preserving(field(fields, "text"), options~)
+      Json::object({ "text": Json::string(@valve.stringify(source.document())) })
+    }
+    "binary-decode" => {
+      let bytes = @base64.decode(field(fields, "base64")[:])
+      Json::object({
+        "tree": @valve.binary_to_json(@valve.decode_binary(bytes)),
+      })
+    }
+    "binary-encode" => {
+      guard fields.get("tree") is Some(tree) else {
+        raise Failure("Expected a typed tree")
+      }
+      let bytes = @valve.encode_binary(@valve.binary_from_json(tree))
+      Json::object({
+        "base64": Json::string(@base64.encode(bytes[:])),
+        "size": Json::number(bytes.length().to_double()),
+      })
+    }
+    "stream" => {
+      let events : Array[Json] = []
+      let parser = @valve.new_stream_parser(
+        event => {
+          let value = match event {
+            @valve.Pair(k, v) =>
+              Json::array([
+                Json::string("pair"),
+                Json::string(k),
+                Json::string(v),
+              ])
+            @valve.BeginObject(k) =>
+              Json::array([Json::string("begin"), Json::string(k)])
+            @valve.EndObject => Json::array([Json::string("end")])
+            @valve.Condition(k, c) =>
+              Json::array([
+                Json::string("condition"),
+                Json::string(k),
+                Json::string(c),
+              ])
+          }
+          events.push(value)
+          true
+        },
+        options~,
+      )
+      guard fields.get("chunks") is Some(Array(chunks)) else {
+        raise Failure("Expected chunks")
+      }
+      for chunk in chunks {
+        guard chunk is String(s) else {
+          raise Failure("Expected string chunks")
+        }
+        parser.feed(s)
+      }
+      parser.finish()
+      Json::object({ "events": Json::array(events) })
+    }
+    _ => raise Failure("Unknown action")
+  }
+}
+
+///|
+/// One JSON envelope keeps the browser and test harness on the same MoonBit core.
+#export_name("dispatch")
+pub fn dispatch(input : String) -> String {
+  try {
+    if input.char_length() > 33554432 {
+      raise Failure("Request exceeds limit")
+    }
+    Json::object({
+      "ok": Json::boolean(true),
+      "result": execute(@json.parse(input[:])),
+    }).stringify()
+  } catch {
+    @valve.ParseError(d) =>
+      Json::object({
+        "ok": Json::boolean(false),
+        "error": Json::object({
+          "code": Json::string(d.code),
+          "message": Json::string(d.message),
+          "offset": Json::number(d.offset.to_double()),
+          "line": Json::number(d.line.to_double()),
+          "column": Json::number(d.column.to_double()),
+        }),
+      }).stringify()
+    error =>
+      Json::object({
+        "ok": Json::boolean(false),
+        "error": Json::object({
+          "code": Json::string("operation_failed"),
+          "message": Json::string(error.to_string()),
+        }),
+      }).stringify()
+  }
+}

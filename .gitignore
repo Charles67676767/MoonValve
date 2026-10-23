@@ -20,3 +20,8 @@ submissions/
 *.key
 credentials.json
 node_modules/
+**/bin/
+**/obj/
+*.bak
+*.moonvalve-*
+web/editor/moonvalve.mjs

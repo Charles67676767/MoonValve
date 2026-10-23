@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="MoonValve 本地 KeyValues 工作台：查看、编辑和转换 Valve 配置文件。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'">
+  <title>MoonValve · 本地工作台</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="mark" aria-hidden="true">M<span>◕</span></span><div><strong>MoonValve</strong><small>KEYVALUES WORKBENCH</small></div></div>
+    <div class="local"><span class="dot"></span>文件仅在本机处理</div>
+    <div class="actions"><button id="open" class="primary">打开文件</button><button id="download">下载结果 <span>↗</span></button></div>
+  </header>
+  <main>
+    <section class="intro"><div><span class="eyebrow">配置与数据，从容掌握</span><h1>每一个键，都有迹可循。</h1><p>浏览重复项、保留原文修改，也能检查二进制数据。</p></div><div class="intro-note"><strong>MoonBit 驱动</strong><span>解析 · 编辑 · 转换</span></div></section>
+    <div class="toolbar">
+      <div class="file-label"><span id="file-icon">◫</span><strong id="filename">example.vdf</strong><span id="modified" hidden>已修改</span></div>
+      <div class="toolbar-actions"><label class="select-label">格式<select id="kind"><option value="text">文本 KV1</option><option value="binary">二进制 KV1</option></select></label><select id="example" aria-label="加载示例"><option value="">加载示例…</option><option value="duplicates">重复键与嵌套对象</option><option value="conditions">平台条件与引用</option><option value="binary">二进制快捷方式</option></select><button id="undo" disabled>撤销应用</button><button id="export-json">导出 JSON</button></div>
+    </div>
+    <div class="workspace">
+      <aside class="tree-pane"><div class="pane-heading"><strong>文档结构</strong><span id="entry-count">—</span></div><label class="search"><span>⌕</span><input id="search" placeholder="搜索键名" aria-label="搜索键名"></label><div id="tree" role="tree" aria-label="KeyValues 文档树"></div></aside>
+      <section class="code-pane"><div class="pane-heading"><strong id="editor-heading">源文件</strong><span>保留注释与排版</span></div><div class="code-surface"><pre id="gutter" aria-hidden="true">1</pre><textarea id="editor" aria-label="源文件编辑区" spellcheck="false" wrap="off"></textarea></div><div class="editor-footer"><label><input type="checkbox" id="literal">反斜杠按字面处理</label><button id="validate">重新解析</button></div></section>
+      <aside class="inspector"><div class="pane-heading"><strong>条目详情</strong><span id="value-type">—</span></div><div id="selection-empty"><span class="empty-symbol">↖</span><h2>从左侧选择一个键</h2><p>同名条目按出现次序分别定位，修改前可先预览结果。</p></div><div id="selection" hidden><div id="selected-path" class="path"></div><label class="field">键名<input id="key-name"></label><label class="field">值<textarea id="value" rows="5" spellcheck="false"></textarea></label><div class="stack-actions"><button id="replace" class="primary">预览替换</button><button id="rename">预览重命名</button><button id="remove" class="danger">预览删除</button></div><div id="insert-fields"><h3>向对象添加条目</h3><label class="field">新键名<input id="new-key" placeholder="例如：resource_path"></label><label class="field">文本值<input id="new-value" placeholder="新条目的值"></label><button id="insert">预览插入</button></div></div></aside>
+    </div>
+    <section class="advanced"><details><summary>条件预览与文件引用 <span>显式选择输入，原文保持可编辑</span></summary><div class="advanced-grid"><label class="field">启用的条件符号<input id="symbols" placeholder="WIN32, DESKTOP" value="WIN32"></label><button id="evaluate">预览条件求值</button><label class="field">引用入口相对路径<input id="source-name" value="example.vdf"></label><div class="reference-actions"><button id="load-references">载入引用目录</button><button id="resolve">预览引用展开</button><span id="reference-count">未载入</span></div></div></details></section>
+    <footer class="status"><div id="status" role="status" aria-live="polite"><span class="dot"></span>正在加载解析器…</div><span id="size">0 字节</span></footer>
+  </main>
+  <div id="drop-overlay" hidden>将配置文件拖到这里<div>文本与标准二进制 KV1 · 最大 16 MiB</div></div>
+  <dialog id="preview"><form method="dialog"><div class="dialog-header"><div><span class="eyebrow">修改预览</span><h2 id="preview-title">确认后应用到编辑区</h2></div><button aria-label="关闭预览" value="cancel">×</button></div><div class="comparison"><div><h3>修改前</h3><pre id="before"></pre></div><div><h3>修改后</h3><pre id="after"></pre></div></div><p>应用只改变编辑区内容，原始文件保持不变。使用“下载结果”保存副本。</p><div class="dialog-actions"><button value="cancel">取消</button><button id="apply" type="button" class="primary">应用到编辑区</button></div></form></dialog>
+  <input id="file-input" type="file" accept=".vdf,.acf,.res,.txt,.bin,.json" hidden><input id="references-input" type="file" webkitdirectory multiple hidden>
+  <script type="module" src="app.mjs"></script>
+</body></html>
