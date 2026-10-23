@@ -182,6 +182,35 @@ try {
     const extracted=run(['cache',file,'480']);assert.equal(extracted.status,0,extracted.stderr);assert.equal(JSON.parse(extracted.stdout)[0].value,'Synthetic');
     assert.equal(run(['cache',file,'999']).status,2);
   });
+  test('streamed events retain raw conditions and scalar query addresses every duplicate', () => {
+    const source='r { k one k "中文😀" [$WIN32] nested { k no } }';
+    const events=run(['stream-json','-'],source);assert.equal(events.status,0,events.stderr);
+    const rows=events.stdout.trim().split('\n').map(JSON.parse);assert.equal(rows[2].path[1].index,1);assert.equal(rows[3].event,'condition');
+    const query=run(['stream-query','-','r','k'],source);assert.equal(query.status,0,query.stderr);
+    assert.deepEqual(query.stdout.trim().split('\n').map(line=>JSON.parse(line).value),['one','中文😀']);
+    const csv=run(['stream-csv','-'],'r { k "a,\\\"b" }');assert.equal(csv.status,0,csv.stderr);assert.match(csv.stdout,/path,value/);assert.match(csv.stdout,/a,""b/);
+  });
+  test('stream formatting roundtrips and rejects conditional or referenced output', () => {
+    const source='r { k "中文😀" k two nested { x y } }';const formatted=run(['stream-format','-'],source);assert.equal(formatted.status,0,formatted.stderr);
+    assert.deepEqual(JSON.parse(run(['parse','-'],formatted.stdout).stdout),JSON.parse(run(['parse','-'],source).stdout));
+    for(const text of ['r {k yes [$WIN32]}','#base missing','r {k yes'])assert.equal(run(['stream-format','-'],text).status,2);
+    assert.equal(run(['stream-json','-','--max-bytes','2'],'key value').status,2);
+    assert.equal(run(['stream-json','-'],Buffer.from([0xf0,0x9f])).status,2);
+    assert.equal(run(['stream-json',path.join(temporary,'missing-stream')]).status,2);
+  });
+  test('project CLI reports inherited scalar origins and reference locations', () => {
+    const folder=path.join(temporary,'project');fs.mkdirSync(folder);
+    fs.writeFileSync(path.join(folder,'main.vdf'),'#base defaults.vdf\nr { local yes }');fs.writeFileSync(path.join(folder,'defaults.vdf'),'r { local no inherited yes }');
+    const result=run(['project','main.vdf','--root',folder]);assert.equal(result.status,0,result.stderr);
+    const project=JSON.parse(result.stdout),origin=project.origins.find(o=>o.path.at(-1).key==='inherited');assert.equal(origin.location.source,'defaults.vdf');assert.equal(origin.location.column,14);assert.equal(project.references[0].kind,'base');
+  });
+  test('streaming crosses chunk UTF8 boundaries and reads files larger than ordinary IO limits', () => {
+    const file=path.join(temporary,'large.vdf'),fd=fs.openSync(file,'w');
+    fs.writeSync(fd,'r {\n');const row='padding "'+ 'x'.repeat(90)+'"\n';for(let i=0;i<200;i++)fs.writeSync(fd,row.repeat(1000));fs.writeSync(fd,'needle "中文😀"\n}');fs.closeSync(fd);
+    assert.ok(fs.statSync(file).size>16*1024*1024);
+    const result=run(['stream-query',file,'r','needle']);assert.equal(result.status,0,result.stderr);assert.equal(JSON.parse(result.stdout).value,'中文😀');
+    const boundary=path.join(temporary,'boundary.vdf');fs.writeFileSync(boundary,' '.repeat(65535)+'r {k "😀"}');assert.equal(run(['stream-format',boundary]).status,0);
+  });
   console.log(`${cases} CLI checks passed`);
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });

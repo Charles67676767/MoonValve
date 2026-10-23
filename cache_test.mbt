@@ -50,6 +50,22 @@ fn cache_fixture(version : Int, is_package : Bool) -> Bytes raise {
 }
 
 ///|
+test "cache metadata pagination handles filtering boundaries and invalid page limits" {
+  let cache = @moonvalve.open_steam_cache(cache_fixture(41, false))
+  assert_eq(cache.page(query="48", limit=1).records[0].id, 480U)
+  assert_eq(cache.page(query="48", offset=1).total, 1)
+  assert_eq(cache.page(query="48", offset=1).records.length(), 0)
+  assert_eq(cache.page(query="999").total, 0)
+  for limit in [0, 201] {
+    try cache.page(limit~) catch {
+      @moonvalve.InvalidBinary(_, _) => ()
+    } noraise {
+      _ => fail("Expected invalid page size")
+    }
+  }
+}
+
+///|
 test "Steam appinfo 39 40 41 and packageinfo 39 40 expose metadata and exact data" {
   for is_package in [false, true] {
     for version in [39, 40, 41] {

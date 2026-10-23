@@ -26,11 +26,15 @@ pub fn inventory_csv(Array[InventoryRecord]) -> String
 
 pub fn inventory_total(Array[InventoryRecord]) -> InventoryTotal raise SteamError
 
+pub fn load_project(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> ResolvedProject raise
+
 pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> Document raise
 
 pub fn new_shortcut_file() -> ShortcutFile
 
 pub fn new_stream_parser((StreamEvent) -> Bool raise, options? : ParseOptions) -> StreamParser raise ParseError
+
+pub fn new_stream_writer((String) -> Unit raise) -> StreamWriter
 
 pub fn open_steam_cache(Bytes, max_bytes? : Int, max_records? : Int) -> SteamCache raise BinaryError
 
@@ -142,6 +146,12 @@ pub(all) enum CacheFormat {
 pub fn CacheFormat::equal(Self, Self) -> Bool
 pub fn CacheFormat::not_equal(Self, Self) -> Bool
 pub fn CacheFormat::to_repr(Self) -> @debug.Repr
+
+pub(all) struct CachePage {
+  records : Array[CacheRecord]
+  total : Int
+  offset : Int
+}
 
 pub(all) struct CacheRecord {
   id : UInt
@@ -260,6 +270,34 @@ pub fn ParseOptions::equal(Self, Self) -> Bool
 pub fn ParseOptions::not_equal(Self, Self) -> Bool
 pub fn ParseOptions::to_repr(Self) -> @debug.Repr
 
+pub(all) struct ReferenceEdge {
+  source : String
+  target : String
+  kind : String
+  location : SourceLocation
+} derive(Eq, @debug.Debug)
+pub fn ReferenceEdge::equal(Self, Self) -> Bool
+pub fn ReferenceEdge::not_equal(Self, Self) -> Bool
+pub fn ReferenceEdge::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ResolvedOrigin {
+  path : Array[Selector]
+  location : SourceLocation
+} derive(Eq, @debug.Debug)
+pub fn ResolvedOrigin::equal(Self, Self) -> Bool
+pub fn ResolvedOrigin::not_equal(Self, Self) -> Bool
+pub fn ResolvedOrigin::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ResolvedProject {
+  document : Document
+  origins : Array[ResolvedOrigin]
+  references : Array[ReferenceEdge]
+} derive(Eq, @debug.Debug)
+pub fn ResolvedProject::equal(Self, Self) -> Bool
+pub fn ResolvedProject::not_equal(Self, Self) -> Bool
+pub fn ResolvedProject::to_json(Self) -> Json
+pub fn ResolvedProject::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Selector {
   key : String
   occurrence : Int
@@ -280,7 +318,18 @@ pub fn SourceDocument::apply(Self, Array[Change]) -> Self raise
 pub fn SourceDocument::document(Self) -> Document
 pub fn SourceDocument::edit(Self, Array[Selector], Edit) -> Self raise
 pub fn SourceDocument::evaluate(Self, Array[String]) -> Document raise ParseError
+pub fn SourceDocument::locations(Self, String) -> Array[ResolvedOrigin]
 pub fn SourceDocument::text(Self) -> String
+
+pub(all) struct SourceLocation {
+  source : String
+  offset : Int
+  line : Int
+  column : Int
+} derive(Eq, @debug.Debug)
+pub fn SourceLocation::equal(Self, Self) -> Bool
+pub fn SourceLocation::not_equal(Self, Self) -> Bool
+pub fn SourceLocation::to_repr(Self) -> @debug.Repr
 
 pub(all) struct SteamApp {
   app_id : String
@@ -295,6 +344,7 @@ pub fn SteamApp::to_repr(Self) -> @debug.Repr
 
 type SteamCache
 pub fn SteamCache::format(Self) -> CacheFormat
+pub fn SteamCache::page(Self, query? : String, offset? : Int, limit? : Int) -> CachePage raise BinaryError
 pub fn SteamCache::read(Self, UInt) -> Array[BinaryEntry]? raise BinaryError
 pub fn SteamCache::records(Self) -> Array[CacheRecord]
 pub fn SteamCache::universe(Self) -> UInt
@@ -340,6 +390,10 @@ pub fn StreamParser::entries_seen(Self) -> Int
 pub fn StreamParser::feed(Self, String) -> Unit raise
 pub fn StreamParser::feed_bytes(Self, Bytes) -> Unit raise
 pub fn StreamParser::finish(Self) -> Unit raise
+
+type StreamWriter
+pub fn StreamWriter::finish(Self) -> Unit raise WriteError
+pub fn StreamWriter::write(Self, StreamEvent) -> Unit raise
 
 pub(all) enum Value {
   Text(String)

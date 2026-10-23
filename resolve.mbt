@@ -13,6 +13,7 @@ priv struct ResolveState {
   mut files : Int
   mut chars : Int
   mut entries : Int
+  references : Array[ReferenceEdge]
 }
 
 ///|
@@ -25,17 +26,7 @@ pub fn load_resolved(
   options? : ParseOptions = ParseOptions::default(),
   max_files? : Int = 64,
 ) -> Document raise {
-  if max_files < 1 || max_files > 256 {
-    raise InvalidReference("max_files must be between 1 and 256")
-  }
-  let state = ResolveState::{
-    options,
-    max_files,
-    files: 0,
-    chars: 0,
-    entries: 0,
-  }
-  resolve_file(normalize_reference(source), loader, [], state)
+  load_project(source, loader, options~, max_files~).document
 }
 
 ///|
@@ -86,7 +77,7 @@ fn resolve_file(
   loader : (String) -> String raise,
   stack : Array[String],
   state : ResolveState,
-) -> Document raise {
+) -> Array[ResolvedNode] raise {
   if stack.contains(source) {
     raise InvalidReference("Cyclic reference: " + source)
   }
@@ -103,71 +94,88 @@ fn resolve_file(
     raise InvalidReference("Referenced input exceeds global character budget")
   }
   state.chars += chars
-  let (doc, count) = parse_internal(text, state.options, true)
+  let traces : Array[TraceNode] = []
+  let (doc, count, _) = parse_with_spans(
+    text,
+    state.options,
+    true,
+    false,
+    trace=Some(traces),
+  )
   if count > state.options.max_entries - state.entries {
     raise InvalidReference("Referenced input exceeds global entry budget")
   }
   state.entries += count
   let next = stack.map(s => s)
   next.push(source)
-  let result : Array[Entry] = []
-  let includes : Array[String] = []
-  let bases : Array[String] = []
-  for entry in doc.entries {
+  let result : Array[ResolvedNode] = []
+  let includes : Array[ResolvedNode] = []
+  let bases : Array[ResolvedNode] = []
+  for node in traced_nodes(doc.entries, traces, source) {
+    let entry = node.entry
     let is_include = entry.key.equal_ignore_ascii_case("#include")
     let base = entry.key.equal_ignore_ascii_case("#base")
     if is_include || base {
-      guard entry.value is Text(path) else {
+      guard entry.value is Text(_) else {
         raise InvalidReference("Directive value must be a file path")
       }
       if is_include {
-        includes.push(path)
+        includes.push(node)
       } else {
-        bases.push(path)
+        bases.push(node)
       }
     } else {
-      result.push(entry)
+      result.push(node)
     }
   }
   for reference in includes {
-    let included = resolve_file(
-      child_reference(source, reference),
-      loader,
-      next,
-      state,
-    )
-    for entry in included.entries {
+    let path = reference.entry.value.as_text().unwrap()
+    let target = child_reference(source, path)
+    state.references.push({
+      source,
+      target,
+      kind: "include",
+      location: reference.location,
+    })
+    let included = resolve_file(target, loader, next, state)
+    for entry in included {
       result.push(entry)
     }
   }
   let mut merged = result
   for reference in bases {
-    let base = resolve_file(
-      child_reference(source, reference),
-      loader,
-      next,
-      state,
-    )
-    merged = merge_base(merged, base.entries)
+    let path = reference.entry.value.as_text().unwrap()
+    let target = child_reference(source, path)
+    state.references.push({
+      source,
+      target,
+      kind: "base",
+      location: reference.location,
+    })
+    let base = resolve_file(target, loader, next, state)
+    merged = merge_base(merged, base)
   }
-  { entries: merged, }
+  merged
 }
 
 ///|
 /// Pair duplicate keys by occurrence when merging; existing scalar values win.
-fn merge_base(current : Array[Entry], base : Array[Entry]) -> Array[Entry] {
+fn merge_base(
+  current : Array[ResolvedNode],
+  base : Array[ResolvedNode],
+) -> Array[ResolvedNode] {
   let result = current.map(e => e)
   let positions : Map[String, Array[Int]] = Map([])
   let occurrences : Map[String, Int] = Map([])
   for i in 0..<result.length() {
-    let key = reference_key(result[i].key)
+    let key = reference_key(result[i].entry.key)
     match positions.get(key) {
       Some(indices) => indices.push(i)
       None => positions[key] = [i]
     }
   }
   for entry in base {
-    let key = reference_key(entry.key)
+    let key = reference_key(entry.entry.key)
     let occurrence = occurrences.get(key).unwrap_or(0)
     occurrences[key] = occurrence + 1
     let found = match positions.get(key) {
@@ -183,12 +191,18 @@ fn merge_base(current : Array[Entry], base : Array[Entry]) -> Array[Entry] {
         result.push(entry)
       }
       Some(i) =>
-        match (result[i].value, entry.value) {
-          (Object(children), Object(defaults)) =>
+        match (result[i].entry.value, entry.entry.value) {
+          (Object(_), Object(_)) => {
+            let children = merge_base(result[i].children, entry.children)
             result[i] = {
-              key: result[i].key,
-              value: Object(merge_base(children, defaults)),
+              ..result[i],
+              entry: {
+                key: result[i].entry.key,
+                value: Object(children.map(n => n.entry)),
+              },
+              children,
             }
+          }
           _ => ()
         }
     }

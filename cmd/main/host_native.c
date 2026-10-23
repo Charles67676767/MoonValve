@@ -45,6 +45,39 @@ static wchar_t *mv_wide(const char *text) {
 }
 #endif
 
+/* One active synchronous input stream per CLI invocation; chunks are bounded. */
+static FILE *mv_stream;
+MOONBIT_FFI_EXPORT int moonvalve_stream_open(moonbit_bytes_t path) {
+  mv_failed = 0;
+  if (mv_stream) { mv_failed=1; return -1; }
+  if (!strcmp((const char *)path,"-")) {
+    mv_stream=stdin;
+#ifdef _WIN32
+    _setmode(_fileno(stdin),_O_BINARY);
+#endif
+  } else {
+#ifdef _WIN32
+    wchar_t *wide=mv_wide((const char *)path);
+    if (!wide) { mv_failed=1; return -1; }
+    mv_stream=_wfopen(wide,L"rb"); free(wide);
+#else
+    mv_stream=fopen((const char *)path,"rb");
+#endif
+  }
+  if (!mv_stream) mv_failed=1;
+  return mv_stream?1:-1;
+}
+MOONBIT_FFI_EXPORT moonbit_bytes_t moonvalve_stream_chunk(int32_t handle) {
+  unsigned char buffer[65536];
+  if (handle!=1 || !mv_stream) return mv_error();
+  size_t n=fread(buffer,1,sizeof(buffer),mv_stream);
+  if (ferror(mv_stream)) return mv_error();
+  return mv_result(buffer,n);
+}
+MOONBIT_FFI_EXPORT void moonvalve_stream_close(int32_t handle) {
+  if (handle==1 && mv_stream) { if(mv_stream!=stdin)fclose(mv_stream); mv_stream=NULL; }
+}
+
 MOONBIT_FFI_EXPORT moonbit_bytes_t moonvalve_read(moonbit_bytes_t path, int32_t limit) {
   mv_failed = 0;
   if (limit < 1 || limit > 536870912) return mv_error();

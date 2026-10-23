@@ -10,6 +10,9 @@ priv struct Parser {
   capture : Bool
   path : Array[Int]
   spans : Array[SourceSpan]
+  tracing : Bool
+  trace_stack : Array[Array[TraceNode]]
+  mut last_trace : Array[TraceNode]
 }
 
 ///|
@@ -40,6 +43,7 @@ fn parse_with_spans(
   options : ParseOptions,
   allow_directives : Bool,
   capture : Bool,
+  trace? : Array[TraceNode]? = None,
 ) -> (Document, Int, Array[SourceSpan]) raise ParseError {
   if options.max_depth < 0 ||
     options.max_depth > 256 ||
@@ -74,11 +78,19 @@ fn parse_with_spans(
     capture,
     path: [],
     spans: [],
+    tracing: trace is Some(_),
+    trace_stack: [],
+    last_trace: [],
   }
   if p.chars.get(0) is Some(c) && c.to_int() == 0xFEFF {
     p.advance()
   }
   let doc = Document::{ entries: p.read_entries(0, false), }
+  if trace is Some(output) {
+    for node in p.last_trace {
+      output.push(node)
+    }
+  }
   (doc, p.entry_count, p.spans)
 }
 
@@ -222,6 +234,10 @@ fn Parser::read_entries(
   nested : Bool,
 ) -> Array[Entry] raise ParseError {
   let entries : Array[Entry] = []
+  let traces : Array[TraceNode] = []
+  if self.tracing {
+    self.trace_stack.push(traces)
+  }
   while true {
     self.skip_trivia()
     match self.peek() {
@@ -229,14 +245,14 @@ fn Parser::read_entries(
         if nested {
           self.fail("unclosed_object", "Object is missing its closing brace")
         }
-        return entries
+        break
       }
       Some('}') => {
         if !nested {
           self.fail("unexpected_close", "Closing brace has no matching object")
         }
         self.advance()
-        return entries
+        break
       }
       Some('[') =>
         self.fail(
@@ -248,6 +264,8 @@ fn Parser::read_entries(
       self.fail("entry_limit", "Document exceeds max_entries")
     }
     let key_start = self.pos
+    let key_line = self.line
+    let key_column = self.column
     let key = self.read_string()
     let key_end = self.pos
     if key.is_empty() && self.peek() == Some('=') {
@@ -299,6 +317,11 @@ fn Parser::read_entries(
       _ => Value::Text(self.read_string())
     }
     let value_end = self.pos
+    let children = if value is Object(_) && self.tracing {
+      self.last_trace
+    } else {
+      []
+    }
     let mut entry_end = value_end
     self.skip_trivia()
     while self.peek() == Some('[') {
@@ -323,13 +346,27 @@ fn Parser::read_entries(
         while index < entries.length() {
           if entries[index].key.equal_ignore_ascii_case(key) {
             entries.remove(index) |> ignore
+            if self.tracing {
+              traces.remove(index) |> ignore
+            }
           } else {
             index += 1
           }
         }
       }
       entries.push({ key, value, })
+      if self.tracing {
+        traces.push({
+          offset: key_start,
+          line: key_line,
+          column: key_column,
+          children,
+        })
+      }
     }
+  }
+  if self.tracing {
+    self.last_trace = self.trace_stack.pop().unwrap()
   }
   entries
 }

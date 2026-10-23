@@ -1,0 +1,6 @@
+root
+{
+  name "Default Name"
+  quality high
+  resources { path materials/moon }
+}

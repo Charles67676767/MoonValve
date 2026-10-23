@@ -20,6 +20,40 @@ extern "C" fn native_exit(code : Int) -> Unit = "moonvalve_exit"
 let exit_status : Ref[Int] = { val: 0, }
 
 ///|
+#borrow(path)
+extern "C" fn native_stream_open(path : Bytes) -> Int = "moonvalve_stream_open"
+
+///|
+extern "C" fn native_stream_chunk(handle : Int) -> Bytes = "moonvalve_stream_chunk"
+
+///|
+fn host_stream_chunk(handle : Int) -> Bytes raise CliError {
+  let result = native_stream_chunk(handle)
+  host_stream_check()
+  result
+}
+
+///|
+extern "C" fn host_stream_close(handle : Int) -> Unit = "moonvalve_stream_close"
+
+///|
+fn host_stream_check() -> Unit raise CliError {
+  if native_failed() != 0 {
+    raise InvalidArgument("Stream read failed")
+  }
+}
+
+///|
+fn host_stream_open(path : String) -> Int raise CliError {
+  if path.contains("\u0000") || @utf8.encode(path[:]).length() > 32767 {
+    raise InvalidArgument("Invalid stream path")
+  }
+  let result = native_stream_open(os_path(path))
+  host_stream_check()
+  result
+}
+
+///|
 fn os_path(path : String) -> Bytes {
   @utf8.encode(path[:]) + b"\x00"
 }
@@ -110,6 +144,13 @@ fn host_output(text : String) -> Unit {
   let bytes = @utf8.encode(text[:])
   if native_write(bytes, bytes.length(), 0) != 0 {
     exit_status.val = 2
+  }
+}
+
+///|
+fn host_output_check() -> Unit raise CliError {
+  if exit_status.val != 0 {
+    raise InvalidArgument("Output stream failed")
   }
 }
 

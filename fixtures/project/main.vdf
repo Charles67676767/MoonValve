@@ -1,0 +1,9 @@
+// Synthetic project entry
+#base config/defaults.vdf
+#include config/extra.vdf
+root
+{
+  name "Moon Harbor"
+  platform windows [$WIN32]
+  platform linux [$LINUX]
+}

@@ -236,8 +236,15 @@ fn run(args : Array[String]) -> Unit raise {
   if args.length() <= 2 || args[2] == "help" || args[2] == "--help" {
     help()
     println("  version                 Show version information")
+    println("  stream-json FILE        Emit raw events as JSON Lines")
+    println("  stream-query FILE KEY... Stream matching raw scalar values")
+    println("  stream-csv FILE         Emit raw scalar paths and values as CSV")
+    println("  stream-format FILE      Stream canonical unconditional KV1")
     println("  query-all FILE KEY...    Follow all duplicate matches")
     println("  resolve FILE --root DIR  Expand references inside DIR")
+    println(
+      "  project FILE --root DIR Emit resolved tree, origins and reference graph",
+    )
     println("  edit FILE PLAN.json [--dry-run|--in-place]")
     println("  binary-decode FILE       Emit typed ordered JSON")
     println("  binary-encode FILE       Import typed JSON and write bytes")
@@ -255,8 +262,14 @@ fn run(args : Array[String]) -> Unit raise {
     return
   }
   let command = args[2]
+  if ["stream-json", "stream-query", "stream-csv", "stream-format"].contains(
+      command,
+    ) {
+    run_stream(command, args)
+    return
+  }
   let expanded = [
-    "parse", "format", "query", "query-all", "resolve", "edit", "binary-decode",
+    "parse", "format", "query", "query-all", "resolve", "project", "edit", "binary-decode",
     "binary-encode", "cache", "shortcuts", "shortcut-add", "shortcut-set", "shortcut-remove",
   ]
   if !expanded.contains(command) {
@@ -268,6 +281,25 @@ fn run(args : Array[String]) -> Unit raise {
   }
   let file = args[3]
   let opts = command_options(args)
+  if command == "project" {
+    reject_write_options(opts)
+    guard opts.root is Some(root) && file != "-" && opts.words.is_empty() else {
+      raise InvalidArgument(
+        "project requires --root DIR and a relative input filename",
+      )
+    }
+    let project = @valve.load_project(
+      file,
+      path => input_text(host_confined(root, path)),
+      options={
+        ..@valve.ParseOptions::default(),
+        escape_sequences: !opts.literal,
+        conditions: opts.symbols,
+      },
+    )
+    host_output(project.to_json().stringify() + "\n")
+    return
+  }
   if command == "edit" {
     if opts.words.length() != 1 ||
       opts.resolve ||

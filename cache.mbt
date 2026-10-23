@@ -64,6 +64,37 @@ pub fn SteamCache::records(self : SteamCache) -> Array[CacheRecord] {
 }
 
 ///|
+pub(all) struct CachePage {
+  records : Array[CacheRecord]
+  total : Int
+  offset : Int
+}
+
+///|
+/// Metadata-only pagination never decodes payloads. Query matches decimal IDs.
+pub fn SteamCache::page(
+  self : SteamCache,
+  query? : String = "",
+  offset? : Int = 0,
+  limit? : Int = 100,
+) -> CachePage raise BinaryError {
+  if offset < 0 || limit < 1 || limit > 200 {
+    raise InvalidBinary(0, "Invalid page range")
+  }
+  let records : Array[CacheRecord] = []
+  let mut total = 0
+  for row in self.rows {
+    if query == "" || row.id.to_string().contains(query) {
+      if total >= offset && records.length() < limit {
+        records.push(row)
+      }
+      total += 1
+    }
+  }
+  { records, total, offset, }
+}
+
+///|
 pub fn SteamCache::read(
   self : SteamCache,
   id : UInt,

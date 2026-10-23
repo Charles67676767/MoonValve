@@ -26,8 +26,60 @@ extern "js" fn host_error(message : String, code : Int) -> Unit =
   #| function(message, code) { process.stderr.write(message + '\n'); process.exitCode = code; }
 
 ///|
-extern "js" fn host_output(text : String) -> Unit =
-  #| function(text) { process.stdout.write(text); }
+extern "js" fn host_output_impl(text : String) -> String =
+  #| function(text) { try { const fs=require('node:fs'),bytes=Buffer.from(text); let offset=0; while(offset<bytes.length){try{const n=fs.writeSync(1,bytes,offset,bytes.length-offset);if(!n)throw new Error('Output closed');offset+=n;}catch(e){if(e.code!=='EAGAIN'&&e.code!=='EWOULDBLOCK')throw e;Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,5);}}return ''; }catch(e){return e.message||'Output failed';} }
+
+///|
+let output_failure : Ref[String] = { val: "", }
+
+///|
+fn host_output(text : String) -> Unit {
+  let error = host_output_impl(text)
+  if error != "" {
+    output_failure.val = error
+    host_exit_code(2)
+  }
+}
+
+///|
+extern "js" fn host_stream_open_impl(path : String) -> Int =
+  #| function(path) { try { return path==='-'?0:require('node:fs').openSync(path,'r'); }catch{return -1;} }
+
+///|
+extern "js" fn host_stream_chunk_impl(handle : Int) -> FixedArray[Bytes] =
+  #| function(handle) { try{ const bytes=Buffer.alloc(65536),n=require('node:fs').readSync(handle,bytes,0,bytes.length,null); return [bytes.subarray(0,n),new Uint8Array()]; }catch(e){return [new Uint8Array(),Buffer.from(e.message||'Read failed')];} }
+
+///|
+fn host_stream_chunk(handle : Int) -> Bytes raise CliError {
+  let result = host_stream_chunk_impl(handle)
+  if !result[1].is_empty() {
+    raise InvalidArgument(@utf8.decode_lossy(result[1][:]))
+  }
+  result[0]
+}
+
+///|
+extern "js" fn host_stream_close(handle : Int) -> Unit =
+  #| function(handle) { if(handle!==0)require('node:fs').closeSync(handle); }
+
+///|
+fn host_stream_open(path : String) -> Int raise CliError {
+  if path.contains("\u0000") || @utf8.encode(path[:]).length() > 32767 {
+    raise InvalidArgument("Invalid stream path")
+  }
+  let result = host_stream_open_impl(path)
+  if result < 0 {
+    raise InvalidArgument("Unable to open stream")
+  }
+  result
+}
+
+///|
+fn host_output_check() -> Unit raise CliError {
+  if output_failure.val != "" {
+    raise InvalidArgument(output_failure.val)
+  }
+}
 
 ///|
 extern "js" fn host_manifest_paths(
