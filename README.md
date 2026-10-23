@@ -107,10 +107,10 @@ node _build/js/release/build/cmd/main/main.js help
 
 ```sh
 moon build --target native --release
-./_build/native/release/build/cmd/main/main help
+moon run cmd/main --target native --release -- help
 ```
 
-Windows 使用同目录下的 `main.exe`。两种 CLI 的命令、输入格式与退出码一致。
+可直接分发 `_build/native/release/build/cmd/main/` 下生成的 `main.exe` 或 `main`，以工具链实际产物为准；`.exe` 后缀也可能出现在 Linux 产物上。两种 CLI 的命令、输入格式与退出码一致。
 
 ## 检查与测试
 

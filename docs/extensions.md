@@ -42,6 +42,6 @@ CLI 示例：`inventory libraryfolders.vdf --filter portal --sort size --csv`。
 
 ## 原生命令行
 
-`moon build --target native --release` 生成 `_build/native/release/build/cmd/main/main`（Windows 为 `main.exe`），运行时无需 Node。命令和退出码与 JavaScript 版本一致。原生版本通过少量 C 宿主代码提供有界字节读取、标准输出和目录枚举；解析与业务逻辑均为 MoonBit。Windows 路径转换为 UTF-16 调用系统接口，文件内容严格按 UTF-8 解码。
+`moon build --target native --release` 在 `_build/native/release/build/cmd/main/` 生成 `main.exe` 或 `main`，以工具链实际产物为准，运行时无需 Node。可用 `moon run cmd/main --target native --release -- help` 运行。命令和退出码与 JavaScript 版本一致。原生版本通过少量 C 宿主代码提供有界字节读取、标准输出和目录枚举；解析与业务逻辑均为 MoonBit。Windows 路径转换为 UTF-16 调用系统接口，文件内容严格按 UTF-8 解码。
 
 构建需要 MoonBit 原生后端支持的 C 编译器。输入最多 16 MiB；目录枚举最多 100000 个普通文件和 16 MiB 文件名数据，不跟随清单文件符号链接。JavaScript 与原生版本共用同一套 CLI 验收脚本。

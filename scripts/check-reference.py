@@ -85,7 +85,10 @@ def main():
             assert literal in actual, 'Missing binary vector in MoonBit tests'
     if args.cases < 0 or args.cases > 2000:
         raise ValueError('cases must be 0..2000')
-    executable = ROOT / ('_build/native/release/build/cmd/main/main' + ('.exe' if sys.platform == 'win32' else '') if args.native else '_build/js/release/build/cmd/main/main.js')
+    candidates = ['_build/native/release/build/cmd/main/main.exe', '_build/native/release/build/cmd/main/main'] if args.native else ['_build/js/release/build/cmd/main/main.js']
+    executable = next((ROOT / name for name in candidates if (ROOT / name).is_file()), None)
+    if executable is None:
+        raise RuntimeError('Build the requested release CLI first')
     command = [str(executable)] if args.native else [shutil.which('node') or 'node', str(executable)]
 
     def cli(action, text):

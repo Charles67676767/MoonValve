@@ -1,10 +1,13 @@
 // Reproducible process-level parsing benchmark, including startup and JSON output.
 const {spawnSync} = require('node:child_process');
 const path = require('node:path');
+const fs = require('node:fs');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
 const native = process.argv.includes('--native');
-const executable = path.join(root, native ? '_build/native/release/build/cmd/main/main' + (process.platform === 'win32' ? '.exe' : '') : '_build/js/release/build/cmd/main/main.js');
+const executable = (native ? ['_build/native/release/build/cmd/main/main.exe', '_build/native/release/build/cmd/main/main'] : ['_build/js/release/build/cmd/main/main.js'])
+  .map(name => path.join(root, name)).find(name => fs.existsSync(name));
+if (!executable) throw new Error(`Run moon build --target ${native ? 'native' : 'js'} --release first`);
 console.log(JSON.stringify({node: process.version, platform: process.platform, architecture: process.arch, target: native ? 'native' : 'js', metric: 'wall time including process startup, UTF-8 parsing and ordered JSON output'}));
 for (const entries of [1000, 10000, 50000]) {
   const input = 'root {\n' + Array.from({length: entries}, (_, i) => `"key${i % 97}" "value ${i} 中文"\n`).join('') + '}\n';
