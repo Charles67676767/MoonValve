@@ -14,21 +14,41 @@ pub fn changes_from_json(Json) -> Array[Change] raise
 
 pub fn check_inventory(Array[SteamLibrary], Array[InventoryRecord]) -> Array[InventoryIssue]
 
+pub fn compile_query(String) -> Query raise QueryError
+
 pub fn decode_binary(Bytes, options? : BinaryOptions, string_table? : Array[String]?) -> Array[BinaryEntry] raise BinaryError
 
 pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonImportError
+
+pub fn edit_workspace_snapshot(Json, Json, options? : ParseOptions) -> Json raise
 
 pub fn encode_binary(Array[BinaryEntry], options? : BinaryOptions, string_table? : Array[String]?) -> Bytes raise BinaryError
 
 pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
 
+pub fn generic_kv3_header() -> KV3Header
+
 pub fn inventory_csv(Array[InventoryRecord]) -> String
 
 pub fn inventory_total(Array[InventoryRecord]) -> InventoryTotal raise SteamError
 
+pub fn kv3_from_json(Json) -> KV3Document raise
+
+pub fn kv3_to_json(KV3Document) -> Json raise
+
 pub fn load_project(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> ResolvedProject raise
 
 pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> Document raise
+
+pub fn located_values_to_json(Array[LocatedValue]) -> Json
+
+pub fn lsp_frame(Json) -> Bytes
+
+pub fn lsp_position(String, Int) -> Json
+
+pub fn new_lsp_framer() -> LspFramer
+
+pub fn new_lsp_server() -> LspServer
 
 pub fn new_shortcut_file() -> ShortcutFile
 
@@ -36,13 +56,19 @@ pub fn new_stream_parser((StreamEvent) -> Bool raise, options? : ParseOptions) -
 
 pub fn new_stream_writer((String) -> Unit raise) -> StreamWriter
 
+pub fn new_workspace(Map[String, String], options? : ParseOptions) -> Workspace raise
+
 pub fn open_steam_cache(Bytes, max_bytes? : Int, max_records? : Int) -> SteamCache raise BinaryError
 
 pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
 
 pub fn parse_json_document(String, options? : ParseOptions) -> Document raise JsonImportError
 
+pub fn parse_kv3(String, options? : ParseOptions, allow_headerless? : Bool) -> KV3Document raise
+
 pub fn parse_preserving(String, options? : ParseOptions) -> SourceDocument raise
+
+pub fn query_edit_from_json(Json) -> QueryEdit raise
 
 pub fn read_app_manifest(Document) -> SteamApp raise SteamError
 
@@ -56,7 +82,11 @@ pub fn shortcut_app_id(String, String) -> UInt
 
 pub fn stringify(Document) -> String raise WriteError
 
+pub fn stringify_kv3(KV3Document) -> String raise
+
 pub fn version() -> String
+
+pub fn workspace_from_json(Json, options? : ParseOptions) -> Workspace raise
 
 // Errors
 pub suberror AccessError {
@@ -88,6 +118,11 @@ pub suberror ParseError {
   ParseError(Diagnostic)
 } derive(@debug.Debug)
 pub fn ParseError::to_repr(Self) -> @debug.Repr
+
+pub suberror QueryError {
+  InvalidQuery(String)
+} derive(@debug.Debug)
+pub fn QueryError::to_repr(Self) -> @debug.Repr
 
 pub suberror ResolveError {
   InvalidReference(String)
@@ -189,6 +224,7 @@ pub(all) struct Document {
   entries : Array[Entry]
 } derive(Eq, @debug.Debug)
 pub fn Document::apply(Self, Array[Change], options? : ParseOptions) -> Self raise
+pub fn Document::apply_snapshot(Self, Array[Change]) -> Self raise
 pub fn Document::edit(Self, Array[Selector], Edit) -> Self raise EditError
 pub fn Document::equal(Self, Self) -> Bool
 pub fn Document::find(Self, String) -> Array[LocatedValue] raise
@@ -198,12 +234,15 @@ pub fn Document::lookup(Self, Array[String]) -> Value?
 pub fn Document::lookup_all(Self, Array[String]) -> Array[Value] raise AccessError
 pub fn Document::lookup_at(Self, Array[Selector]) -> Value raise AccessError
 pub fn Document::not_equal(Self, Self) -> Bool
+pub fn Document::query_plan(Self, String, QueryEdit) -> Array[Change] raise
 pub fn Document::read_bool(Self, Array[Selector]) -> Bool raise AccessError
 pub fn Document::read_double(Self, Array[Selector]) -> Double raise AccessError
 pub fn Document::read_int64(Self, Array[Selector]) -> Int64 raise AccessError
 pub fn Document::read_text(Self, Array[Selector]) -> String raise AccessError
+pub fn Document::select(Self, String) -> Array[LocatedValue] raise
 pub fn Document::to_json(Self) -> Json
 pub fn Document::to_repr(Self) -> @debug.Repr
+pub fn Document::transfer(Self, Array[Selector], Array[Selector], Int, copy? : Bool) -> Self raise
 pub fn Document::walk(Self, (Array[Selector], Value) -> Bool raise) -> Unit raise
 
 pub(all) enum Edit {
@@ -249,6 +288,45 @@ pub fn InventoryTotal::equal(Self, Self) -> Bool
 pub fn InventoryTotal::not_equal(Self, Self) -> Bool
 pub fn InventoryTotal::to_repr(Self) -> @debug.Repr
 
+pub(all) struct KV3Document {
+  header : KV3Header?
+  root : KV3Value
+} derive(Eq, @debug.Debug)
+pub fn KV3Document::equal(Self, Self) -> Bool
+pub fn KV3Document::not_equal(Self, Self) -> Bool
+pub fn KV3Document::to_repr(Self) -> @debug.Repr
+
+pub(all) struct KV3Entry {
+  key : String
+  value : KV3Value
+} derive(Eq, @debug.Debug)
+pub fn KV3Entry::equal(Self, Self) -> Bool
+pub fn KV3Entry::not_equal(Self, Self) -> Bool
+pub fn KV3Entry::to_repr(Self) -> @debug.Repr
+
+pub(all) struct KV3Header {
+  format_name : String
+  format_id : String
+} derive(Eq, @debug.Debug)
+pub fn KV3Header::equal(Self, Self) -> Bool
+pub fn KV3Header::not_equal(Self, Self) -> Bool
+pub fn KV3Header::to_repr(Self) -> @debug.Repr
+
+pub(all) enum KV3Value {
+  KV3Null
+  KV3Bool(Bool)
+  KV3Integer(String)
+  KV3Float(String)
+  KV3String(String)
+  KV3Blob(Bytes)
+  KV3Array(Array[KV3Value])
+  KV3Object(Array[KV3Entry])
+  KV3Flag(String, KV3Value)
+} derive(Eq, @debug.Debug)
+pub fn KV3Value::equal(Self, Self) -> Bool
+pub fn KV3Value::not_equal(Self, Self) -> Bool
+pub fn KV3Value::to_repr(Self) -> @debug.Repr
+
 pub(all) struct LocatedValue {
   path : Array[Selector]
   value : Value
@@ -256,6 +334,20 @@ pub(all) struct LocatedValue {
 pub fn LocatedValue::equal(Self, Self) -> Bool
 pub fn LocatedValue::not_equal(Self, Self) -> Bool
 pub fn LocatedValue::to_repr(Self) -> @debug.Repr
+
+type LspFramer
+pub fn LspFramer::feed(Self, Bytes) -> Array[LspPacket] raise
+pub fn LspFramer::finish(Self) -> Unit raise
+
+pub(all) enum LspPacket {
+  LspRequest(Json)
+  LspInvalidJson
+}
+
+type LspServer
+pub fn LspServer::exit_code(Self) -> Int
+pub fn LspServer::handle(Self, Json) -> Array[Json]
+pub fn LspServer::should_exit(Self) -> Bool
 
 pub(all) struct ParseOptions {
   escape_sequences : Bool
@@ -269,6 +361,17 @@ pub fn ParseOptions::default() -> Self
 pub fn ParseOptions::equal(Self, Self) -> Bool
 pub fn ParseOptions::not_equal(Self, Self) -> Bool
 pub fn ParseOptions::to_repr(Self) -> @debug.Repr
+
+type Query
+pub fn Query::select(Self, Document, max_matches? : Int, max_visited? : Int) -> Array[LocatedValue] raise
+
+pub(all) enum QueryEdit {
+  SetText(String)
+  ReplacePrefix(String, String)
+  RenameKey(String)
+  RemoveMatches
+} derive(@debug.Debug)
+pub fn QueryEdit::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ReferenceEdge {
   source : String
@@ -315,11 +418,15 @@ pub fn ShortcutFile::to_binary(Self) -> Array[BinaryEntry]
 
 type SourceDocument
 pub fn SourceDocument::apply(Self, Array[Change]) -> Self raise
+pub fn SourceDocument::apply_snapshot(Self, Array[Change]) -> Self raise
 pub fn SourceDocument::document(Self) -> Document
 pub fn SourceDocument::edit(Self, Array[Selector], Edit) -> Self raise
+pub fn SourceDocument::edit_query(Self, String, QueryEdit) -> Self raise
 pub fn SourceDocument::evaluate(Self, Array[String]) -> Document raise ParseError
 pub fn SourceDocument::locations(Self, String) -> Array[ResolvedOrigin]
 pub fn SourceDocument::text(Self) -> String
+pub fn SourceDocument::transfer(Self, Array[Selector], Array[Selector], Int, copy? : Bool) -> Self raise
+pub fn SourceDocument::transfer_json(Self, Json) -> Self raise
 
 pub(all) struct SourceLocation {
   source : String
@@ -404,6 +511,15 @@ pub fn Value::as_text(Self) -> String?
 pub fn Value::equal(Self, Self) -> Bool
 pub fn Value::not_equal(Self, Self) -> Bool
 pub fn Value::to_repr(Self) -> @debug.Repr
+
+type Workspace
+pub fn Workspace::add_file(Self, String, String) -> Self raise
+pub fn Workspace::apply(Self, Json) -> Self raise
+pub fn Workspace::copy_file(Self, String, String) -> Self raise
+pub fn Workspace::files(Self) -> Map[String, String]
+pub fn Workspace::remove_file(Self, String) -> Self raise
+pub fn Workspace::rename_file(Self, String, String) -> Self raise
+pub fn Workspace::to_json(Self) -> Json
 
 // Type aliases
 

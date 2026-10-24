@@ -18,6 +18,8 @@ for(const file of ['LICENSE','NOTICE.md','pkg.generated.mbti'])copy(path.join(ro
 copyTree(path.join(root,'docs'),path.join(destination,'docs'));
 copyTree(path.join(root,'fixtures'),path.join(destination,'fixtures'));
 copyTree(path.join(root,'web/editor'),path.join(destination,'web/editor'));
+for(const file of ['package.json','extension.cjs','client.cjs','language-configuration.json','kv3-language-configuration.json','README.md','LICENSE'])copy(path.join(root,'extensions/vscode',file),path.join(destination,'extensions/vscode',file));
+copy(path.join(root,'_build',`moonvalve-${version}.vsix`),path.join(destination,'extensions',`moonvalve-${version}.vsix`));
 copy(path.join(root,'scripts/serve-editor.cjs'),path.join(destination,'scripts/serve-editor.cjs'));
 const moonHome=process.env.MOON_HOME||path.join(os.homedir(),'.moon');
 copy(path.join(moonHome,'lib/core/LICENSE'),path.join(destination,'licenses/Apache-2.0.txt'));

@@ -15,6 +15,7 @@ struct SourceDocument {
   source : String
   doc : Document
   spans : Array[SourceSpan]
+  span_index : Map[String, SourceSpan]
   options : ParseOptions
   chars : Array[Char]
   linebreak : String
@@ -32,10 +33,15 @@ pub fn parse_preserving(
     )
   }
   let (doc, _, spans) = parse_with_spans(input, options, true, true)
+  let span_index : Map[String, SourceSpan] = Map([])
+  for span in spans {
+    span_index[index_key(span.path)] = span
+  }
   let result = SourceDocument::{
     source: input,
     doc,
     spans,
+    span_index,
     options,
     chars: input.to_array(),
     linebreak: if input.contains("\r\n") {
@@ -75,12 +81,10 @@ fn SourceDocument::span(
   self : SourceDocument,
   path : Array[Int],
 ) -> SourceSpan raise EditError {
-  for span in self.spans {
-    if span.path == path {
-      return span
-    }
+  match self.span_index.get(index_key(path)) {
+    Some(span) => span
+    None => raise InvalidEdit("Source span was not found")
   }
-  raise InvalidEdit("Source span was not found")
 }
 
 ///|

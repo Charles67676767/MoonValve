@@ -61,5 +61,15 @@ const assert=require('node:assert/strict'),path=require('node:path'),{pathToFile
     const raw=ok({action:'parse',source:'main',text:'😀 yes\r\nr {k one k two}'});assert.equal(raw.origins.at(-1).path.at(-1).occurrence,1);assert.equal(raw.origins.at(-1).line,2);
     assert.equal(run({action:'project',source:'main',files:{main:'#include main'},symbols:[]}).ok,false);
   });
+  test('query batch and structure transfer share the MoonBit source editor',()=>{
+    const text='// keep\nr {tag one tag two child {}}';assert.equal(ok({action:'query',text,expression:'/**/tag'}).matches.length,2);
+    const r=ok({action:'query-edit',text,expression:'/**/tag',operation:{op:'replace',value:'Moon'}});assert.match(r.text,/^\/\/ keep/);assert.equal(r.tree[0].value[1].value,'Moon');
+    const moved=ok({action:'transfer',text,plan:{from:[{key:'r',occurrence:0},{key:'tag',occurrence:1}],to:[{key:'r',occurrence:0},{key:'child',occurrence:0}],index:0}});assert.equal(moved.tree[0].value[1].value[0].value,'two');
+  });
+  test('KV3 typed models and workspace refactors reject invalid requests',()=>{
+    const r=ok({action:'kv3-parse',headerless:true,text:'{n=18446744073709551615 arr=[true,null]}'});assert.equal(ok({action:'kv3-from-json',model:r.model}).model.root.value[0].value.value,'18446744073709551615');
+    assert.equal(run({action:'kv3-parse',headerless:true,text:'{n=1 n=2}'}).ok,false);
+    const snapshot={format:'moonvalve-project-v1',source:'main',files:{main:'#base base\nr {}',base:'r {k v}'}};const result=ok({action:'workspace-edit',snapshot,plan:[{op:'rename',from:'base',to:'new/base'}]});assert.match(result.files.main,/new\/base/);assert.equal(run({action:'workspace-edit',snapshot,plan:[{op:'remove',name:'base'}]}).ok,false);
+  });
   console.log(`${cases} editor core checks passed`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

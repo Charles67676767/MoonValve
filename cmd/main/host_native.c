@@ -70,9 +70,14 @@ MOONBIT_FFI_EXPORT int moonvalve_stream_open(moonbit_bytes_t path) {
 MOONBIT_FFI_EXPORT moonbit_bytes_t moonvalve_stream_chunk(int32_t handle) {
   unsigned char buffer[65536];
   if (handle!=1 || !mv_stream) return mv_error();
-  size_t n=fread(buffer,1,sizeof(buffer),mv_stream);
-  if (ferror(mv_stream)) return mv_error();
-  return mv_result(buffer,n);
+#ifdef _WIN32
+  int n=_read(_fileno(mv_stream),buffer,sizeof(buffer));
+#else
+  ssize_t n;
+  do { n=read(fileno(mv_stream),buffer,sizeof(buffer)); } while(n<0 && errno==EINTR);
+#endif
+  if (n<0) return mv_error();
+  return mv_result(buffer,(size_t)n);
 }
 MOONBIT_FFI_EXPORT void moonvalve_stream_close(int32_t handle) {
   if (handle==1 && mv_stream) { if(mv_stream!=stdin)fclose(mv_stream); mv_stream=NULL; }

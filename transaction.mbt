@@ -18,6 +18,16 @@ pub fn Document::apply(
   if changes.length() > 10000 {
     raise InvalidEdit("A transaction supports at most 10000 changes")
   }
+  if changes.length() > 1 && changes.all(c => c.operation is Replace(_)) {
+    try {
+      let result = self.apply_snapshot(changes)
+      parse(stringify(result), options~) |> ignore
+      return result
+    } catch {
+      InvalidEdit(_) => ()
+      error => raise error
+    }
+  }
   let mut result = self
   for change in changes {
     result = result.edit(change.path, change.operation)
@@ -35,6 +45,14 @@ pub fn SourceDocument::apply(
 ) -> SourceDocument raise {
   if changes.length() > 10000 {
     raise InvalidEdit("A transaction supports at most 10000 changes")
+  }
+  if changes.length() > 1 && changes.all(c => c.operation is Replace(_)) {
+    try {
+      return self.apply_snapshot(changes)
+    } catch {
+      InvalidEdit(_) => ()
+      error => raise error
+    }
   }
   let mut result = self
   for change in changes {

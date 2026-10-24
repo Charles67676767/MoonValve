@@ -56,3 +56,5 @@
 ## 安装与版本
 
 `version()` 返回开发版本；CLI 和发行包构建会核对其与 moon.mod 一致。Mooncakes 尚未发布时，可使用 integration/consumer 的 moon.work 方式接入源码。核心库无 Python/.NET 运行依赖。
+
+查询、快照批量编辑、移动复制、文本 KV3、多文件重构与 LSP 的用法、JSON 格式和边界见 [进阶功能](advanced.md)。

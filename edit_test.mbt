@@ -1,4 +1,25 @@
 ///|
+test "optimized replacement batch still obeys caller resource limits" {
+  let document = @moonvalve.parse("a one b two")
+  let changes = @moonvalve.changes_from_json(
+    @json.parse(
+      "[{\"op\":\"replace\",\"path\":[{\"key\":\"a\",\"occurrence\":0}],\"value\":\"changed\"},{\"op\":\"replace\",\"path\":[{\"key\":\"b\",\"occurrence\":0}],\"value\":\"changed\"}]",
+    ),
+  )
+  try
+    document.apply(changes, options={
+      ..@moonvalve.ParseOptions::default(),
+      max_token_chars: 3,
+    })
+  catch {
+    _ => ()
+  } noraise {
+    _ => fail("Expected caller token limit")
+  }
+  assert_eq(document.lookup(["a"]), Some(@moonvalve.Text("one")))
+}
+
+///|
 test "edit selects an individual duplicate and leaves input unchanged" {
   let before = @moonvalve.parse("root { tag one tag two name demo }")
   let path = [

@@ -38,11 +38,20 @@ with tempfile.TemporaryDirectory(prefix='moonvalve-package-') as temporary:
     result = subprocess.run([str(binary), 'parse', '-'], input='root { key "中文😀" key two }', encoding='utf-8', check=True, capture_output=True)
     assert [row['value'] for row in json.loads(result.stdout)[0]['value']] == ['中文😀', 'two']
     assert (folder / 'web/editor/moonvalve.mjs').is_file()
-    for asset in ['tools.mjs', 'samples.mjs', 'worker.mjs']:
+    for asset in ['tools.mjs', 'samples.mjs', 'worker.mjs', 'editing.mjs', 'kv3-tools.mjs']:
         assert (folder / 'web/editor' / asset).is_file()
     streamed = subprocess.run([str(binary), 'stream-query', '-', 'root', 'key'], input='root { key "中文😀" key two }', encoding='utf-8', check=True, capture_output=True)
     assert [json.loads(line)['value'] for line in streamed.stdout.splitlines()] == ['中文😀', 'two']
     project = subprocess.run([str(binary), 'project', 'main.vdf', '--root', str(folder / 'fixtures/project'), '--condition', 'WIN32'], encoding='utf-8', check=True, capture_output=True)
     assert any(row['location']['source'] == 'config/defaults.vdf' for row in json.loads(project.stdout)['origins'])
     assert (folder / 'licenses/Apache-2.0.txt').is_file()
+    selected = subprocess.run([str(binary), 'select', '-', '/**/tag'], input='r {tag one tag two}', encoding='utf-8', check=True, capture_output=True)
+    assert len(json.loads(selected.stdout)) == 2
+    typed = subprocess.run([str(binary), 'kv3-parse', str(folder / 'fixtures/sample.kv3')], encoding='utf-8', check=True, capture_output=True)
+    assert '18446744073709551615' in typed.stdout
+    extension = folder / 'extensions' / f'moonvalve-{module_version}.vsix'
+    with zipfile.ZipFile(extension) as bundle:
+        assert bundle.testzip() is None
+        assert 'extension/client.cjs' in bundle.namelist()
+        assert not any('/node_modules/' in name for name in bundle.namelist())
 print('Package checksums, ZIP integrity, isolated native execution and bundled editor passed')

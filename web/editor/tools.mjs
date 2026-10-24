@@ -1,3 +1,4 @@
+import {setupKV3} from './kv3-tools.mjs';
 // UI state and file selection only. MoonBit owns all format and Steam semantics.
 export function setupTools(api) {
   const $ = id => document.getElementById(id);
@@ -10,9 +11,9 @@ export function setupTools(api) {
   function show(name) {
     panel = name;
     $('open').hidden = $('download').hidden = name !== 'config';
-    $('size').hidden = name === 'cache' || name === 'project';
+    $('size').hidden = name === 'cache' || name === 'project' || name === 'kv3';
     for (const tab of document.querySelectorAll('[data-panel]')) tab.classList.toggle('active', tab.dataset.panel === name);
-    for (const key of ['config', 'shortcuts', 'cache', 'project']) $('panel-' + key).hidden = name !== key;
+    for (const key of ['config', 'shortcuts', 'cache', 'project', 'kv3']) $('panel-' + key).hidden = name !== key;
   }
   for (const tab of document.querySelectorAll('[data-panel]')) tab.onclick = guard(async () => {
     show(tab.dataset.panel);
@@ -156,12 +157,15 @@ export function setupTools(api) {
 
   function renderFiles() {
     const files = api.files(), originals = api.originals(), names = Object.keys(files).sort(), previous = $('project-entry').value;
+    const oldRefactor=$('project-op-source').value;$('project-op-source').replaceChildren();
     $('project-entry').replaceChildren(); $('project-files').replaceChildren();
     for (const name of names) {
       const option = document.createElement('option'); option.value = option.textContent = name; $('project-entry').append(option);
+      $('project-op-source').append(option.cloneNode(true));
       const item = button(name + (files[name] !== originals[name] ? ' · 已修改' : ''), () => jump(name, 0)); item.className = 'project-file'; item.style.paddingLeft = `${10 + (name.split('/').length - 1) * 14}px`; $('project-files').append(item);
     }
     if (names.includes(previous)) $('project-entry').value = previous;
+    if (names.includes(oldRefactor)) $('project-op-source').value=oldRefactor;
     if (!names.length) $('project-files').textContent = '打开目录或加载示例工程。';
   }
   async function jump(name, offset) {
@@ -171,6 +175,7 @@ export function setupTools(api) {
   }
   function invalidateProject() { project = null; analyzedFiles = null; $('project-graph').replaceChildren(); $('project-origins').replaceChildren(); $('project-state').textContent = '选择入口并分析引用。'; }
   async function setProject(files, source) {
+    projectHistory=[];$('project-op-undo').disabled=true;
     api.setFiles(files); invalidateProject(); renderFiles(); $('project-entry').value = source;
     await api.load(files[source], source, 'text'); show('project');
   }
@@ -237,6 +242,16 @@ export function setupTools(api) {
     api.download(JSON.stringify({format: 'moonvalve-project-v1', source:$('project-entry').value, files}, null, 2), 'moonvalve-project.json', 'application/json');
     api.status('已导出含当前编辑内容的工程快照。');
   });
+  let projectHistory=[];
+  const snapshot=()=>({format:'moonvalve-project-v1',source:$('project-entry').value,files:api.files()});
+  async function restore(snapshot){api.setFiles(snapshot.files,false);invalidateProject();renderFiles();$('project-entry').value=snapshot.source;await api.load(snapshot.files[snapshot.source],snapshot.source,'text');show('project');}
+  $('project-op-preview').onclick=guard(async()=>{
+    const before=snapshot(),stamp=JSON.stringify(before),op=$('project-op').value,from=$('project-op-source').value,to=$('project-op-target').value;
+    const plan=[op==='add'?{op,name:to,text:$('project-op-text').value}:op==='remove'?{op,name:from}:{op,from,to}];
+    const result=await api.core({action:'workspace-edit',snapshot:before,plan,...api.options()});
+    api.preview(JSON.stringify(result,null,2),'文件重构 · 确认所有引用修改',async()=>{if(JSON.stringify(snapshot())!==stamp)throw new Error('工程已变化，请重新预览。');projectHistory.push(before);if(projectHistory.length>20)projectHistory.shift();await restore(result);$('project-op-undo').disabled=false;},JSON.stringify(before,null,2));
+  });
+  $('project-op-undo').onclick=guard(async()=>{if(projectHistory.length){await restore(projectHistory.pop());$('project-op-undo').disabled=!projectHistory.length;}});
   api.subscribe(() => { if (panel === 'shortcuts') guard(refreshShortcuts)(); });
-  return {show, renderFiles};
+  return {show, renderFiles,...setupKV3(api,show)};
 }

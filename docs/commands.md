@@ -53,3 +53,5 @@ moonvalve shortcut-remove shortcuts.vdf 0 --in-place
 缓存支持 appinfo 39/40/41 与 packageinfo 39/40；默认只列记录索引，指定 ID 才解码目标。未知版本拒绝解析。缓存命令输入上限 512 MiB，其他文件命令上限 16 MiB。AppInfo 按记录边界建立索引后延迟验证数据；PackageInfo 没有记录长度，索引时需要解析其树。
 
 快捷方式定义包含 name、exe、start_dir、launch_options 和 tags。新增时 name/exe 必填；更新仅替换定义中提供的字段并保留 App ID 及未知数据。库 API 允许调用方另行显式调整 ID。默认向标准输出写新的二进制；预览、备份和原地保存规则与文本编辑一致。运行中的 Steam 可能重新写入快捷方式配置，因此应在 Steam 退出后保存。
+
+查询、快照批量编辑、移动复制、文本 KV3、多文件重构与 LSP 的用法、JSON 格式和边界见 [进阶功能](advanced.md)。

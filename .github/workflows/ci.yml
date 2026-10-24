@@ -36,6 +36,10 @@ jobs:
       - if: matrix.target == 'js'
         run: node scripts/test-cli.cjs
       - if: matrix.target == 'js'
+        run: node scripts/test-lsp.cjs
+      - if: matrix.target == 'js'
+        run: node scripts/test-extension.cjs
+      - if: matrix.target == 'js'
         run: node scripts/test-stream-pipe.cjs
       - if: matrix.target == 'js'
         uses: actions/setup-python@v5
@@ -51,6 +55,8 @@ jobs:
         run: moon build --target native --release
       - if: matrix.target == 'native'
         run: node scripts/test-cli.cjs --native
+      - if: matrix.target == 'native'
+        run: node scripts/test-lsp.cjs --native
       - if: matrix.target == 'native'
         run: node scripts/test-stream-pipe.cjs --native
       - if: matrix.target == 'native'
@@ -69,6 +75,13 @@ jobs:
         run: node scripts/build-editor.cjs
       - if: matrix.target == 'native'
         run: node scripts/test-editor.cjs
+      - if: matrix.target == 'native'
+        run: node scripts/benchmark-edits.cjs
+      - if: matrix.target == 'native'
+        run: npm ci --ignore-scripts
+        working-directory: extensions/vscode
+      - if: matrix.target == 'native'
+        run: node scripts/package-extension.cjs
       - if: matrix.target == 'native'
         run: node scripts/package.cjs
       - if: matrix.target == 'native'
@@ -96,11 +109,14 @@ jobs:
       - run: moon test --target js
       - run: moon build --target js --release
       - run: node scripts/test-cli.cjs
+      - run: node scripts/test-lsp.cjs
+      - run: node scripts/test-extension.cjs
       - run: node scripts/test-stream-pipe.cjs
       - run: moon check --target native
       - run: moon test --target native
       - run: moon build --target native --release
       - run: node scripts/test-cli.cjs --native
+      - run: node scripts/test-lsp.cjs --native
       - run: node scripts/test-stream-pipe.cjs --native
       - uses: actions/setup-python@v5
         with:
@@ -109,6 +125,9 @@ jobs:
       - run: python scripts/check-reference.py --native
       - run: node scripts/build-editor.cjs
       - run: node scripts/test-editor.cjs
+      - run: npm ci --ignore-scripts
+        working-directory: extensions/vscode
+      - run: node scripts/package-extension.cjs
       - run: node scripts/package.cjs
       - run: python scripts/test-package.py
       - uses: actions/upload-artifact@v4
@@ -136,4 +155,5 @@ jobs:
       - run: dotnet restore tools/reference-dotnet/Reference.csproj --locked-mode
       - run: dotnet build tools/reference-dotnet/Reference.csproj --no-restore -c Release
       - run: node scripts/check-dotnet.cjs
+      - run: node scripts/check-kv3.cjs
       - run: node scripts/fuzz.cjs

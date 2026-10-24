@@ -1,0 +1,88 @@
+{
+  "name": "moonvalve",
+  "displayName": "MoonValve KeyValues",
+  "description": "MoonBit-powered KV1 and text KV3 language tools.",
+  "version": "0.4.0",
+  "publisher": "Charles67676767",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Charles67676767/MoonValve.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:moonvalve-kv1",
+    "onLanguage:moonvalve-kv3"
+  ],
+  "main": "./extension.cjs",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "moonvalve-kv1",
+        "aliases": [
+          "Valve KeyValues 1"
+        ],
+        "extensions": [
+          ".vdf",
+          ".acf",
+          ".res",
+          ".kv"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "moonvalve-kv3",
+        "aliases": [
+          "Valve KeyValues 3"
+        ],
+        "extensions": [
+          ".kv3"
+        ],
+        "configuration": "./kv3-language-configuration.json"
+      }
+    ],
+    "configuration": {
+      "title": "MoonValve",
+      "properties": {
+        "moonvalve.serverPath": {
+          "type": "string",
+          "default": "moonvalve",
+          "scope": "machine",
+          "description": "Path to the native MoonValve executable, or Node.js when using the JS CLI."
+        },
+        "moonvalve.serverArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "lsp"
+          ],
+          "scope": "machine",
+          "description": "Arguments passed directly without a shell. For Node.js, use [\"/path/to/moonvalve.cjs\", \"lsp\"]."
+        },
+        "moonvalve.literalPaths": {
+          "type": "boolean",
+          "default": false,
+          "description": "Treat backslashes literally in KV1. Reload the window after changing this setting."
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "@vscode/vsce": "4.0.0"
+  },
+  "overrides": {
+    "@azure/msal-node": "7.1.1"
+  }
+}

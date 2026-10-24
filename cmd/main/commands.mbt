@@ -48,6 +48,7 @@ priv struct CommandOptions {
   root : String?
   inplace : Bool
   preview : Bool
+  headerless : Bool
 }
 
 ///|
@@ -59,6 +60,7 @@ fn command_options(args : Array[String]) -> CommandOptions raise CliError {
   let mut root = None
   let mut inplace = false
   let mut preview = false
+  let mut headerless = false
   let mut i = 4
   let mut positional = false
   while i < args.length() {
@@ -74,6 +76,7 @@ fn command_options(args : Array[String]) -> CommandOptions raise CliError {
       "--resolve" => resolve = true
       "--in-place" => inplace = true
       "--dry-run" => preview = true
+      "--headerless" => headerless = true
       "--condition" | "--root" => {
         if i + 1 >= args.length() {
           raise InvalidArgument("Option requires a value: " + arg)
@@ -100,7 +103,7 @@ fn command_options(args : Array[String]) -> CommandOptions raise CliError {
   if inplace && preview {
     raise InvalidArgument("Choose either --in-place or --dry-run")
   }
-  { words, symbols, literal, resolve, root, inplace, preview, }
+  { words, symbols, literal, resolve, root, inplace, preview, headerless, }
 }
 
 ///|
@@ -236,6 +239,16 @@ fn run(args : Array[String]) -> Unit raise {
   if args.length() <= 2 || args[2] == "help" || args[2] == "--help" {
     help()
     println("  version                 Show version information")
+    println(
+      "  select FILE EXPR        Query paths, duplicates and value filters",
+    )
+    println("  query-edit FILE EXPR OP.json [--dry-run|--in-place]")
+    println("  edit-snapshot FILE PLAN.json [--dry-run|--in-place]")
+    println("  transfer FILE PLAN.json [--dry-run|--in-place]")
+    println("  kv3-parse / kv3-format FILE [--headerless]")
+    println("  kv3-from-json FILE       Write typed KV3 JSON as text")
+    println("  workspace-edit SNAPSHOT PLAN.json [--dry-run|--in-place]")
+    println("  lsp                     Start UTF-8 framed LSP on stdio")
     println("  stream-json FILE        Emit raw events as JSON Lines")
     println("  stream-query FILE KEY... Stream matching raw scalar values")
     println("  stream-csv FILE         Emit raw scalar paths and values as CSV")
@@ -262,6 +275,13 @@ fn run(args : Array[String]) -> Unit raise {
     return
   }
   let command = args[2]
+  if command == "lsp" {
+    if args.length() != 3 {
+      raise InvalidArgument("lsp takes no arguments")
+    }
+    run_lsp()
+    return
+  }
   if ["stream-json", "stream-query", "stream-csv", "stream-format"].contains(
       command,
     ) {
@@ -269,8 +289,10 @@ fn run(args : Array[String]) -> Unit raise {
     return
   }
   let expanded = [
-    "parse", "format", "query", "query-all", "resolve", "project", "edit", "binary-decode",
-    "binary-encode", "cache", "shortcuts", "shortcut-add", "shortcut-set", "shortcut-remove",
+    "select", "query-edit", "edit-snapshot", "transfer", "kv3-parse", "kv3-format",
+    "kv3-from-json", "workspace-edit", "parse", "format", "query", "query-all", "resolve",
+    "project", "edit", "binary-decode", "binary-encode", "cache", "shortcuts", "shortcut-add",
+    "shortcut-set", "shortcut-remove",
   ]
   if !expanded.contains(command) {
     run_basic(args)
@@ -281,6 +303,12 @@ fn run(args : Array[String]) -> Unit raise {
   }
   let file = args[3]
   let opts = command_options(args)
+  if opts.headerless && !["kv3-parse", "kv3-format"].contains(command) {
+    raise InvalidArgument("--headerless is only used when reading KV3")
+  }
+  if run_advanced(command, file, opts) {
+    return
+  }
   if command == "project" {
     reject_write_options(opts)
     guard opts.root is Some(root) && file != "-" && opts.words.is_empty() else {

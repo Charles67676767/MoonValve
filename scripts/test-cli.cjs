@@ -211,6 +211,26 @@ try {
     const result=run(['stream-query',file,'r','needle']);assert.equal(result.status,0,result.stderr);assert.equal(JSON.parse(result.stdout).value,'中文😀');
     const boundary=path.join(temporary,'boundary.vdf');fs.writeFileSync(boundary,' '.repeat(65535)+'r {k "😀"}');assert.equal(run(['stream-format',boundary]).status,0);
   });
+  test('query expressions and snapshot edits retain duplicate identity and reject overlaps',()=>{
+    const file=path.join(temporary,'query.vdf'),plan=path.join(temporary,'query.json');fs.writeFileSync(file,'// keep\nr {tag one tag two nested {tag three}}');
+    let r=run(['select',file,'/**/tag']);assert.equal(r.status,0,r.stderr);assert.equal(JSON.parse(r.stdout).length,3);
+    fs.writeFileSync(plan,JSON.stringify({op:'replace',value:'Moon'}));r=run(['query-edit',file,'/**/tag',plan]);assert.equal(r.status,0,r.stderr);assert.equal((r.stdout.match(/Moon/g)||[]).length,3);assert.match(r.stdout,/^\/\/ keep/);assert.match(fs.readFileSync(file,'utf8'),/one/);
+    fs.writeFileSync(plan,JSON.stringify([{op:'remove',path:[{key:'r',occurrence:0},{key:'tag',occurrence:0}]},{op:'remove',path:[{key:'r',occurrence:0},{key:'tag',occurrence:1}]}]));r=run(['edit-snapshot',file,plan]);assert.equal(r.status,0,r.stderr);assert.doesNotMatch(r.stdout,/one|two/);assert.match(r.stdout,/three/);
+  });
+  test('structure transfers preserve source comments and reject moving into descendants',()=>{
+    const file=path.join(temporary,'transfer.vdf'),plan=path.join(temporary,'transfer.json');fs.writeFileSync(file,'r {\n // follows\n k one\n child {}\n}');
+    const from=[{key:'r',occurrence:0},{key:'k',occurrence:0}],to=[{key:'r',occurrence:0},{key:'child',occurrence:0}];fs.writeFileSync(plan,JSON.stringify({from,to,index:0,copy:true}));let r=run(['transfer',file,plan]);assert.equal(r.status,0,r.stderr);assert.equal((r.stdout.match(/follows/g)||[]).length,2);
+    fs.writeFileSync(plan,JSON.stringify({from:[{key:'r',occurrence:0}],to,index:0}));assert.equal(run(['transfer',file,plan]).status,2);
+  });
+  test('typed KV3 text roundtrips exact integers and rejects binary and invalid types',()=>{
+    const r=run(['kv3-parse','-','--headerless'],'{n=18446744073709551615 flag=resource:"moon" data=#[00 ff]}');assert.equal(r.status,0,r.stderr);assert.match(r.stdout,/18446744073709551615/);
+    const text=run(['kv3-from-json','-'],r.stdout);assert.equal(text.status,0,text.stderr);assert.equal(run(['kv3-parse','-','--headerless'],text.stdout).status,0);
+    assert.equal(run(['kv3-parse','-'],'{a=1}').status,2);assert.equal(run(['kv3-parse','-','--headerless'],'{a=1 a=2}').status,2);
+  });
+  test('workspace snapshot rename rewrites incoming and outgoing references atomically',()=>{
+    const file=path.join(temporary,'workspace.json'),plan=path.join(temporary,'workspace-plan.json'),before={format:'moonvalve-project-v1',source:'main.vdf',files:{'main.vdf':'#base config/base.vdf\nr {}','config/base.vdf':'#include ../extra.vdf\nr {k v}','extra.vdf':'extra yes'}};fs.writeFileSync(file,JSON.stringify(before));fs.writeFileSync(plan,JSON.stringify([{op:'rename',from:'config/base.vdf',to:'moved.vdf'}]));let r=run(['workspace-edit',file,plan]);assert.equal(r.status,0,r.stderr);const result=JSON.parse(r.stdout);assert.match(result.files['main.vdf'],/moved.vdf/);assert.match(result.files['moved.vdf'],/extra.vdf/);assert.doesNotMatch(result.files['moved.vdf'],/\.\.\//);assert.deepEqual(JSON.parse(fs.readFileSync(file)),before);
+    fs.writeFileSync(plan,JSON.stringify([{op:'remove',name:'config/base.vdf'}]));assert.equal(run(['workspace-edit',file,plan,'--in-place']).status,2);assert.ok(!fs.existsSync(file+'.bak'));
+  });
   console.log(`${cases} CLI checks passed`);
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });

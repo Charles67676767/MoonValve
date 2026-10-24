@@ -5,5 +5,5 @@ version = "0.0.0"
 license = "MIT"
 
 import {
-  "Charles67676767/moonvalve@0.3.0",
+  "Charles67676767/moonvalve@0.4.0",
 }

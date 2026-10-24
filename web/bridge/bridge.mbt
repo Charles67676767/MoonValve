@@ -18,6 +18,67 @@ fn execute(request : Json) -> Json raise {
     escape_sequences: !literal,
   }
   match action {
+    "query" | "query-edit" => {
+      let source = @valve.parse_preserving(field(fields, "text"), options~)
+      let expression = field(fields, "expression")
+      let matches = @valve.located_values_to_json(
+        source.document().select(expression),
+      )
+      if action == "query" {
+        Json::object({ "matches": matches })
+      } else {
+        guard fields.get("operation") is Some(operation) else {
+          raise Failure("Expected query edit operation")
+        }
+        let result = source.edit_query(
+          expression,
+          @valve.query_edit_from_json(operation),
+        )
+        Json::object({
+          "matches": matches,
+          "text": Json::string(result.text()),
+          "tree": result.document().to_json(),
+        })
+      }
+    }
+    "transfer" => {
+      guard fields.get("plan") is Some(plan) else {
+        raise Failure("Expected transfer plan")
+      }
+      let source = @valve.parse_preserving(field(fields, "text"), options~)
+      let result = source.transfer_json(plan)
+      Json::object({
+        "text": Json::string(result.text()),
+        "tree": result.document().to_json(),
+      })
+    }
+    "workspace-edit" => {
+      guard fields.get("snapshot") is Some(snapshot) &&
+        fields.get("plan") is Some(plan) else {
+        raise Failure("Expected workspace snapshot and plan")
+      }
+      @valve.edit_workspace_snapshot(snapshot, plan, options~)
+    }
+    "kv3-parse" | "kv3-format" => {
+      let document = @valve.parse_kv3(
+        field(fields, "text"),
+        allow_headerless=fields.get("headerless") == Some(Json::boolean(true)),
+      )
+      Json::object({
+        "model": @valve.kv3_to_json(document),
+        "text": Json::string(@valve.stringify_kv3(document)),
+      })
+    }
+    "kv3-from-json" => {
+      guard fields.get("model") is Some(model) else {
+        raise Failure("Expected typed KV3 model")
+      }
+      let document = @valve.kv3_from_json(model)
+      Json::object({
+        "model": @valve.kv3_to_json(document),
+        "text": Json::string(@valve.stringify_kv3(document)),
+      })
+    }
     "cache-page" => cache_page(fields)
     "cache-read" => cache_record(fields)
     "cache-close" => {
@@ -150,7 +211,16 @@ fn execute(request : Json) -> Json raise {
         raise Failure("Expected changes")
       }
       let source = @valve.parse_preserving(field(fields, "text"), options~)
-      let edited = source.apply(@valve.changes_from_json(changes))
+      let plan = @valve.changes_from_json(changes)
+      let edited = if fields.get("sequential") == Some(Json::boolean(true)) {
+        let mut result = source
+        for change in plan {
+          result = result.edit(change.path, change.operation)
+        }
+        result
+      } else {
+        source.apply(plan)
+      }
       Json::object({
         "tree": edited.document().to_json(),
         "text": Json::string(edited.text()),

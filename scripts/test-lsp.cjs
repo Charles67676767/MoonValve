@@ -1,0 +1,42 @@
+const path=require('node:path'),fs=require('node:fs'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
+const {RpcClient}=require('../extensions/vscode/client.cjs');
+const root=path.resolve(__dirname,'..'),native=process.argv.includes('--native');
+const binary=native?['_build/native/release/build/cmd/main/main.exe','_build/native/release/build/cmd/main/main'].map(p=>path.join(root,p)).find(fs.existsSync):path.join(root,'_build/js/release/build/cmd/main/main.js');
+const child=spawn(native?binary:process.execPath,native?['lsp']:[binary,'lsp'],{cwd:root,stdio:['pipe','pipe','pipe']});
+const client=new RpcClient(child),notifications=[];let errors='',cases=0;
+child.stderr.on('data',data=>{errors+=data;});
+client.on('notification',message=>notifications.push(message));
+function td(uri){return {textDocument:{uri}};}
+(async()=>{
+  try{
+    const init=await client.request('initialize',{capabilities:{general:{positionEncodings:['utf-16']}}});
+    assert.equal(init.capabilities.positionEncoding,'utf-16');client.notify('initialized');cases++;
+    const uri='file:///project/main.vdf',base='file:///project/base.vdf';
+    client.notify('moonvalve/setFile',{uri:base,text:'r {extra yes}'});
+    client.notify('textDocument/didOpen',{textDocument:{uri,languageId:'moonvalve-kv1',version:1,text:'#base base.vdf\nr\n{\n tag one\n tag two\n}'}});
+    const symbols=await client.request('textDocument/documentSymbol',td(uri));assert.equal(symbols.length,2);assert.equal(symbols[1].children.length,2);cases++;
+    const definition=await client.request('textDocument/definition',{...td(uri),position:{line:0,character:9}});assert.equal(definition[0].uri,base);
+    const links=await client.request('textDocument/documentLink',td(uri));assert.equal(links.length,1);
+    const completion=await client.request('textDocument/completion',{...td(uri),position:{line:0,character:9}});assert.ok(completion.some(c=>c.label==='base.vdf'));cases++;
+    const plain='file:///project/plain.vdf';
+    client.notify('textDocument/didOpen',{textDocument:{uri:plain,languageId:'moonvalve-kv1',version:1,text:'r {k "😀"}'}});
+    client.notify('textDocument/didChange',{textDocument:{uri:plain,version:2},contentChanges:[{range:{start:{line:0,character:6},end:{line:0,character:8}},text:'Moon'}]});
+    let edits=await client.request('textDocument/formatting',td(plain));assert.match(edits[0].newText,/"k" "Moon"/);cases++;
+    client.notify('textDocument/didChange',{textDocument:{uri:plain,version:1},contentChanges:[{text:'broken {'}]});
+    edits=await client.request('textDocument/formatting',td(plain));assert.match(edits[0].newText,/"k" "Moon"/);cases++;
+    const kv3='file:///project/test.kv3',header='<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n';
+    client.notify('textDocument/didOpen',{textDocument:{uri:kv3,languageId:'moonvalve-kv3',version:1,text:header+'{n=18446744073709551615 enabled=true}'}});
+    edits=await client.request('textDocument/formatting',td(kv3));assert.match(edits[0].newText,/18446744073709551615/);assert.match(edits[0].newText,/true/);cases++;
+    await assert.rejects(client.request('unknown/method'),e=>e.rpcCode===-32601);cases++;
+    client.notify('textDocument/didChange',{textDocument:{uri:plain,version:3},contentChanges:[{text:'😀 yes\nr {k }'}]});
+    await client.request('textDocument/documentSymbol',td(plain));
+    assert.ok(notifications.some(n=>n.method==='textDocument/publishDiagnostics'&&n.params.uri===plain&&n.params.diagnostics[0]?.range.start.line===1));cases++;
+    const negative='file:///project/negative.vdf';client.notify('textDocument/didOpen',{textDocument:{uri:negative,languageId:'moonvalve-kv1',version:-2,text:'r {key old}'}});
+    client.notify('moonvalve/setFile',{uri:negative,text:'r {key cached}'});
+    client.notify('textDocument/didChange',{textDocument:{uri:negative,version:-1},contentChanges:[{text:'r {key unsaved}'}]});
+    edits=await client.request('textDocument/formatting',td(negative));assert.match(edits[0].newText,/unsaved/);cases++;
+    client.notify('textDocument/didClose',td(plain));await client.request('shutdown');client.notify('exit');
+    const code=await new Promise(resolve=>child.once('close',resolve));assert.equal(code,0,errors);assert.equal(errors,'');
+    console.log(cases+' '+(native?'Native':'JavaScript')+' interactive LSP checks passed');
+  }finally{client.dispose();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

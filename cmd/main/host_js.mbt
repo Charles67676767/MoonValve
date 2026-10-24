@@ -155,8 +155,17 @@ fn host_read_bytes(
 }
 
 ///|
-extern "js" fn host_output_bytes(bytes : Bytes) -> Unit =
-  #| function(bytes) { process.stdout.write(Buffer.from(bytes)); }
+extern "js" fn host_output_bytes_impl(bytes : Bytes) -> String =
+  #| function(bytes) { try{const fs=require('node:fs');let offset=0;while(offset<bytes.length){try{const n=fs.writeSync(1,bytes,offset,bytes.length-offset);if(!n)throw new Error('Output closed');offset+=n;}catch(e){if(e.code!=='EAGAIN'&&e.code!=='EWOULDBLOCK')throw e;Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,5);}}return '';}catch(e){return e.message||'Output failed';} }
+
+///|
+fn host_output_bytes(bytes : Bytes) -> Unit {
+  let error = host_output_bytes_impl(bytes)
+  if error != "" {
+    output_failure.val = error
+    host_exit_code(2)
+  }
+}
 
 ///|
 extern "js" fn host_confined_impl(

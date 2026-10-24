@@ -1,10 +1,12 @@
 # MoonValve
 
-**MoonBit 原生 Valve KeyValues 1 读写库与 Steam 清单工具。**
+**MoonBit 原生 Valve KeyValues 工具库：KV1、文本 KV3、Steam 清单与编辑器服务。**
 
 MoonValve 让 MoonBit 程序可以读取、查询和写出 VDF/ACF 文本，同时保留键的顺序与重复项。核心库没有第三方依赖，也不调用 Python、Valve SDK 或外部解析器。Steam 数据模型和命令行工具建立在同一份解析实现上。
 
-当前版本为开发中的 `0.3.0`，提供库、命令行、本地可视化工作台和跨平台下载包。尚未发布到 Mooncakes。
+当前版本为开发中的 `0.4.0`，提供库、命令行、本地可视化工作台和跨平台下载包。尚未发布到 Mooncakes。
+
+新增查询表达式与快照批量修改、跨对象移动复制、批量编辑优化、文本 KV3、多文件引用重构及标准输入输出 LSP。详见 [进阶功能与边界](docs/advanced.md)，[VS Code 扩展](extensions/vscode/README.md) 可通过 VSIX 安装。
 
 ## 为什么需要它
 
@@ -165,7 +167,7 @@ docs/                 兼容性、设计与路线图
 
 ## 后续方向
 
-当前重点是稳定已实现 API、扩充实际兼容性样例并准备首个 Mooncakes 发布版本。KV2、KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
+当前重点是稳定已实现 API、扩充实际兼容性样例并准备首个 Mooncakes 发布版本。KV2、二进制 KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
 
 ## 许可证与参考
 
