@@ -1,0 +1,5 @@
+# Upstream provenance hashes describe original bytes on every platform.
+fixtures/upstream/proton/compatibilitytool.vdf.template -text
+fixtures/upstream/proton/toolmanifest_x86_64.vdf -text
+fixtures/upstream/proton/toolmanifest_arm64.vdf -text
+fixtures/upstream/proton/LICENSE.proton -text
