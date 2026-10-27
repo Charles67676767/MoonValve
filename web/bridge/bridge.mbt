@@ -52,6 +52,42 @@ fn execute(request : Json) -> Json raise {
         "tree": result.document().to_json(),
       })
     }
+    "workspace-query" => {
+      guard fields.get("snapshot") is Some(snapshot) else {
+        raise Failure("Expected workspace snapshot")
+      }
+      let files : Array[String] = match fields.get("files") {
+        None => []
+        Some(Array(values)) =>
+          values.map(v => {
+            guard v is String(s) else {
+              raise Failure("Expected selected filenames")
+            }
+            s
+          })
+        _ => raise Failure("Expected selected files")
+      }
+      @valve.query_workspace_snapshot(
+        snapshot,
+        field(fields, "expression"),
+        files~,
+        options~,
+      )
+    }
+    "kv3-edit" => {
+      guard fields.get("plan") is Some(plan) else {
+        raise Failure("Expected KV3 edit plan")
+      }
+      let source = @valve.parse_kv3_preserving(
+        field(fields, "text"),
+        allow_headerless=fields.get("headerless") == Some(Json::boolean(true)),
+      )
+      let edited = source.apply_json(plan)
+      Json::object({
+        "text": Json::string(edited.text()),
+        "model": @valve.kv3_to_json(edited.document()),
+      })
+    }
     "workspace-edit" => {
       guard fields.get("snapshot") is Some(snapshot) &&
         fields.get("plan") is Some(plan) else {

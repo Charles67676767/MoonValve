@@ -231,6 +231,22 @@ try {
     const file=path.join(temporary,'workspace.json'),plan=path.join(temporary,'workspace-plan.json'),before={format:'moonvalve-project-v1',source:'main.vdf',files:{'main.vdf':'#base config/base.vdf\nr {}','config/base.vdf':'#include ../extra.vdf\nr {k v}','extra.vdf':'extra yes'}};fs.writeFileSync(file,JSON.stringify(before));fs.writeFileSync(plan,JSON.stringify([{op:'rename',from:'config/base.vdf',to:'moved.vdf'}]));let r=run(['workspace-edit',file,plan]);assert.equal(r.status,0,r.stderr);const result=JSON.parse(r.stdout);assert.match(result.files['main.vdf'],/moved.vdf/);assert.match(result.files['moved.vdf'],/extra.vdf/);assert.doesNotMatch(result.files['moved.vdf'],/\.\.\//);assert.deepEqual(JSON.parse(fs.readFileSync(file)),before);
     fs.writeFileSync(plan,JSON.stringify([{op:'remove',name:'config/base.vdf'}]));assert.equal(run(['workspace-edit',file,plan,'--in-place']).status,2);assert.ok(!fs.existsSync(file+'.bak'));
   });
+  test('preserving KV3 edits back up originals and reject entire invalid transactions',()=>{
+    const file=path.join(temporary,'local.kv3'),plan=path.join(temporary,'kv3-plan.json'),before='// keep\r\n{n=18446744073709551615 arr=[1, /*keep*/ 2,]}';fs.writeFileSync(file,before);
+    fs.writeFileSync(plan,JSON.stringify([{op:'replace',path:['n'],value:{type:'integer',value:'42'}},{op:'insert-element',path:['arr'],index:1,value:{type:'bool',value:true}}]));
+    let r=run(['kv3-edit',file,plan,'--headerless','--dry-run']);assert.equal(r.status,0,r.stderr);assert.equal(fs.readFileSync(file,'utf8'),before);assert.ok(!fs.existsSync(file+'.bak'));
+    r=run(['kv3-edit',file,plan,'--headerless','--in-place']);assert.equal(r.status,0,r.stderr);assert.equal(fs.readFileSync(file+'.bak','utf8'),before);assert.match(fs.readFileSync(file,'utf8'),/\/\*keep\*\//);
+    const changed=fs.readFileSync(file,'utf8');fs.writeFileSync(plan,JSON.stringify([{op:'remove',path:['arr','0']},{op:'remove',path:['absent']}]));assert.equal(run(['kv3-edit',file,plan,'--headerless','--in-place']).status,2);assert.equal(fs.readFileSync(file,'utf8'),changed);
+  });
+  test('workspace field query selects files and batch failure writes nothing',()=>{
+    const file=path.join(temporary,'fields.json'),plan=path.join(temporary,'fields-plan.json'),selection=path.join(temporary,'fields-selection.json');
+    const before={format:'moonvalve-project-v1',source:'a.vdf',files:{'a.vdf':'// keep\nr {path old/a}','b.vdf':'r {path old/b}','c.vdf':'r {path other}'}};fs.writeFileSync(file,JSON.stringify(before));fs.writeFileSync(selection,JSON.stringify(['b.vdf']));
+    let r=run(['workspace-query',file,'/r/path',selection]);assert.equal(r.status,0,r.stderr);assert.deepEqual(JSON.parse(r.stdout).map(row=>row.file),['b.vdf']);
+    fs.writeFileSync(plan,JSON.stringify([{op:'query',expression:'/r/path?^="old/"',operation:{op:'replace-prefix',from:'old/',to:'new/'},files:[]}]))
+    r=run(['workspace-edit',file,plan]);assert.equal(r.status,0,r.stderr);assert.match(JSON.parse(r.stdout).files['a.vdf'],/new\/a/);assert.equal(JSON.parse(r.stdout).files['c.vdf'],before.files['c.vdf']);assert.deepEqual(JSON.parse(fs.readFileSync(file)),before);
+    fs.writeFileSync(plan,JSON.stringify([{op:'query',expression:'/r/path',operation:{op:'replace-prefix',from:'old/',to:'new/'},files:[]}]))
+    assert.equal(run(['workspace-edit',file,plan,'--in-place']).status,2);assert.deepEqual(JSON.parse(fs.readFileSync(file)),before);assert.ok(!fs.existsSync(file+'.bak'));
+  });
   console.log(`${cases} CLI checks passed`);
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });

@@ -245,6 +245,35 @@ export function setupTools(api) {
   let projectHistory=[];
   const snapshot=()=>({format:'moonvalve-project-v1',source:$('project-entry').value,files:api.files()});
   async function restore(snapshot){api.setFiles(snapshot.files,false);invalidateProject();renderFiles();$('project-entry').value=snapshot.source;await api.load(snapshot.files[snapshot.source],snapshot.source,'text');show('project');}
+  const projectQuery=()=>({expression:$('project-query-expression').value,files:$('project-query-files').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)});
+  function queryStamp(){return JSON.stringify([snapshot(),api.options()]);}
+  function renderWorkspaceMatches(rows,stamp){
+    const total=rows.reduce((n,row)=>n+row.matches.length,0);$('project-query-count').textContent=total+' 个字段 · '+rows.length+' 个文件';$('project-query-results').replaceChildren();
+    let shown=0;
+    for(const row of rows)for(const match of row.matches){
+      if(shown++>=1000)continue;
+      const item=button(row.file+' · '+match.path.map(p=>p.key+'['+p.occurrence+']').join(' / ')+' · '+(Array.isArray(match.value)?'对象':match.value),guard(async()=>{
+        if(queryStamp()!==stamp)throw new Error('工程或选项已变化，请重新查询。');
+        const files=api.files();await api.load(files[row.file],row.file,'text');show('config');api.selectPath(match.path);
+      }));$('project-query-results').append(item);
+    }
+    if(total>1000)$('project-query-count').textContent+='（显示前 1000 项）';
+  }
+  $('project-query-run').onclick=guard(async()=>{
+    const stamp=queryStamp(),query=projectQuery(),rows=await api.core({action:'workspace-query',snapshot:snapshot(),...query,...api.options()});
+    if(queryStamp()!==stamp)throw new Error('工程或选项已变化，请重新查询。');renderWorkspaceMatches(rows,stamp);
+  });
+  $('project-query-preview').onclick=guard(async()=>{
+    const before=snapshot(),stamp=queryStamp(),query=projectQuery(),op=$('project-query-operation').value;
+    const operation=op==='replace-prefix'?{op,from:$('project-query-value').value,to:$('project-query-to').value}:op==='remove'?{op}:{op,value:$('project-query-value').value};
+    const rows=await api.core({action:'workspace-query',snapshot:before,...query,...api.options()});
+    const result=await api.core({action:'workspace-edit',snapshot:before,plan:[{op:'query',...query,operation}],...api.options()});
+    if(queryStamp()!==stamp)throw new Error('工程或选项已变化，请重新预览。');renderWorkspaceMatches(rows,stamp);
+    api.preview(JSON.stringify(result,null,2),'工程字段批量修改 · '+rows.reduce((n,r)=>n+r.matches.length,0)+' 项匹配',async()=>{
+      if(queryStamp()!==stamp)throw new Error('工程或选项已变化，请重新预览。');
+      projectHistory.push(before);if(projectHistory.length>20)projectHistory.shift();await restore(result);$('project-op-undo').disabled=false;
+    },JSON.stringify(before,null,2));
+  });
   $('project-op-preview').onclick=guard(async()=>{
     const before=snapshot(),stamp=JSON.stringify(before),op=$('project-op').value,from=$('project-op-source').value,to=$('project-op-target').value;
     const plan=[op==='add'?{op,name:to,text:$('project-op-text').value}:op==='remove'?{op,name:from}:{op,from,to}];

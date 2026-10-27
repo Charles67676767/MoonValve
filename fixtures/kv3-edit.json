@@ -1,0 +1,12 @@
+[
+  {
+    "op": "replace",
+    "path": [
+      "name"
+    ],
+    "value": {
+      "type": "string",
+      "value": "Moon Harbor"
+    }
+  }
+]

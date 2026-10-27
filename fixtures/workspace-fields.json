@@ -1,0 +1,8 @@
+{
+  "format": "moonvalve-project-v1",
+  "source": "main.vdf",
+  "files": {
+    "main.vdf": "// Keep project notes\n#base config/base.vdf\nroot { path old/materials/moon.vmat }",
+    "config/base.vdf": "root { path old/models/moon.vmdl }"
+  }
+}

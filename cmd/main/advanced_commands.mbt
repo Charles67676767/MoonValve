@@ -73,6 +73,59 @@ fn run_advanced(
         }
       }
     }
+    "kv3-edit" => {
+      if opts.words.length() != 1 ||
+        opts.literal ||
+        opts.resolve ||
+        opts.root is Some(_) ||
+        opts.symbols is Some(_) {
+        raise InvalidArgument(
+          "kv3-edit requires one JSON plan and no KV1 options",
+        )
+      }
+      let before = host_read_bytes(file)
+      let source = @valve.parse_kv3_preserving(
+        @utf8.decode(before[:]),
+        allow_headerless=opts.headerless,
+      )
+      let edited = source.apply_json(@json.parse(input_text(opts.words[0])[:]))
+      emit_changed(file, before, @utf8.encode(edited.text()[:]), opts, true)
+    }
+    "workspace-query" => {
+      reject_write_options(opts)
+      if opts.words.length() < 1 ||
+        opts.words.length() > 2 ||
+        opts.resolve ||
+        opts.root is Some(_) ||
+        opts.symbols is Some(_) {
+        raise InvalidArgument(
+          "workspace-query requires an expression and optional selected-files JSON filename",
+        )
+      }
+      let files : Array[String] = if opts.words.length() == 2 {
+        guard @json.parse(input_text(opts.words[1])[:]) is Array(values) else {
+          raise InvalidArgument("Expected a file list")
+        }
+        values.map(v => {
+          guard v is String(s) else {
+            raise InvalidArgument("Expected a filename")
+          }
+          s
+        })
+      } else {
+        []
+      }
+      let result = @valve.query_workspace_snapshot(
+        @json.parse(input_text(file)[:]),
+        opts.words[0],
+        files~,
+        options={
+          ..@valve.ParseOptions::default(),
+          escape_sequences: !opts.literal,
+        },
+      )
+      host_output(result.stringify() + "\n")
+    }
     "workspace-edit" => {
       if opts.words.length() != 1 ||
         opts.resolve ||

@@ -66,9 +66,13 @@ pub fn parse_json_document(String, options? : ParseOptions) -> Document raise Js
 
 pub fn parse_kv3(String, options? : ParseOptions, allow_headerless? : Bool) -> KV3Document raise
 
+pub fn parse_kv3_preserving(String, options? : ParseOptions, allow_headerless? : Bool) -> KV3SourceDocument raise
+
 pub fn parse_preserving(String, options? : ParseOptions) -> SourceDocument raise
 
 pub fn query_edit_from_json(Json) -> QueryEdit raise
+
+pub fn query_workspace_snapshot(Json, String, files? : Array[String], options? : ParseOptions) -> Json raise
 
 pub fn read_app_manifest(Document) -> SteamApp raise SteamError
 
@@ -296,6 +300,15 @@ pub fn KV3Document::equal(Self, Self) -> Bool
 pub fn KV3Document::not_equal(Self, Self) -> Bool
 pub fn KV3Document::to_repr(Self) -> @debug.Repr
 
+pub(all) enum KV3Edit {
+  KV3Replace(KV3Value)
+  KV3Remove
+  KV3Rename(String)
+  KV3InsertField(Int, String, KV3Value)
+  KV3InsertElement(Int, KV3Value)
+} derive(@debug.Debug)
+pub fn KV3Edit::to_repr(Self) -> @debug.Repr
+
 pub(all) struct KV3Entry {
   key : String
   value : KV3Value
@@ -311,6 +324,12 @@ pub(all) struct KV3Header {
 pub fn KV3Header::equal(Self, Self) -> Bool
 pub fn KV3Header::not_equal(Self, Self) -> Bool
 pub fn KV3Header::to_repr(Self) -> @debug.Repr
+
+type KV3SourceDocument
+pub fn KV3SourceDocument::apply_json(Self, Json) -> Self raise
+pub fn KV3SourceDocument::document(Self) -> KV3Document
+pub fn KV3SourceDocument::edit(Self, Array[String], KV3Edit) -> Self raise
+pub fn KV3SourceDocument::text(Self) -> String
 
 pub(all) enum KV3Value {
   KV3Null
@@ -516,9 +535,11 @@ type Workspace
 pub fn Workspace::add_file(Self, String, String) -> Self raise
 pub fn Workspace::apply(Self, Json) -> Self raise
 pub fn Workspace::copy_file(Self, String, String) -> Self raise
+pub fn Workspace::edit_query(Self, String, QueryEdit, files? : Array[String]) -> Self raise
 pub fn Workspace::files(Self) -> Map[String, String]
 pub fn Workspace::remove_file(Self, String) -> Self raise
 pub fn Workspace::rename_file(Self, String, String) -> Self raise
+pub fn Workspace::select(Self, String, files? : Array[String]) -> Json raise
 pub fn Workspace::to_json(Self) -> Json
 
 // Type aliases

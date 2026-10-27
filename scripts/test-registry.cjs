@@ -5,6 +5,21 @@ assert.match(version,/^\d+\.\d+\.\d+$/);const temporary=fs.mkdtempSync(path.join
 fs.mkdirSync(path.join(temporary,'cmd/main'),{recursive:true});
 fs.writeFileSync(path.join(temporary,'moon.mod'),`name = "integration/registry-consumer"\nversion = "0.0.0"\nlicense = "MIT"\nimport { "Charles67676767/moonvalve@${version}", }\n`);
 fs.writeFileSync(path.join(temporary,'cmd/main/moon.pkg'),'import { "Charles67676767/moonvalve" @valve, "moonbitlang/core/json", }\npkgtype(kind: "executable")\n');
+const newFeatures=Number(version.split('.')[1])>=5?String.raw`
+  let preserved = @valve.parse_kv3_preserving("//keep\n{name='Moon' arr=[1,2,]}", allow_headerless=true)
+  let local = preserved.edit(["name"], @valve.KV3Replace(@valve.KV3String("Sun")))
+  assert_eq(local.text(), "//keep\n{name=\"Sun\" arr=[1,2,]}")
+  let appended = local.edit(["arr"], @valve.KV3InsertElement(2, @valve.KV3Null))
+  assert_true(appended.text().contains("null"))
+  let batch = @valve.new_workspace({"a":"r {path old/a}","b":"r {path old/b}"})
+  assert_true(batch.select("/**/path").stringify().contains("old/b"))
+  let changed = batch.edit_query("/**/path", @valve.ReplacePrefix("old/", "new/"), files=["a"])
+  assert_eq(changed.files()["a"], "r {path new/a}")
+  assert_eq(changed.files()["b"], "r {path old/b}")
+  server.handle(Json::object({"jsonrpc":Json::string("2.0"),"method":Json::string("moonvalve/setFile"),"params":Json::object({"uri":Json::string("file:///project/main.vdf"),"text":Json::string("#base base.vdf\nr {}")})})) |> ignore
+  let rename = server.handle(Json::object({"jsonrpc":Json::string("2.0"),"id":Json::number(2),"method":Json::string("workspace/willRenameFiles"),"params":Json::object({"files":Json::array([Json::object({"oldUri":Json::string("file:///project/base.vdf"),"newUri":Json::string("file:///project/new.vdf")})])})}))
+  assert_true(rename[0].stringify().contains("new.vdf"))
+`:'';
 fs.writeFileSync(path.join(temporary,'cmd/main/main.mbt'),`///|
 fn verify() -> Unit raise {
   assert_eq(@valve.version(), "${version}")
@@ -26,6 +41,7 @@ fn verify() -> Unit raise {
   let server = @valve.new_lsp_server()
   let initialized = server.handle(@json.parse("{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":1,\\\"method\\\":\\\"initialize\\\",\\\"params\\\":{}}"))
   assert_eq(initialized.length(), 1)
+  ${newFeatures}
   println("Registry ${version}: parsing, exact integers, queries, source edits, transfer, KV3, workspace and LSP passed")
 }
 ///|
@@ -39,6 +55,6 @@ try{
   assert.ok(!fs.realpathSync(installed).startsWith(root+path.sep),'Consumer must not resolve the checkout');
   assert.match(fs.readFileSync(installed,'utf8'),new RegExp('version\\s*=\\s*"'+version.replace(/\./g,'\\.')+'"'));
   for(const target of ['wasm','wasm-gc','js','native']){moon(['run','cmd/main','--target',target]);passed.push(target);}
-  fs.mkdirSync(path.join(root,'_build'),{recursive:true});fs.writeFileSync(path.join(root,`_build/registry-check-${version}.json`),JSON.stringify({module:'Charles67676767/moonvalve',version,registry_only:true,targets:passed,features:['parse','int64','query','source-edit','transfer','kv3','workspace','lsp']},null,2)+'\n');
+  fs.mkdirSync(path.join(root,'_build'),{recursive:true});fs.writeFileSync(path.join(root,`_build/registry-check-${version}.json`),JSON.stringify({module:'Charles67676767/moonvalve',version,registry_only:true,targets:passed,features:['parse','int64','query','source-edit','transfer','kv3','workspace','lsp',...(newFeatures?['kv3-preserving','workspace-fields','lsp-file-rename']:[])]},null,2)+'\n');
   console.log('Independent registry installation verified on all four backends');
 }finally{const resolved=fs.realpathSync(temporary),parent=fs.realpathSync(os.tmpdir());assert.ok(resolved.startsWith(parent+path.sep)&&path.basename(resolved).startsWith('moonvalve-registry-'));fs.rmSync(resolved,{recursive:true,force:true});}

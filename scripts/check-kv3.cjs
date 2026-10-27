@@ -10,6 +10,17 @@ const root=path.resolve(__dirname,'..'),dotnet=process.env.MOONVALVE_DOTNET||'do
   const sources=Array.from({length:60},()=>header+value(3));
   for(const literal of literals)sources.push(header+literal);
   sources.push(header+'{text="""\nline one\n中文\n"""\nempty=[] object={} flag=panorama:[true,false]}');
+  const original=header+'// stable\r\n{ name="Moon😀" id=18446744073709551615 arr=[1, /* keep comma , */ 2,3,] nested=resource:{title="old"} }';
+  const plans=[
+    [{op:'replace',path:['name'],value:{type:'string',value:'Sun'}}],
+    [{op:'rename',path:['name'],key:'display name'}],
+    [{op:'remove',path:['id']}],
+    [{op:'replace',path:['nested','title'],value:{type:'string',value:'new'}}],
+    ...Array.from({length:4},(_,index)=>[{op:'insert-element',path:['arr'],index,value:{type:'bool',value:false}}]),
+    ...Array.from({length:3},(_,index)=>[{op:'remove',path:['arr',String(index)]}]),
+    [{op:'insert-field',path:[],index:2,key:'added',value:{type:'array',value:[{type:'null',value:null}]}}]
+  ];
+  for(const plan of plans){const result=run({action:'kv3-edit',text:original,plan});assert.ok(result.text.includes('// stable\r\n'));assert.ok(result.text.includes('/* keep comma , */'));sources.push(result.text);}
   const models=sources.map(text=>run({action:'kv3-parse',text}));
   const requests=sources.flatMap((text,i)=>[{kv3:true,text},{kv3:true,text:models[i].text}]);
   const reference=spawnSync(dotnet,[path.join(root,'tools/reference-dotnet/bin/Release/net10.0/Reference.dll')],{input:requests.map(r=>JSON.stringify(r)).join('\n')+'\n',encoding:'utf8',maxBuffer:16*1024*1024,timeout:60000});

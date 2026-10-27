@@ -71,5 +71,17 @@ const assert=require('node:assert/strict'),path=require('node:path'),{pathToFile
     assert.equal(run({action:'kv3-parse',headerless:true,text:'{n=1 n=2}'}).ok,false);
     const snapshot={format:'moonvalve-project-v1',source:'main',files:{main:'#base base\nr {}',base:'r {k v}'}};const result=ok({action:'workspace-edit',snapshot,plan:[{op:'rename',from:'base',to:'new/base'}]});assert.match(result.files.main,/new\/base/);assert.equal(run({action:'workspace-edit',snapshot,plan:[{op:'remove',name:'base'}]}).ok,false);
   });
+  test('KV3 local edits preserve unaffected source and reject invalid later steps',()=>{
+    const text='// keep\r\n{ name="Moon" n=18446744073709551615 arr=[1,/*tail*/] }';
+    const r=ok({action:'kv3-edit',text,headerless:true,plan:[{op:'replace',path:['name'],value:{type:'string',value:'Sun'}},{op:'insert-element',path:['arr'],index:1,value:{type:'null',value:null}}]});
+    assert.match(r.text,/^\/\/ keep\r\n/);assert.match(r.text,/18446744073709551615/);assert.match(r.text,/\/\*tail\*\//);assert.equal(r.model.root.value[2].value.value.length,2);
+    assert.equal(run({action:'kv3-edit',text,headerless:true,plan:[{op:'remove',path:['name']},{op:'remove',path:['absent']}]}).ok,false);
+  });
+  test('workspace queries and batch edits share snapshot semantics with CLI',()=>{
+    const snapshot={format:'moonvalve-project-v1',source:'a',files:{a:'//keep\nr {path old/a}',b:'r {path other}'}};
+    const rows=ok({action:'workspace-query',snapshot,expression:'/r/path'});assert.deepEqual(rows.map(row=>row.file),['a','b']);
+    const r=ok({action:'workspace-edit',snapshot,plan:[{op:'query',expression:'/r/path',files:['a'],operation:{op:'replace-prefix',from:'old/',to:'new/'}}]});assert.equal(r.files.a,'//keep\nr {path new/a}');assert.equal(r.files.b,snapshot.files.b);
+    assert.equal(run({action:'workspace-edit',snapshot,plan:[{op:'query',expression:'/r/path',files:[],operation:{op:'replace-prefix',from:'old/',to:'new/'}}]}).ok,false);
+  });
   console.log(`${cases} editor core checks passed`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

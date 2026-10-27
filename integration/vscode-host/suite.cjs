@@ -27,6 +27,17 @@ exports.run=async()=>{
     await waitFor(()=>vscode.languages.getDiagnostics(plain.uri).length===0,'clear diagnostics');checks.push('diagnostic recovery');
     const kv3=await vscode.workspace.openTextDocument(uri('resource.kv3'));await vscode.window.showTextDocument(kv3);assert.equal(kv3.languageId,'moonvalve-kv3');
     formatting=await command('executeFormatDocumentProvider',kv3.uri,{tabSize:2,insertSpaces:true});const formatted=formattedText(kv3,formatting);assert.match(formatted,/18446744073709551615/);assert.match(formatted,/resource:/);checks.push('KV3 language and exact typed formatting');
+    const rename=new vscode.WorkspaceEdit();rename.renameFile(uri('base.vdf'),uri('renamed.vdf'));assert.equal(await vscode.workspace.applyEdit(rename),true);
+    await waitFor(()=>main.getText().includes('renamed.vdf'),'automatic reference rename');checks.push('file rename updates incoming reference');
+    await main.save();const renamed=await vscode.workspace.openTextDocument(uri('renamed.vdf'));
+    const linkEdits=await command('executeLinkProvider',main.uri);assert.equal(linkEdits[0].target.toString(),renamed.uri.toString());checks.push('renamed cache navigation');
+    const changeReference=new vscode.WorkspaceEdit();changeReference.replace(main.uri,new vscode.Range(new vscode.Position(0,0),main.positionAt(main.getText().length)),'#base absent.vdf\nroot {}');await vscode.workspace.applyEdit(changeReference);
+    await waitFor(()=>vscode.languages.getDiagnostics(main.uri).some(row=>row.code==='missing_reference'),'confirmed missing target');checks.push('filesystem-confirmed missing reference');
+    const restoreMain=new vscode.WorkspaceEdit();restoreMain.replace(main.uri,new vscode.Range(new vscode.Position(0,0),main.positionAt(main.getText().length)),'#base renamed.vdf\nroot {}');await vscode.workspace.applyEdit(restoreMain);
+    const cycle=new vscode.WorkspaceEdit();cycle.replace(renamed.uri,new vscode.Range(new vscode.Position(0,0),renamed.positionAt(renamed.getText().length)),'#include main.vdf\nroot {}');await vscode.workspace.applyEdit(cycle);
+    await waitFor(()=>vscode.languages.getDiagnostics(main.uri).some(row=>row.code==='reference_cycle'&&row.message.includes('main.vdf')),'live reference cycle');checks.push('unsaved cross-file cycle diagnostic');
+    const removeCycle=new vscode.WorkspaceEdit();removeCycle.replace(renamed.uri,new vscode.Range(new vscode.Position(0,0),renamed.positionAt(renamed.getText().length)),'root {}');await vscode.workspace.applyEdit(removeCycle);
+    await waitFor(()=>vscode.languages.getDiagnostics(main.uri).length===0,'cross-file recovery');checks.push('dependent diagnostic recovery');
     result.success=true;
   }catch(error){result.success=false;result.error=error.message;throw error;}
   finally{fs.writeFileSync(report,JSON.stringify(result,null,2)+'\n');}

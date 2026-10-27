@@ -6,6 +6,7 @@ const root=path.resolve(__dirname,'..'),test=require('../extensions/vscode/node_
   fs.mkdirSync(path.join(workspace,'.vscode'),{recursive:true});fs.mkdirSync(path.join(user,'User'),{recursive:true});
   const native=['_build/native/release/build/cmd/main/main.exe','_build/native/release/build/cmd/main/main'].map(p=>path.join(root,p)).find(fs.existsSync);assert.ok(native,'Build native release CLI first');
   fs.writeFileSync(path.join(user,'User/settings.json'),JSON.stringify({'moonvalve.serverPath':native,'moonvalve.serverArgs':['lsp'],'telemetry.telemetryLevel':'off','workbench.startupEditor':'none','extensions.autoUpdate':false}));
+  const renamedFixture=path.join(workspace,'renamed.vdf');if(fs.existsSync(renamedFixture))fs.unlinkSync(renamedFixture);
   fs.writeFileSync(path.join(workspace,'main.vdf'),'#base base.vdf\nroot\n{\n tag one\n tag two\n}\n');fs.writeFileSync(path.join(workspace,'base.vdf'),'root { inherited yes }');fs.writeFileSync(path.join(workspace,'plain.vdf'),'root {key "😀"}');
   fs.copyFileSync(path.join(root,'fixtures/sample.kv3'),path.join(workspace,'resource.kv3'));
   let executable=process.env.MOONVALVE_VSCODE_EXECUTABLE;

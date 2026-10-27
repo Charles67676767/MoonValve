@@ -13,6 +13,9 @@ struct LspServer {
   mut initialized : Bool
   mut shutting_down : Bool
   mut exiting : Bool
+  reference_cache : Map[String, Array[LspReference]]
+  mut references_dirty : Bool
+  missing_files : Map[String, Bool]
   mut literal : Bool
 }
 
@@ -25,6 +28,9 @@ pub fn new_lsp_server() -> LspServer {
     shutting_down: false,
     exiting: false,
     literal: false,
+    missing_files: Map([]),
+    reference_cache: Map([]),
+    references_dirty: true,
   }
 }
 
@@ -195,6 +201,7 @@ fn LspServer::put(
   if total > 16777216 || document.text.char_length() > 8388608 {
     raise Failure("LSP document character budget exceeded")
   }
+  self.references_dirty = true
   self.documents[uri] = document
 }
 
@@ -238,6 +245,9 @@ fn LspServer::diagnostics(self : LspServer, uri : String) -> Json {
           parse_kv3(document.text) |> ignore
         } else {
           self.source(uri) |> ignore
+          for diagnostic in self.reference_diagnostics(uri) {
+            errors.push(diagnostic)
+          }
         }
       } catch {
         ParseError(d) =>
@@ -376,6 +386,26 @@ fn LspServer::perform(
     }
     return Json::object({
       "capabilities": Json::object({
+        "workspace": Json::object({
+          "fileOperations": Json::object({
+            "willRename": Json::object({
+              "filters": Json::array([
+                Json::object({
+                  "scheme": Json::string("file"),
+                  "pattern": Json::object({ "glob": Json::string("**/*") }),
+                }),
+              ]),
+            }),
+            "didRename": Json::object({
+              "filters": Json::array([
+                Json::object({
+                  "scheme": Json::string("file"),
+                  "pattern": Json::object({ "glob": Json::string("**/*") }),
+                }),
+              ]),
+            }),
+          }),
+        }),
         "positionEncoding": Json::string("utf-16"),
         "textDocumentSync": Json::object({
           "openClose": Json::boolean(true),
@@ -430,6 +460,29 @@ fn LspServer::perform(
   }
   match rpc_method {
     "initialized" | "$/cancelRequest" => Json::null()
+    "moonvalve/referenceTargets" => self.reference_targets()
+    "moonvalve/setMissingFiles" => {
+      guard params.get("uris") is Some(Array(uris)) && uris.length() <= 10000 else {
+        raise Failure("Expected bounded missing-file list")
+      }
+      let checked : Map[String, Bool] = Map([])
+      for uri in uris {
+        guard uri is String(text) else { raise Failure("Expected file URI") }
+        checked[lsp_virtual_uri(text)] = true
+      }
+      self.missing_files.clear()
+      for path, value in checked {
+        self.missing_files[path] = value
+      }
+      self.publish_open_diagnostics(output)
+      Json::null()
+    }
+    "workspace/willRenameFiles" => self.will_rename(params)
+    "workspace/didRenameFiles" => {
+      self.did_rename(params)
+      self.publish_open_diagnostics(output)
+      Json::null()
+    }
     "moonvalve/setFile" => {
       let uri = lsp_string(params, "uri")
       let text = lsp_string(params, "text")
@@ -450,6 +503,7 @@ fn LspServer::perform(
         self.put(uri, { text, version: 0, opened: false, })
       }
       self.workspace_files[uri] = text
+      self.publish_open_diagnostics(output)
       Json::null()
     }
     "textDocument/didOpen" => {
@@ -461,6 +515,7 @@ fn LspServer::perform(
         opened: true,
       })
       output.push(self.diagnostics(uri))
+      self.publish_other_diagnostics(uri, output)
       Json::null()
     }
     "textDocument/didChange" => {
@@ -502,10 +557,12 @@ fn LspServer::perform(
       }
       self.put(uri, { text, version, opened: true, })
       output.push(self.diagnostics(uri))
+      self.publish_other_diagnostics(uri, output)
       Json::null()
     }
     "textDocument/didClose" => {
       let uri = lsp_string(lsp_object(params, "textDocument"), "uri")
+      self.references_dirty = true
       match self.workspace_files.get(uri) {
         Some(text) => self.documents[uri] = { text, version: 0, opened: false, }
         None => self.documents.remove(uri) |> ignore
@@ -519,14 +576,17 @@ fn LspServer::perform(
           }),
         ),
       )
+      self.publish_other_diagnostics(uri, output)
       Json::null()
     }
     "moonvalve/removeFile" => {
       let uri = lsp_string(params, "uri")
+      self.references_dirty = true
       self.workspace_files.remove(uri) |> ignore
       if self.documents.get(uri) is Some(document) && !document.opened {
         self.documents.remove(uri) |> ignore
       }
+      self.publish_open_diagnostics(output)
       Json::null()
     }
     "textDocument/documentSymbol" => {

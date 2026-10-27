@@ -66,6 +66,9 @@ priv struct KV3Reader {
   mut line : Int
   mut column : Int
   mut nodes : Int
+  path : Array[Int]
+  spans : Map[String, KV3Span]?
+  keys : Map[String, (Int, Int)]
 }
 
 ///|
@@ -167,7 +170,12 @@ fn KV3Reader::word(self : KV3Reader) -> String raise ParseError {
   while self.peek() is Some(c) &&
         c.to_int() > 32 &&
         c.to_int() < 128 &&
-        !"{}[]=,'\":|;".contains(c.to_string()) {
+        !"{}[]=,'\":|;".contains(c.to_string()) &&
+        !(c == '/' &&
+        (
+          self.chars.get(self.pos + 1) == Some('/') ||
+          self.chars.get(self.pos + 1) == Some('*')
+        )) {
     self.advance()
     if self.pos - begin > self.options.max_token_chars {
       self.fail("Token exceeds KV3 limit")
@@ -403,6 +411,19 @@ fn kv3_number(text : String) -> KV3Value raise WriteError {
 ///|
 fn KV3Reader::value(self : KV3Reader, depth : Int) -> KV3Value raise {
   self.space()
+  let start = self.pos
+  let value = self.value_inner(depth)
+  if self.spans is Some(spans) {
+    let key = index_key(self.path)
+    let body = spans.get(key).map(s => s.body).unwrap_or(start)
+    spans[key] = { start, end: self.pos, body, }
+  }
+  value
+}
+
+///|
+fn KV3Reader::value_inner(self : KV3Reader, depth : Int) -> KV3Value raise {
+  self.space()
   if depth > self.options.max_depth {
     self.fail("KV3 depth limit exceeded")
   }
@@ -421,8 +442,10 @@ fn KV3Reader::value(self : KV3Reader, depth : Int) -> KV3Value raise {
           self.advance()
           break
         }
+        let key_start = self.pos
         let quoted = self.peek() == Some('"') || self.peek() == Some('\'')
         let key = if quoted { self.string() } else { self.word() }
+        let key_end = self.pos
         if !quoted && !kv3_identifier(key) {
           self.fail("Unquoted object keys must be identifiers")
         }
@@ -431,7 +454,13 @@ fn KV3Reader::value(self : KV3Reader, depth : Int) -> KV3Value raise {
         }
         keys[key] = true
         self.take('=')
-        entries.push({ key, value: self.value(depth + 1), })
+        self.path.push(entries.length())
+        if self.spans is Some(_) {
+          self.keys[index_key(self.path)] = (key_start, key_end)
+        }
+        let value = self.value(depth + 1)
+        self.path.pop() |> ignore
+        entries.push({ key, value, })
       }
       KV3Object(entries)
     }
@@ -440,7 +469,10 @@ fn KV3Reader::value(self : KV3Reader, depth : Int) -> KV3Value raise {
       let values : Array[KV3Value] = []
       self.space()
       while self.peek() != Some(']') {
-        values.push(self.value(depth + 1))
+        self.path.push(values.length())
+        let value = self.value(depth + 1)
+        self.path.pop() |> ignore
+        values.push(value)
         self.space()
         if self.peek() == Some(']') {
           break
@@ -482,6 +514,9 @@ fn KV3Reader::value(self : KV3Reader, depth : Int) -> KV3Value raise {
     }
     _ => {
       let token = self.word()
+      let token_end = self.pos
+      let token_line = self.line
+      let token_column = self.column
       self.space()
       if self.peek() == Some(':') || self.peek() == Some('|') {
         if !kv3_flag(token) {
@@ -494,6 +529,9 @@ fn KV3Reader::value(self : KV3Reader, depth : Int) -> KV3Value raise {
         }
         return KV3Flag(token.to_lower(), value)
       }
+      self.pos = token_end
+      self.line = token_line
+      self.column = token_column
       match token.to_lower() {
         "null" => KV3Null
         "true" => KV3Bool(true)
@@ -517,6 +555,16 @@ pub fn parse_kv3(
   options? : ParseOptions = ParseOptions::default(),
   allow_headerless? : Bool = false,
 ) -> KV3Document raise {
+  kv3_read(input, options, allow_headerless, None).0
+}
+
+///|
+fn kv3_read(
+  input : String,
+  options : ParseOptions,
+  allow_headerless : Bool,
+  spans : Map[String, KV3Span]?,
+) -> (KV3Document, KV3Reader) raise {
   parse("", options~) |> ignore
   if !options.escape_sequences || options.conditions is Some(_) {
     raise InvalidDocument("KV3 does not use KV1 literal or condition options")
@@ -531,6 +579,9 @@ pub fn parse_kv3(
     line: 1,
     column: 1,
     nodes: 0,
+    path: [],
+    spans,
+    keys: Map([]),
   }
   if reader.peek() == Some('\uFEFF') {
     reader.advance()
@@ -549,7 +600,7 @@ pub fn parse_kv3(
   if reader.peek() is Some(_) {
     reader.fail("Trailing data after root value")
   }
-  { header, root, }
+  ({ header, root, }, reader)
 }
 
 ///|

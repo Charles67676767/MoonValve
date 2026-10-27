@@ -1,0 +1,526 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Charles67676767/moonvalve"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn binary_from_json(Json, options? : BinaryOptions) -> Array[BinaryEntry] raise BinaryError
+
+pub fn binary_to_json(Array[BinaryEntry]) -> Json
+
+pub fn changes_from_json(Json) -> Array[Change] raise
+
+pub fn check_inventory(Array[SteamLibrary], Array[InventoryRecord]) -> Array[InventoryIssue]
+
+pub fn compile_query(String) -> Query raise QueryError
+
+pub fn decode_binary(Bytes, options? : BinaryOptions, string_table? : Array[String]?) -> Array[BinaryEntry] raise BinaryError
+
+pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonImportError
+
+pub fn edit_workspace_snapshot(Json, Json, options? : ParseOptions) -> Json raise
+
+pub fn encode_binary(Array[BinaryEntry], options? : BinaryOptions, string_table? : Array[String]?) -> Bytes raise BinaryError
+
+pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
+
+pub fn generic_kv3_header() -> KV3Header
+
+pub fn inventory_csv(Array[InventoryRecord]) -> String
+
+pub fn inventory_total(Array[InventoryRecord]) -> InventoryTotal raise SteamError
+
+pub fn kv3_from_json(Json) -> KV3Document raise
+
+pub fn kv3_to_json(KV3Document) -> Json raise
+
+pub fn load_project(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> ResolvedProject raise
+
+pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> Document raise
+
+pub fn located_values_to_json(Array[LocatedValue]) -> Json
+
+pub fn lsp_frame(Json) -> Bytes
+
+pub fn lsp_position(String, Int) -> Json
+
+pub fn new_lsp_framer() -> LspFramer
+
+pub fn new_lsp_server() -> LspServer
+
+pub fn new_shortcut_file() -> ShortcutFile
+
+pub fn new_stream_parser((StreamEvent) -> Bool raise, options? : ParseOptions) -> StreamParser raise ParseError
+
+pub fn new_stream_writer((String) -> Unit raise) -> StreamWriter
+
+pub fn new_workspace(Map[String, String], options? : ParseOptions) -> Workspace raise
+
+pub fn open_steam_cache(Bytes, max_bytes? : Int, max_records? : Int) -> SteamCache raise BinaryError
+
+pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
+
+pub fn parse_json_document(String, options? : ParseOptions) -> Document raise JsonImportError
+
+pub fn parse_kv3(String, options? : ParseOptions, allow_headerless? : Bool) -> KV3Document raise
+
+pub fn parse_preserving(String, options? : ParseOptions) -> SourceDocument raise
+
+pub fn query_edit_from_json(Json) -> QueryEdit raise
+
+pub fn read_app_manifest(Document) -> SteamApp raise SteamError
+
+pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
+
+pub fn read_shortcut_file(Array[BinaryEntry]) -> ShortcutFile raise SteamError
+
+pub fn select_inventory(Array[InventoryRecord], filter? : String, sort? : String) -> Array[InventoryRecord] raise SteamError
+
+pub fn shortcut_app_id(String, String) -> UInt
+
+pub fn stringify(Document) -> String raise WriteError
+
+pub fn stringify_kv3(KV3Document) -> String raise
+
+pub fn version() -> String
+
+pub fn workspace_from_json(Json, options? : ParseOptions) -> Workspace raise
+
+// Errors
+pub suberror AccessError {
+  InvalidAccess(Array[Selector], String)
+} derive(@debug.Debug)
+pub fn AccessError::to_repr(Self) -> @debug.Repr
+
+pub suberror BinaryError {
+  InvalidBinary(Int, String)
+} derive(@debug.Debug)
+pub fn BinaryError::to_repr(Self) -> @debug.Repr
+
+pub suberror ConditionError {
+  InvalidCondition(String)
+} derive(@debug.Debug)
+pub fn ConditionError::to_repr(Self) -> @debug.Repr
+
+pub suberror EditError {
+  InvalidEdit(String)
+} derive(@debug.Debug)
+pub fn EditError::to_repr(Self) -> @debug.Repr
+
+pub suberror JsonImportError {
+  InvalidJsonDocument(String)
+} derive(@debug.Debug)
+pub fn JsonImportError::to_repr(Self) -> @debug.Repr
+
+pub suberror ParseError {
+  ParseError(Diagnostic)
+} derive(@debug.Debug)
+pub fn ParseError::to_repr(Self) -> @debug.Repr
+
+pub suberror QueryError {
+  InvalidQuery(String)
+} derive(@debug.Debug)
+pub fn QueryError::to_repr(Self) -> @debug.Repr
+
+pub suberror ResolveError {
+  InvalidReference(String)
+} derive(@debug.Debug)
+pub fn ResolveError::to_repr(Self) -> @debug.Repr
+
+pub suberror SteamError {
+  InvalidManifest(String)
+} derive(@debug.Debug)
+pub fn SteamError::to_repr(Self) -> @debug.Repr
+
+pub suberror WriteError {
+  InvalidDocument(String)
+} derive(@debug.Debug)
+pub fn WriteError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct BinaryEntry {
+  key : String
+  value : BinaryValue
+} derive(Eq, @debug.Debug)
+pub fn BinaryEntry::equal(Self, Self) -> Bool
+pub fn BinaryEntry::not_equal(Self, Self) -> Bool
+pub fn BinaryEntry::to_repr(Self) -> @debug.Repr
+
+pub(all) struct BinaryOptions {
+  max_depth : Int
+  max_entries : Int
+  max_bytes : Int
+  max_string_bytes : Int
+} derive(Eq, @debug.Debug)
+pub fn BinaryOptions::default() -> Self
+pub fn BinaryOptions::equal(Self, Self) -> Bool
+pub fn BinaryOptions::not_equal(Self, Self) -> Bool
+pub fn BinaryOptions::to_repr(Self) -> @debug.Repr
+
+pub(all) enum BinaryValue {
+  ObjectValue(Array[BinaryEntry])
+  StringValue(String)
+  Int32Value(Int)
+  Float32Bits(UInt)
+  Pointer32(UInt)
+  WideString(String)
+  Color32(UInt)
+  UInt64Value(UInt64)
+  Int64Value(Int64)
+} derive(Eq, @debug.Debug)
+pub fn BinaryValue::equal(Self, Self) -> Bool
+pub fn BinaryValue::not_equal(Self, Self) -> Bool
+pub fn BinaryValue::to_repr(Self) -> @debug.Repr
+
+pub(all) enum CacheFormat {
+  AppInfo
+  PackageInfo
+} derive(Eq, @debug.Debug)
+pub fn CacheFormat::equal(Self, Self) -> Bool
+pub fn CacheFormat::not_equal(Self, Self) -> Bool
+pub fn CacheFormat::to_repr(Self) -> @debug.Repr
+
+pub(all) struct CachePage {
+  records : Array[CacheRecord]
+  total : Int
+  offset : Int
+}
+
+pub(all) struct CacheRecord {
+  id : UInt
+  change_number : UInt
+  token : UInt64
+  sha1 : Bytes
+  binary_sha1 : Bytes?
+  info_state : UInt?
+  last_updated : UInt?
+  offset : Int
+  length : Int
+} derive(Eq, @debug.Debug)
+pub fn CacheRecord::equal(Self, Self) -> Bool
+pub fn CacheRecord::not_equal(Self, Self) -> Bool
+pub fn CacheRecord::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Change {
+  path : Array[Selector]
+  operation : Edit
+} derive(@debug.Debug)
+pub fn Change::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Diagnostic {
+  code : String
+  message : String
+  offset : Int
+  line : Int
+  column : Int
+} derive(Eq, @debug.Debug)
+pub fn Diagnostic::equal(Self, Self) -> Bool
+pub fn Diagnostic::not_equal(Self, Self) -> Bool
+pub fn Diagnostic::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Document {
+  entries : Array[Entry]
+} derive(Eq, @debug.Debug)
+pub fn Document::apply(Self, Array[Change], options? : ParseOptions) -> Self raise
+pub fn Document::apply_snapshot(Self, Array[Change]) -> Self raise
+pub fn Document::edit(Self, Array[Selector], Edit) -> Self raise EditError
+pub fn Document::equal(Self, Self) -> Bool
+pub fn Document::find(Self, String) -> Array[LocatedValue] raise
+pub fn Document::get(Self, String) -> Value?
+pub fn Document::get_all(Self, String) -> Array[Value]
+pub fn Document::lookup(Self, Array[String]) -> Value?
+pub fn Document::lookup_all(Self, Array[String]) -> Array[Value] raise AccessError
+pub fn Document::lookup_at(Self, Array[Selector]) -> Value raise AccessError
+pub fn Document::not_equal(Self, Self) -> Bool
+pub fn Document::query_plan(Self, String, QueryEdit) -> Array[Change] raise
+pub fn Document::read_bool(Self, Array[Selector]) -> Bool raise AccessError
+pub fn Document::read_double(Self, Array[Selector]) -> Double raise AccessError
+pub fn Document::read_int64(Self, Array[Selector]) -> Int64 raise AccessError
+pub fn Document::read_text(Self, Array[Selector]) -> String raise AccessError
+pub fn Document::select(Self, String) -> Array[LocatedValue] raise
+pub fn Document::to_json(Self) -> Json
+pub fn Document::to_repr(Self) -> @debug.Repr
+pub fn Document::transfer(Self, Array[Selector], Array[Selector], Int, copy? : Bool) -> Self raise
+pub fn Document::walk(Self, (Array[Selector], Value) -> Bool raise) -> Unit raise
+
+pub(all) enum Edit {
+  Replace(Value)
+  Remove
+  Rename(String)
+  Insert(Int, Entry)
+} derive(@debug.Debug)
+pub fn Edit::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Entry {
+  key : String
+  value : Value
+} derive(Eq, @debug.Debug)
+pub fn Entry::equal(Self, Self) -> Bool
+pub fn Entry::not_equal(Self, Self) -> Bool
+pub fn Entry::to_repr(Self) -> @debug.Repr
+
+pub(all) struct InventoryIssue {
+  code : String
+  library : String
+  manifest : String?
+  message : String
+} derive(Eq, @debug.Debug)
+pub fn InventoryIssue::equal(Self, Self) -> Bool
+pub fn InventoryIssue::not_equal(Self, Self) -> Bool
+pub fn InventoryIssue::to_repr(Self) -> @debug.Repr
+
+pub(all) struct InventoryRecord {
+  library : String
+  manifest : String
+  app : SteamApp
+} derive(Eq, @debug.Debug)
+pub fn InventoryRecord::equal(Self, Self) -> Bool
+pub fn InventoryRecord::not_equal(Self, Self) -> Bool
+pub fn InventoryRecord::to_repr(Self) -> @debug.Repr
+
+pub(all) struct InventoryTotal {
+  known_size_bytes : Int64
+  unknown_size_count : Int
+} derive(Eq, @debug.Debug)
+pub fn InventoryTotal::equal(Self, Self) -> Bool
+pub fn InventoryTotal::not_equal(Self, Self) -> Bool
+pub fn InventoryTotal::to_repr(Self) -> @debug.Repr
+
+pub(all) struct KV3Document {
+  header : KV3Header?
+  root : KV3Value
+} derive(Eq, @debug.Debug)
+pub fn KV3Document::equal(Self, Self) -> Bool
+pub fn KV3Document::not_equal(Self, Self) -> Bool
+pub fn KV3Document::to_repr(Self) -> @debug.Repr
+
+pub(all) struct KV3Entry {
+  key : String
+  value : KV3Value
+} derive(Eq, @debug.Debug)
+pub fn KV3Entry::equal(Self, Self) -> Bool
+pub fn KV3Entry::not_equal(Self, Self) -> Bool
+pub fn KV3Entry::to_repr(Self) -> @debug.Repr
+
+pub(all) struct KV3Header {
+  format_name : String
+  format_id : String
+} derive(Eq, @debug.Debug)
+pub fn KV3Header::equal(Self, Self) -> Bool
+pub fn KV3Header::not_equal(Self, Self) -> Bool
+pub fn KV3Header::to_repr(Self) -> @debug.Repr
+
+pub(all) enum KV3Value {
+  KV3Null
+  KV3Bool(Bool)
+  KV3Integer(String)
+  KV3Float(String)
+  KV3String(String)
+  KV3Blob(Bytes)
+  KV3Array(Array[KV3Value])
+  KV3Object(Array[KV3Entry])
+  KV3Flag(String, KV3Value)
+} derive(Eq, @debug.Debug)
+pub fn KV3Value::equal(Self, Self) -> Bool
+pub fn KV3Value::not_equal(Self, Self) -> Bool
+pub fn KV3Value::to_repr(Self) -> @debug.Repr
+
+pub(all) struct LocatedValue {
+  path : Array[Selector]
+  value : Value
+} derive(Eq, @debug.Debug)
+pub fn LocatedValue::equal(Self, Self) -> Bool
+pub fn LocatedValue::not_equal(Self, Self) -> Bool
+pub fn LocatedValue::to_repr(Self) -> @debug.Repr
+
+type LspFramer
+pub fn LspFramer::feed(Self, Bytes) -> Array[LspPacket] raise
+pub fn LspFramer::finish(Self) -> Unit raise
+
+pub(all) enum LspPacket {
+  LspRequest(Json)
+  LspInvalidJson
+}
+
+type LspServer
+pub fn LspServer::exit_code(Self) -> Int
+pub fn LspServer::handle(Self, Json) -> Array[Json]
+pub fn LspServer::should_exit(Self) -> Bool
+
+pub(all) struct ParseOptions {
+  escape_sequences : Bool
+  max_depth : Int
+  max_entries : Int
+  max_input_chars : Int
+  max_token_chars : Int
+  conditions : Array[String]?
+} derive(Eq, @debug.Debug)
+pub fn ParseOptions::default() -> Self
+pub fn ParseOptions::equal(Self, Self) -> Bool
+pub fn ParseOptions::not_equal(Self, Self) -> Bool
+pub fn ParseOptions::to_repr(Self) -> @debug.Repr
+
+type Query
+pub fn Query::select(Self, Document, max_matches? : Int, max_visited? : Int) -> Array[LocatedValue] raise
+
+pub(all) enum QueryEdit {
+  SetText(String)
+  ReplacePrefix(String, String)
+  RenameKey(String)
+  RemoveMatches
+} derive(@debug.Debug)
+pub fn QueryEdit::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ReferenceEdge {
+  source : String
+  target : String
+  kind : String
+  location : SourceLocation
+} derive(Eq, @debug.Debug)
+pub fn ReferenceEdge::equal(Self, Self) -> Bool
+pub fn ReferenceEdge::not_equal(Self, Self) -> Bool
+pub fn ReferenceEdge::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ResolvedOrigin {
+  path : Array[Selector]
+  location : SourceLocation
+} derive(Eq, @debug.Debug)
+pub fn ResolvedOrigin::equal(Self, Self) -> Bool
+pub fn ResolvedOrigin::not_equal(Self, Self) -> Bool
+pub fn ResolvedOrigin::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ResolvedProject {
+  document : Document
+  origins : Array[ResolvedOrigin]
+  references : Array[ReferenceEdge]
+} derive(Eq, @debug.Debug)
+pub fn ResolvedProject::equal(Self, Self) -> Bool
+pub fn ResolvedProject::not_equal(Self, Self) -> Bool
+pub fn ResolvedProject::to_json(Self) -> Json
+pub fn ResolvedProject::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Selector {
+  key : String
+  occurrence : Int
+} derive(Eq, @debug.Debug)
+pub fn Selector::equal(Self, Self) -> Bool
+pub fn Selector::not_equal(Self, Self) -> Bool
+pub fn Selector::to_repr(Self) -> @debug.Repr
+
+type ShortcutFile
+pub fn ShortcutFile::add(Self, String, String, start_dir? : String, launch_options? : String, tags? : Array[String]) -> Self raise SteamError
+pub fn ShortcutFile::remove(Self, String) -> Self raise SteamError
+pub fn ShortcutFile::set(Self, SteamShortcut) -> Self raise SteamError
+pub fn ShortcutFile::shortcuts(Self) -> Array[SteamShortcut] raise SteamError
+pub fn ShortcutFile::to_binary(Self) -> Array[BinaryEntry]
+
+type SourceDocument
+pub fn SourceDocument::apply(Self, Array[Change]) -> Self raise
+pub fn SourceDocument::apply_snapshot(Self, Array[Change]) -> Self raise
+pub fn SourceDocument::document(Self) -> Document
+pub fn SourceDocument::edit(Self, Array[Selector], Edit) -> Self raise
+pub fn SourceDocument::edit_query(Self, String, QueryEdit) -> Self raise
+pub fn SourceDocument::evaluate(Self, Array[String]) -> Document raise ParseError
+pub fn SourceDocument::locations(Self, String) -> Array[ResolvedOrigin]
+pub fn SourceDocument::text(Self) -> String
+pub fn SourceDocument::transfer(Self, Array[Selector], Array[Selector], Int, copy? : Bool) -> Self raise
+pub fn SourceDocument::transfer_json(Self, Json) -> Self raise
+
+pub(all) struct SourceLocation {
+  source : String
+  offset : Int
+  line : Int
+  column : Int
+} derive(Eq, @debug.Debug)
+pub fn SourceLocation::equal(Self, Self) -> Bool
+pub fn SourceLocation::not_equal(Self, Self) -> Bool
+pub fn SourceLocation::to_repr(Self) -> @debug.Repr
+
+pub(all) struct SteamApp {
+  app_id : String
+  name : String
+  install_dir : String
+  size_on_disk : Int64?
+  build_id : String?
+} derive(Eq, @debug.Debug)
+pub fn SteamApp::equal(Self, Self) -> Bool
+pub fn SteamApp::not_equal(Self, Self) -> Bool
+pub fn SteamApp::to_repr(Self) -> @debug.Repr
+
+type SteamCache
+pub fn SteamCache::format(Self) -> CacheFormat
+pub fn SteamCache::page(Self, query? : String, offset? : Int, limit? : Int) -> CachePage raise BinaryError
+pub fn SteamCache::read(Self, UInt) -> Array[BinaryEntry]? raise BinaryError
+pub fn SteamCache::records(Self) -> Array[CacheRecord]
+pub fn SteamCache::universe(Self) -> UInt
+pub fn SteamCache::version(Self) -> Int
+
+pub(all) struct SteamLibrary {
+  index : String
+  path : String
+  label : String?
+  app_ids : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn SteamLibrary::equal(Self, Self) -> Bool
+pub fn SteamLibrary::not_equal(Self, Self) -> Bool
+pub fn SteamLibrary::to_repr(Self) -> @debug.Repr
+
+pub(all) struct SteamShortcut {
+  index : String
+  app_id : UInt
+  name : String
+  exe : String
+  start_dir : String
+  launch_options : String
+  tags : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn SteamShortcut::equal(Self, Self) -> Bool
+pub fn SteamShortcut::not_equal(Self, Self) -> Bool
+pub fn SteamShortcut::to_repr(Self) -> @debug.Repr
+pub fn SteamShortcut::url(Self) -> String
+
+pub(all) enum StreamEvent {
+  Pair(String, String)
+  BeginObject(String)
+  EndObject
+  Condition(String, String)
+} derive(Eq, @debug.Debug)
+pub fn StreamEvent::equal(Self, Self) -> Bool
+pub fn StreamEvent::not_equal(Self, Self) -> Bool
+pub fn StreamEvent::to_repr(Self) -> @debug.Repr
+
+type StreamParser
+pub fn StreamParser::characters_seen(Self) -> Int
+pub fn StreamParser::entries_seen(Self) -> Int
+pub fn StreamParser::feed(Self, String) -> Unit raise
+pub fn StreamParser::feed_bytes(Self, Bytes) -> Unit raise
+pub fn StreamParser::finish(Self) -> Unit raise
+
+type StreamWriter
+pub fn StreamWriter::finish(Self) -> Unit raise WriteError
+pub fn StreamWriter::write(Self, StreamEvent) -> Unit raise
+
+pub(all) enum Value {
+  Text(String)
+  Object(Array[Entry])
+} derive(Eq, @debug.Debug)
+pub fn Value::as_object(Self) -> Array[Entry]?
+pub fn Value::as_text(Self) -> String?
+pub fn Value::equal(Self, Self) -> Bool
+pub fn Value::not_equal(Self, Self) -> Bool
+pub fn Value::to_repr(Self) -> @debug.Repr
+
+type Workspace
+pub fn Workspace::add_file(Self, String, String) -> Self raise
+pub fn Workspace::apply(Self, Json) -> Self raise
+pub fn Workspace::copy_file(Self, String, String) -> Self raise
+pub fn Workspace::files(Self) -> Map[String, String]
+pub fn Workspace::remove_file(Self, String) -> Self raise
+pub fn Workspace::rename_file(Self, String, String) -> Self raise
+pub fn Workspace::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits

@@ -35,6 +35,17 @@ function td(uri){return {textDocument:{uri}};}
     client.notify('moonvalve/setFile',{uri:negative,text:'r {key cached}'});
     client.notify('textDocument/didChange',{textDocument:{uri:negative,version:-1},contentChanges:[{text:'r {key unsaved}'}]});
     edits=await client.request('textDocument/formatting',td(negative));assert.match(edits[0].newText,/unsaved/);cases++;
+    client.notify('moonvalve/setFile',{uri:base,text:'#include absent.vdf\nr {}'});
+    client.notify('moonvalve/setMissingFiles',{uris:['file:///project/absent.vdf']});await client.request('moonvalve/referenceTargets');
+    let latest=notifications.filter(n=>n.params?.uri===uri&&n.method==='textDocument/publishDiagnostics').at(-1);assert.equal(latest.params.diagnostics[0].code,'missing_reference');assert.match(latest.params.diagnostics[0].message,/main.vdf.*base.vdf.*absent.vdf/);cases++;
+    client.notify('moonvalve/setFile',{uri:base,text:'#include main.vdf\nr {}'});await client.request('moonvalve/referenceTargets');
+    latest=notifications.filter(n=>n.params?.uri===uri&&n.method==='textDocument/publishDiagnostics').at(-1);assert.equal(latest.params.diagnostics[0].code,'reference_cycle');cases++;
+    const newUri='file:///project/new/deep/base.vdf',files=[{oldUri:base,newUri}];
+    const preview=await client.request('workspace/willRenameFiles',{files});assert.equal(preview.documentChanges.length,2);assert.ok(preview.documentChanges.some(row=>row.textDocument.version===1));assert.match(JSON.stringify(preview),/\.\.\/\.\.\/main.vdf/);cases++;
+    client.notify('moonvalve/setFile',{uri:base,text:'r {extra yes}'});
+    client.notify('textDocument/didChange',{textDocument:{uri,version:2},contentChanges:[{text:'#base new/deep/base.vdf\nr {}'}]});
+    client.notify('workspace/didRenameFiles',{files});
+    const renamed=await client.request('textDocument/definition',{...td(uri),position:{line:0,character:9}});assert.equal(renamed[0].uri,newUri);cases++;
     client.notify('textDocument/didClose',td(plain));await client.request('shutdown');client.notify('exit');
     const code=await new Promise(resolve=>child.once('close',resolve));assert.equal(code,0,errors);assert.equal(errors,'');
     console.log(cases+' '+(native?'Native':'JavaScript')+' interactive LSP checks passed');

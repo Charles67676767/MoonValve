@@ -219,6 +219,15 @@ pub fn Workspace::apply(self : Workspace, plan : Json) -> Workspace raise {
       raise InvalidReference("Invalid workspace operation")
     }
     result = match op {
+      "query" if row.length() == 4 &&
+        row.get("expression") is Some(String(expression)) &&
+        row.get("operation") is Some(operation) &&
+        row.get("files") is Some(files) =>
+        result.edit_query(
+          expression,
+          query_edit_from_json(operation),
+          files=workspace_selection(files),
+        )
       "rename" | "copy" if row.length() == 3 &&
         row.get("from") is Some(String(from)) &&
         row.get("to") is Some(String(to)) =>
@@ -304,4 +313,102 @@ pub fn edit_workspace_snapshot(
     "source": Json::string(entry),
     "files": workspace.to_json(),
   })
+}
+
+///|
+fn workspace_selection(json : Json) -> Array[String] raise {
+  guard json is Array(values) && values.length() <= 64 else {
+    raise InvalidQuery("Expected at most 64 selected files")
+  }
+  values.map(value => {
+    guard value is String(name) else {
+      raise InvalidQuery("Expected selected file names")
+    }
+    name
+  })
+}
+
+///|
+fn Workspace::selected_names(
+  self : Workspace,
+  files : Array[String],
+) -> Array[String] raise {
+  let selected : Map[String, Bool] = Map([])
+  for name in files {
+    if !self.documents.contains(name) || selected.contains(name) {
+      raise InvalidQuery("Missing or duplicate selected file")
+    }
+    selected[name] = true
+  }
+  let names = if files.is_empty() {
+    self.documents.keys().collect()
+  } else {
+    files.map(s => s)
+  }
+  names.sort_by((a, b) => a.lexical_compare(b))
+  names
+}
+
+///|
+/// Empty file selection means all files. Results are ordered by file then source.
+pub fn Workspace::select(
+  self : Workspace,
+  expression : String,
+  files? : Array[String] = [],
+) -> Json raise {
+  let query = compile_query(expression)
+  let rows : Array[Json] = []
+  let mut total = 0
+  for name in self.selected_names(files) {
+    let matches = query.select(self.documents[name].doc)
+    total += matches.length()
+    if total > 10000 {
+      raise InvalidQuery("Workspace exceeds 10000 query matches")
+    }
+    if !matches.is_empty() {
+      rows.push(
+        Json::object({
+          "file": Json::string(name),
+          "matches": located_values_to_json(matches),
+        }),
+      )
+    }
+  }
+  Json::array(rows)
+}
+
+///|
+/// Every edit addresses original file contents. Failure returns no new workspace.
+pub fn Workspace::edit_query(
+  self : Workspace,
+  expression : String,
+  operation : QueryEdit,
+  files? : Array[String] = [],
+) -> Workspace raise {
+  self.select(expression, files~) |> ignore
+  let output = self.files()
+  for name in self.selected_names(files) {
+    output[name] = self.documents[name].edit_query(expression, operation).text()
+  }
+  new_workspace(output, options=self.options)
+}
+
+///|
+pub fn query_workspace_snapshot(
+  snapshot : Json,
+  expression : String,
+  files? : Array[String] = [],
+  options? : ParseOptions = ParseOptions::default(),
+) -> Json raise {
+  guard snapshot is Object(fields) &&
+    fields.get("format") == Some(Json::string("moonvalve-project-v1")) &&
+    fields.get("source") is Some(String(source)) &&
+    fields.get("files") is Some(contents) else {
+    raise InvalidReference("Expected MoonValve project snapshot")
+  }
+  let workspace = workspace_from_json(contents, options~)
+  if !workspace.documents.contains(source) {
+    raise InvalidReference("Snapshot entry is missing")
+  }
+  workspace.select(expression, files~)
 }

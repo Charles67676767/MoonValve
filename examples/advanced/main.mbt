@@ -31,6 +31,27 @@ fn demonstrate() -> Unit raise {
     files.get(path).unwrap()
   })
   println(@valve.stringify(resolved))
+  let kv3 = @valve.parse_kv3_preserving(
+    "// retain\n{name='Moon' ids=[1,2,]}",
+    allow_headerless=true,
+  )
+  let changed = kv3.edit(
+    ["name"],
+    @valve.KV3Replace(@valve.KV3String("Harbor")),
+  )
+  assert_true(changed.text().contains("// retain"))
+  assert_true(changed.text().contains("ids=[1,2,]"))
+  println(changed.text())
+  let workspace = @valve.new_workspace({
+    "a.vdf": "root {path old/a}",
+    "b.vdf": "root {path old/b}",
+  })
+  println(workspace.select("/**/path").stringify())
+  let migrated = workspace.edit_query(
+    "/**/path",
+    @valve.ReplacePrefix("old/", "new/"),
+  )
+  assert_true(migrated.files()["a.vdf"].contains("new/a"))
   let typed : Array[@valve.BinaryEntry] = [
     { key: "id", value: @valve.UInt64Value(18446744073709551615UL), },
     { key: "label", value: @valve.WideString("中文😀"), },

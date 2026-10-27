@@ -4,7 +4,7 @@
 
 MoonValve 让 MoonBit 程序可以读取、查询和写出 VDF/ACF 文本，同时保留键的顺序与重复项。核心库没有第三方依赖，也不调用 Python、Valve SDK 或外部解析器。Steam 数据模型和命令行工具建立在同一份解析实现上。
 
-当前版本为开发中的 `0.4.1`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
+当前版本为`0.5.0`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
 
 新增查询表达式与快照批量修改、跨对象移动复制、批量编辑优化、文本 KV3、多文件引用重构及标准输入输出 LSP。详见 [进阶功能与边界](docs/advanced.md)，[VS Code 扩展](extensions/vscode/README.md) 可通过 VSIX 安装。
 
@@ -167,10 +167,18 @@ docs/                 兼容性、设计与路线图
 
 ## 后续方向
 
-0.4.x 公开 API 遵循[兼容约定](docs/api-stability.md)，并通过接口基线、实际配置回归、真实 VS Code 主机及注册表消费者进行验证。KV2、二进制 KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
+0.5.x 保留 0.4 系列公开签名，并遵循[兼容约定](docs/api-stability.md)，并通过接口基线、实际配置回归、真实 VS Code 主机及注册表消费者进行验证。KV2、二进制 KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
 
 ## 许可证与参考
 
 采用 [MIT 许可证](LICENSE)。格式兼容性参考 [ValvePython/vdf](https://github.com/ValvePython/vdf) 和 [ValveKeyValue](https://github.com/ValveResourceFormat/ValveKeyValue)，来源及分发边界见 [NOTICE.md](NOTICE.md)。
 
 MoonValve 是独立项目，与 Valve 或 Steam 没有隶属关系。
+
+### 0.5 新增的工程编辑能力
+
+- KV3 原文局部编辑：替换值、重命名字段、增删对象字段与数组元素，保留未修改区域的注释、头部、换行和数字写法。
+- 工程字段查询与批量修改：按文件选择，查看全部匹配，统一预览并生成新快照；任一步失败都不返回部分工程。
+- VS Code 文件引用维护：文件及目录重命名更新 `#base` / `#include`，跨目录移动重算向外引用；诊断显示文件系统确认的缺失目标及循环引用链。
+
+可运行示例：`moon run examples/advanced --target native`。命令行及工作台用法见[进阶功能](docs/advanced.md)。

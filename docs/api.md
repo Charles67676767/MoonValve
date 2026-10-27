@@ -59,4 +59,4 @@
 
 查询、快照批量编辑、移动复制、文本 KV3、多文件重构与 LSP 的用法、JSON 格式和边界见 [进阶功能](advanced.md)。
 
-0.4.x 的公开接口兼容规则与自动基线检查见 [API 稳定性](api-stability.md)，已发布版本的独立接入验证见 [发布与安装](publishing.md)。
+0.5.x 与前一系列的公开接口兼容规则与自动基线检查见 [API 稳定性](api-stability.md)，已发布版本的独立接入验证见 [发布与安装](publishing.md)。
