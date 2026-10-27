@@ -7,9 +7,9 @@ fs.writeFileSync(path.join(temporary,'moon.mod'),`name = "integration/registry-c
 fs.writeFileSync(path.join(temporary,'cmd/main/moon.pkg'),'import { "Charles67676767/moonvalve" @valve, "moonbitlang/core/json", }\npkgtype(kind: "executable")\n');
 const newFeatures=Number(version.split('.')[1])>=5?String.raw`
   let preserved = @valve.parse_kv3_preserving("//keep\n{name='Moon' arr=[1,2,]}", allow_headerless=true)
-  let local = preserved.edit(["name"], @valve.KV3Replace(@valve.KV3String("Sun")))
-  assert_eq(local.text(), "//keep\n{name=\"Sun\" arr=[1,2,]}")
-  let appended = local.edit(["arr"], @valve.KV3InsertElement(2, @valve.KV3Null))
+  let locally_edited = preserved.edit(["name"], @valve.KV3Replace(@valve.KV3String("Sun")))
+  assert_eq(locally_edited.text(), "//keep\n{name=\"Sun\" arr=[1,2,]}")
+  let appended = locally_edited.edit(["arr"], @valve.KV3InsertElement(2, @valve.KV3Null))
   assert_true(appended.text().contains("null"))
   let batch = @valve.new_workspace({"a":"r {path old/a}","b":"r {path old/b}"})
   assert_true(batch.select("/**/path").stringify().contains("old/b"))

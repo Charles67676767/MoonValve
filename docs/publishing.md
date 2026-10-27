@@ -1,13 +1,13 @@
 # 发布与独立安装
 
-模块：`Charles67676767/moonvalve`。0.4.0 是首个 Mooncakes 发布版本；0.4.1 补充公开 API 兼容约定、实际配置回归和真实编辑器验收工具。0.5.0 增加 KV3 原文局部编辑、工程字段修改和跨文件编辑器维护。包的版本列表可在 [Mooncakes](https://mooncakes.io/docs/Charles67676767/moonvalve/) 查看。
+模块：`Charles67676767/moonvalve`。0.4.0 是首个 Mooncakes 发布版本；0.4.1 补充公开 API 兼容约定、实际配置回归和真实编辑器验收工具。0.5.0 增加 KV3 原文局部编辑、工程字段修改和跨文件编辑器维护。0.5.1 修正独立消费者验收脚本中的保留字命名，库接口与 0.5.0 一致。包的版本列表可在 [Mooncakes](https://mooncakes.io/docs/Charles67676767/moonvalve/) 查看。
 
 ## 安装核心库
 
 在自己的 MoonBit 项目中运行：
 
 ```sh
-moon add Charles67676767/moonvalve@0.5.0
+moon add Charles67676767/moonvalve@0.5.1
 ```
 
 在调用包的 `moon.pkg` 中添加：
@@ -21,7 +21,7 @@ import { "Charles67676767/moonvalve" @valve }
 ## 独立注册表消费者
 
 ```sh
-node scripts/test-registry.cjs 0.5.0
+node scripts/test-registry.cjs 0.5.1
 ```
 
 脚本在系统临时目录建立全新模块，只声明 Mooncakes 版本依赖，不创建 `moon.work`，不指向仓库源码。刷新注册表后核对实际下载模块的版本及来源路径，再在 wasm、wasm-gc、JS、native 四后端运行：精确 Int64、重复项查询、保留原文编辑、移动复制、KV3 类型模型、多文件重构和 LSP 初始化。成功结果写入被忽略的 `_build/registry-check-VERSION.json`。
