@@ -1,0 +1,32 @@
+name: Verify published module
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact Mooncakes version to install
+        required: true
+        default: '0.4.1'
+
+permissions:
+  contents: read
+
+jobs:
+  registry-consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: hustcer/setup-moonbit@v1
+        with:
+          version: '0.10.14+7d59c7ec9'
+          core-version: '0.10.14+7d59c7ec9'
+      - run: node scripts/test-registry.cjs
+        env:
+          MOONVALVE_REGISTRY_VERSION: ${{ inputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: registry-consumer-report
+          path: _build/registry-check-*.json

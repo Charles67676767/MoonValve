@@ -4,7 +4,7 @@
 
 MoonValve 让 MoonBit 程序可以读取、查询和写出 VDF/ACF 文本，同时保留键的顺序与重复项。核心库没有第三方依赖，也不调用 Python、Valve SDK 或外部解析器。Steam 数据模型和命令行工具建立在同一份解析实现上。
 
-当前版本为开发中的 `0.4.0`，提供库、命令行、本地可视化工作台和跨平台下载包。尚未发布到 Mooncakes。
+当前版本为开发中的 `0.4.1`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
 
 新增查询表达式与快照批量修改、跨对象移动复制、批量编辑优化、文本 KV3、多文件引用重构及标准输入输出 LSP。详见 [进阶功能与边界](docs/advanced.md)，[VS Code 扩展](extensions/vscode/README.md) 可通过 VSIX 安装。
 
@@ -51,7 +51,7 @@ moon run examples/demo
 moon run examples/advanced
 ```
 
-示例输出以 `480: Moon Harbor (Moon Harbor)` 开头，随后输出规范化的 KV1。示例游戏、路径和清单均为合成数据。
+示例输出以 `480: Moon Harbor (Moon Harbor)` 开头，随后输出规范化的 KV1。演示中的游戏和路径为合成数据；另有固定上游版本的 [Proton 实际配置回归](fixtures/upstream/proton/README.md)。
 
 ## 库用法
 
@@ -160,14 +160,14 @@ binary.mbt            标准二进制 KV1
 cmd/main/             JS/C 宿主适配与 MoonBit CLI
 examples/demo/        跨后端最小使用示例
 examples/advanced/    编辑、条件、引用与二进制示例
-fixtures/             合成示例数据
+fixtures/             合成示例与注明来源许可的实际配置
 scripts/test-cli.cjs   CLI 端到端测试
 docs/                 兼容性、设计与路线图
 ```
 
 ## 后续方向
 
-当前重点是稳定已实现 API、扩充实际兼容性样例并准备首个 Mooncakes 发布版本。KV2、二进制 KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
+0.4.x 公开 API 遵循[兼容约定](docs/api-stability.md)，并通过接口基线、实际配置回归、真实 VS Code 主机及注册表消费者进行验证。KV2、二进制 KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
 
 ## 许可证与参考
 

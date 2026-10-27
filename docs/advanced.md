@@ -70,4 +70,4 @@ CLI `workspace-edit project.json plan.json` 输出快照；`--in-place` 保存�
 
 服务只访问客户端提供的文档；引用缓存使用 `moonvalve/setFile {uri,text}` / `moonvalve/removeFile {uri}`，不隐式扫描磁盘。打开后的未保存文档优先于缓存。最多 64 份文档、合计 16M 字符，单文件 8M 字符；帧头最多 4096 字节、帧体最多 16 MiB。符号和折叠结果各最多 5000 项。格式化使用两空格规范输出。
 
-VS Code 扩展与安装说明见 [extensions/vscode](../extensions/vscode/README.md)。扩展为接口适配层，所有格式处理和语言功能来自 MoonBit；运行时不依赖 npm 包。自动化验证使用模拟 VS Code API 主机连接真实语言服务器，另有 JS/原生子进程交互测试；尚未以完整 VS Code GUI 自动化覆盖所有菜单操作。
+VS Code 扩展与安装说明见 [extensions/vscode](../extensions/vscode/README.md)。扩展为接口适配层，所有格式处理和语言功能来自 MoonBit；运行时不依赖 npm 包。自动化验证使用模拟 VS Code API 主机连接真实语言服务器，另有 JS/原生子进程交互测试；另有 `scripts/test-vscode.cjs` 在真实 VS Code 中将 VSIX 安装到独立配置，验证 11 项语言交互；该测试使用真实编辑器提供器命令，不以模拟 API 代替主机，也不宣称覆盖每个菜单。

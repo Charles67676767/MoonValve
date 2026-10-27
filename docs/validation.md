@@ -74,10 +74,18 @@ python scripts/test-package.py
 
 ## 0.4.0 新增验证
 
-`node scripts/test-lsp.cjs` 与 `--native` 各执行 9 项交互式检查，确认无需关闭输入即可响应、UTF-16 增量修改、负版本号、缓存与未保存文档、过期版本、引用跳转、诊断与正常关闭。`node scripts/test-extension.cjs` 在模拟 VS Code API 主机内启动真实服务器，覆盖激活、七类提供器注册、增量修改、关闭和重开；不是完整 IDE 界面测试。
+`node scripts/test-lsp.cjs` 与 `--native` 各执行 9 项交互式检查，确认无需关闭输入即可响应、UTF-16 增量修改、负版本号、缓存与未保存文档、过期版本、引用跳转、诊断与正常关闭。`node scripts/test-extension.cjs` 在模拟 VS Code API 主机内启动真实服务器，覆盖激活、七类提供器注册、增量修改、关闭和重开；另有安装 VSIX 后的真实主机测试，见下文。
 
 `node scripts/check-kv3.cjs` 使用固定种子 20261024 和 ValveKeyValue 0.70.0.499，对 76 份 KV3 文档的原文和规范化输出分别执行参考解析写出、再由 MoonValve 重读，比较类型模型。数字比较保留 64 位整数精度、负零及非有限浮点；子集包含数组、对象、blob、多行字符串和标记。
 
 `node scripts/benchmark-edits.cjs` 比较逐项编辑与优化批量编辑的完全相同输出，预热一次后取三次中位数，包括解析、源编辑验证与桥接 JSON 输出，不设置机器耗时门槛。2026-10-24 Windows x64 / Node 24.15.0 本地测量：1000 条配置修改 50 项为 96.64 / 6.63 ms；5000 条配置修改 200 项为 2520.46 / 59.37 ms（逐项 / 批量）。数字不能用于跨机器性能承诺。
 
 发行包检查额外验证新工作台模块、KV3 夹具、查询命令及 VSIX 的内容完整性。VSIX 使用锁定的微软 vsce 4.0.0 打包，开发依赖不进入运行包。
+
+## 0.4.1 发布与使用验收
+
+- `moon info` 后运行 `node scripts/check-api.cjs`，验证根包公开签名与 0.4.0 基线一致。
+- `node scripts/check-upstream.cjs` 验证 ValveSoftware/Proton 的三份实际清单和模板，原始字节哈希与 BSD-3-Clause 许可随文件保留。
+- `node scripts/test-registry.cjs VERSION` 从公开注册表安装指定版本，在仓库外、没有 moon.work 的新模块执行四后端接入；0.4.0 已在 2026-10-27 通过此流程。新版本发布后须再次指定版本验证。
+- `node scripts/test-vscode.cjs` 在独立用户和扩展目录安装 VSIX，以真实 VS Code 命令测试语言识别、符号、引用跳转、链接、补全、悬浮、折叠、UTF-16 增量编辑、格式化、诊断和恢复、KV3 精确类型格式化。2026-10-27 在 Windows x64 / VS Code 1.143.1 完成 11 项检查。主机日志与结果只保存在被忽略的 `_build/vscode-e2e`，机器绝对路径不进入仓库。
+- `moon package --list` 后运行 `python scripts/check-publish.py` 核对实际发布 ZIP 的版本、关键文件、许可证与内容排除。

@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/ValveSoftware/Proton",
+  "commit": "bc896217ffcd67f892f952b010f898fe7bd0f0a1",
+  "license": "BSD-3-Clause",
+  "license_file": "LICENSE.proton",
+  "retrieved_on": "2026-10-27",
+  "files": [
+    {
+      "path": "compatibilitytool.vdf.template",
+      "sha256": "3a8dc1e2cb9d91b72e3d80462ae441f3f40439e8b1ed6ea99f0ad64e976f50d3",
+      "upstream_path": "compatibilitytool.vdf.template",
+      "url": "https://github.com/ValveSoftware/Proton/blob/bc896217ffcd67f892f952b010f898fe7bd0f0a1/compatibilitytool.vdf.template"
+    },
+    {
+      "path": "toolmanifest_x86_64.vdf",
+      "sha256": "bb81d44a687cc6f4ea7ae05fa9f0502f35c48e462051809dce3b2a58492e3498",
+      "upstream_path": "toolmanifest_x86_64.vdf",
+      "url": "https://github.com/ValveSoftware/Proton/blob/bc896217ffcd67f892f952b010f898fe7bd0f0a1/toolmanifest_x86_64.vdf"
+    },
+    {
+      "path": "toolmanifest_arm64.vdf",
+      "sha256": "872df60e3900b6f3f195faefa0cdbbf12c0f7dc388362aa9a4d5838be1c366bf",
+      "upstream_path": "toolmanifest_arm64.vdf",
+      "url": "https://github.com/ValveSoftware/Proton/blob/bc896217ffcd67f892f952b010f898fe7bd0f0a1/toolmanifest_arm64.vdf"
+    }
+  ]
+}

@@ -16,6 +16,6 @@ python scripts/test-package.py
 
 包包含原生 CLI、Node CLI、已编译的本地工作台、可安装 VSIX 扩展及其适配源码、说明文档、合成夹具、公开接口清单、许可证、构建信息及逐文件校验和。原生 CLI 运行无需 Node；本地工作台的静态服务使用 Node 22 或更高版本。解压后运行 README.txt 中的命令即可使用。
 
-GitHub CI 在 Linux x64 和 Windows x64 完成测试后生成下载制品，Actions 页面可下载对应 artifact。它们属于开发版本构建，不代表已经发布到 Mooncakes。运行环境要求以构建平台为准，不声明支持尚未测试的架构或较旧系统。
+GitHub CI 在 Linux x64 和 Windows x64 完成测试后生成下载制品，Actions 页面可下载对应 artifact。它们属于平台工具构建；Mooncakes 另行发布可复用源码模块，安装验证见 [发布与安装](publishing.md)。运行环境要求以构建平台为准，不声明支持尚未测试的架构或较旧系统。
 
 包内附 MoonBit 标准库的 Apache-2.0 许可证与原始 NOTICE，以及原生运行时说明。Python/.NET 参考库和开发工具不随产品打包。

@@ -26,6 +26,8 @@ jobs:
           core-version: '0.10.14+7d59c7ec9'
       - run: moon version --all
       - run: moon fmt --check
+      - run: moon info
+      - run: node scripts/check-api.cjs
       - run: moon check --target ${{ matrix.target }} --deny-warn
       - run: moon build --target ${{ matrix.target }}
       - run: moon test --target ${{ matrix.target }} --deny-warn
@@ -76,6 +78,8 @@ jobs:
       - if: matrix.target == 'native'
         run: node scripts/test-editor.cjs
       - if: matrix.target == 'native'
+        run: node scripts/check-upstream.cjs
+      - if: matrix.target == 'native'
         run: node scripts/benchmark-edits.cjs
       - if: matrix.target == 'native'
         run: npm ci --ignore-scripts
@@ -125,9 +129,11 @@ jobs:
       - run: python scripts/check-reference.py --native
       - run: node scripts/build-editor.cjs
       - run: node scripts/test-editor.cjs
+      - run: node scripts/check-upstream.cjs
       - run: npm ci --ignore-scripts
         working-directory: extensions/vscode
       - run: node scripts/package-extension.cjs
+      - run: node scripts/test-vscode.cjs
       - run: node scripts/package.cjs
       - run: python scripts/test-package.py
       - uses: actions/upload-artifact@v4
@@ -157,3 +163,7 @@ jobs:
       - run: node scripts/check-dotnet.cjs
       - run: node scripts/check-kv3.cjs
       - run: node scripts/fuzz.cjs
+      - run: node scripts/check-upstream.cjs
+      - run: node scripts/test-registry.cjs 0.4.0
+      - run: moon package --list
+      - run: python3 scripts/check-publish.py
