@@ -167,7 +167,7 @@ docs/                 兼容性、设计与路线图
 
 ## 后续方向
 
-0.5.x 保留 0.4 系列公开签名，并遵循[兼容约定](docs/api-stability.md)，并通过接口基线、实际配置回归、真实 VS Code 主机及注册表消费者进行验证。KV2、二进制 KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
+0.6.x 保留 0.4 与 0.5 系列公开签名，并遵循[兼容约定](docs/api-stability.md)，并通过接口基线、实际配置回归、真实 VS Code 主机及注册表消费者进行验证。KV2、二进制 KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
 
 ## 许可证与参考
 

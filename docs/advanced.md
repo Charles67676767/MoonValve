@@ -105,11 +105,11 @@ moonvalve workspace-edit fixtures/workspace-fields.json fixtures/workspace-query
 
 ## LSP 与 VS Code
 
-`moonvalve lsp` 通过标准输入输出传输 JSON-RPC Content-Length 帧，可与其他 LSP 客户端连接。实现初始化、关闭、UTF-16 增量修改、版本过期保护、诊断、KV1 文档符号、折叠、文件指令定义跳转、文档链接、补全、纯文本悬浮和格式化。文本 KV3 提供诊断与格式化，其他导航能力当前针对 KV1。包含条件或文件指令的 KV1 拒绝格式化，避免静默丢失语义。
+`moonvalve lsp` 通过标准输入输出传输 JSON-RPC Content-Length 帧，可与其他 LSP 客户端连接。实现初始化、关闭、UTF-16 增量修改、版本过期保护、诊断、KV1 文档符号、折叠、文件指令定义跳转、文档链接、补全、纯文本悬浮和格式化。文本 KV3 还提供对象/数组大纲、折叠、类型悬浮与字面量补全；文件指令跳转和引用维护当前针对 KV1。包含条件或文件指令的 KV1 拒绝格式化，避免静默丢失语义。
 
 服务只访问客户端提供的文档；引用缓存使用 `moonvalve/setFile {uri,text}` / `moonvalve/removeFile {uri}`，不隐式扫描磁盘。打开后的未保存文档优先于缓存。最多 64 份文档、合计 16M 字符，单文件 8M 字符；帧头最多 4096 字节、帧体最多 16 MiB。符号和折叠结果各最多 5000 项。格式化使用两空格规范输出。
 
-VS Code 扩展与安装说明见 [extensions/vscode](../extensions/vscode/README.md)。扩展为接口适配层，所有格式处理和语言功能来自 MoonBit；运行时不依赖 npm 包。自动化验证使用模拟 VS Code API 主机连接真实语言服务器，另有 JS/原生子进程交互测试；另有 `scripts/test-vscode.cjs` 在真实 VS Code 中将 VSIX 安装到独立配置，验证 16 项语言交互；该测试使用真实编辑器提供器命令，不以模拟 API 代替主机，也不宣称覆盖每个菜单。
+VS Code 扩展与安装说明见 [extensions/vscode](../extensions/vscode/README.md)。扩展为接口适配层，所有格式处理和语言功能来自 MoonBit；运行时不依赖 npm 包。自动化验证使用模拟 VS Code API 主机连接真实语言服务器，另有 JS/原生子进程交互测试；另有 `scripts/test-vscode.cjs` 在真实 VS Code 中将 VSIX 安装到独立配置，验证 20 项语言交互；该测试使用真实编辑器提供器命令，不以模拟 API 代替主机，也不宣称覆盖每个菜单。
 
 ### 跨文件诊断与重命名协议
 
