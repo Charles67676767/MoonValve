@@ -354,6 +354,15 @@ pub fn KV3SourceDocument::edit(
       }
     }
   }
+  self.patched(patches, expected)
+}
+
+///|
+fn KV3SourceDocument::patched(
+  self : KV3SourceDocument,
+  patches : Array[TextPatch],
+  expected : KV3Document,
+) -> KV3SourceDocument raise {
   patches.sort_by((a, b) => a.start.compare(b.start))
   let output = StringBuilder()
   let mut cursor = 0
@@ -431,4 +440,48 @@ pub fn KV3SourceDocument::apply_json(
     result = result.edit(path, operation)
   }
   result
+}
+
+///|
+/// Zero-based Unicode scalar offsets, suitable for UTF-16 conversion by hosts.
+pub(all) struct KV3SourceRange {
+  start : Int
+  end : Int
+  selection_start : Int
+  selection_end : Int
+} derive(Eq, Debug)
+
+///|
+pub extend KV3SourceRange with Eq::{equal, not_equal}
+
+///|
+pub extend KV3SourceRange with @debug.Debug::{to_repr}
+
+///|
+pub fn KV3SourceDocument::range(
+  self : KV3SourceDocument,
+  path : Array[String],
+) -> KV3SourceRange raise {
+  let indices = self.indices(path)
+  let key = index_key(indices)
+  let span = self.spans[key]
+  let container = kv3_unflag(kv3_at(self.doc.root, indices)) is KV3Object(_) ||
+    kv3_unflag(kv3_at(self.doc.root, indices)) is KV3Array(_)
+  let (start, end) = self.keys
+    .get(key)
+    .unwrap_or(
+      (
+        if container {
+          span.body
+        } else {
+          span.start
+        },
+        if container {
+          span.body + 1
+        } else {
+          span.end
+        },
+      ),
+    )
+  { start, end: span.end, selection_start: start, selection_end: end, }
 }

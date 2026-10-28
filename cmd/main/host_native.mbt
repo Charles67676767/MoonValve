@@ -253,3 +253,71 @@ fn host_manifest_paths(source : String, library : String) -> FixedArray[String] 
     }
   })
 }
+
+///|
+#borrow(path)
+extern "C" fn native_export_begin(path : Bytes) -> Int = "moonvalve_export_begin"
+
+///|
+#borrow(path, bytes)
+extern "C" fn native_export_file(
+  path : Bytes,
+  bytes : Bytes,
+  length : Int,
+) -> Int = "moonvalve_export_file"
+
+///|
+extern "C" fn native_export_finish(success : Int) -> Unit = "moonvalve_export_finish"
+
+///|
+fn host_export_directory(
+  target : String,
+  files : Map[String, String],
+) -> Unit raise {
+  if target.is_empty() ||
+    target == "-" ||
+    target.contains("\u0000") ||
+    @utf8.encode(target[:]).length() > 24000 {
+    raise InvalidArgument("Invalid output directory")
+  }
+  if native_export_begin(os_path(target)) != 0 {
+    raise InvalidArgument(
+      "Output directory already exists or cannot be created; parent must exist",
+    )
+  }
+  errdefer native_export_finish(0)
+  {
+    let names = files.keys().collect()
+    names.sort_by((a, b) => a.lexical_compare(b))
+    for name in names {
+      let bytes = @utf8.encode(files[name][:])
+      if native_export_file(os_path(name), bytes, bytes.length()) != 0 {
+        raise InvalidArgument(
+          "Directory export failed; owned output files were rolled back",
+        )
+      }
+    }
+  }
+  native_export_finish(1)
+}
+
+///|
+#borrow(path, bytes)
+extern "C" fn native_write_new(
+  path : Bytes,
+  bytes : Bytes,
+  length : Int,
+) -> Int = "moonvalve_write_new"
+
+///|
+fn host_write_new(target : String, bytes : Bytes) -> Unit raise {
+  if target.is_empty() ||
+    target == "-" ||
+    target.contains("\u0000") ||
+    @utf8.encode(target[:]).length() > 24000 {
+    raise InvalidArgument("Invalid output filename")
+  }
+  if native_write_new(os_path(target), bytes, bytes.length()) != 0 {
+    raise InvalidArgument("Output already exists or cannot be written")
+  }
+}

@@ -4,7 +4,7 @@
 
 MoonValve 让 MoonBit 程序可以读取、查询和写出 VDF/ACF 文本，同时保留键的顺序与重复项。核心库没有第三方依赖，也不调用 Python、Valve SDK 或外部解析器。Steam 数据模型和命令行工具建立在同一份解析实现上。
 
-当前版本为`0.5.1`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
+当前版本为 `0.6.0`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
 
 新增查询表达式与快照批量修改、跨对象移动复制、批量编辑优化、文本 KV3、多文件引用重构及标准输入输出 LSP。详见 [进阶功能与边界](docs/advanced.md)，[VS Code 扩展](extensions/vscode/README.md) 可通过 VSIX 安装。
 
@@ -182,3 +182,13 @@ MoonValve 是独立项目，与 Valve 或 Steam 没有隶属关系。
 - VS Code 文件引用维护：文件及目录重命名更新 `#base` / `#include`，跨目录移动重算向外引用；诊断显示文件系统确认的缺失目标及循环引用链。
 
 可运行示例：`moon run examples/advanced --target native`。命令行及工作台用法见[进阶功能](docs/advanced.md)。
+
+### 0.6 工程导出与 KV3 类型工作流
+
+工作台支持按原目录结构下载工程 ZIP；CLI 可将快照导出到全新目录或 ZIP。KV3 支持类型/标记感知查询、精确整数比较、保留原文的批量编辑、树形字段控件，以及 VS Code 大纲、折叠与类型悬浮。完整命令、库接口和资源限制见[工程导出与 KV3 工作流](docs/kv3-workflows.md)。
+
+```sh
+moon run cmd/main --target native -- workspace-export fixtures/workspace-fields.json new-project
+moon run cmd/main --target native -- workspace-zip fixtures/workspace-fields.json project.zip
+moon run cmd/main --target native -- kv3-select fixtures/sample.kv3 '/**?type=integer&>9007199254740993'
+```

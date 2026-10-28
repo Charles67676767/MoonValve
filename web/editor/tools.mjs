@@ -245,6 +245,12 @@ export function setupTools(api) {
   let projectHistory=[];
   const snapshot=()=>({format:'moonvalve-project-v1',source:$('project-entry').value,files:api.files()});
   async function restore(snapshot){api.setFiles(snapshot.files,false);invalidateProject();renderFiles();$('project-entry').value=snapshot.source;await api.load(snapshot.files[snapshot.source],snapshot.source,'text');show('project');}
+  $('project-zip').onclick=guard(async()=>{
+    const before=snapshot(),stamp=JSON.stringify([before,api.options()]);
+    const result=await api.core({action:'workspace-zip',snapshot:before,...api.options()});
+    if(JSON.stringify([snapshot(),api.options()])!==stamp)throw new Error('工程已变化，请重新导出。');
+    const bytes=Uint8Array.from(atob(result.base64),c=>c.charCodeAt(0));api.download(bytes,'moonvalve-project.zip','application/zip');api.status('已导出工程文件，ZIP 内保留原相对路径。');
+  });
   const projectQuery=()=>({expression:$('project-query-expression').value,files:$('project-query-files').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)});
   function queryStamp(){return JSON.stringify([snapshot(),api.options()]);}
   function renderWorkspaceMatches(rows,stamp){

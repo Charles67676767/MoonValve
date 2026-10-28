@@ -73,6 +73,38 @@ fn run_advanced(
         }
       }
     }
+    "kv3-select" | "kv3-query-edit" => {
+      let count = if command == "kv3-select" { 1 } else { 2 }
+      if opts.words.length() != count ||
+        opts.literal ||
+        opts.resolve ||
+        opts.root is Some(_) ||
+        opts.symbols is Some(_) {
+        raise InvalidArgument(
+          "KV3 query expects an expression and optional operation file, without KV1 options",
+        )
+      }
+      let before = host_read_bytes(file)
+      let source = @valve.parse_kv3_preserving(
+        @utf8.decode(before[:]),
+        allow_headerless=opts.headerless,
+      )
+      if command == "kv3-select" {
+        reject_write_options(opts)
+        host_output(
+          @valve.kv3_located_values_to_json(
+            source.document().select(opts.words[0]),
+          ).stringify() +
+          "\n",
+        )
+      } else {
+        let operation = @valve.kv3_query_edit_from_json(
+          @json.parse(input_text(opts.words[1])[:]),
+        )
+        let edited = source.edit_query(opts.words[0], operation)
+        emit_changed(file, before, @utf8.encode(edited.text()[:]), opts, true)
+      }
+    }
     "kv3-edit" => {
       if opts.words.length() != 1 ||
         opts.literal ||
@@ -90,6 +122,45 @@ fn run_advanced(
       )
       let edited = source.apply_json(@json.parse(input_text(opts.words[0])[:]))
       emit_changed(file, before, @utf8.encode(edited.text()[:]), opts, true)
+    }
+    "workspace-export" | "workspace-zip" => {
+      reject_write_options(opts)
+      if (if command == "workspace-export" {
+          opts.words.length() != 1
+        } else {
+          opts.words.length() > 1
+        }) ||
+        opts.resolve ||
+        opts.root is Some(_) ||
+        opts.symbols is Some(_) {
+        raise InvalidArgument(
+          "workspace-export SNAPSHOT NEW-DIRECTORY or workspace-zip SNAPSHOT",
+        )
+      }
+      let snapshot = @json.parse(input_text(file)[:])
+      let options = {
+        ..@valve.ParseOptions::default(),
+        escape_sequences: !opts.literal,
+      }
+      if command == "workspace-zip" {
+        let bytes = @valve.export_project_zip(snapshot, options~)
+        if opts.words.is_empty() {
+          host_output_bytes(bytes)
+          host_output_check()
+        } else {
+          host_write_new(opts.words[0], bytes)
+        }
+      } else {
+        let files = @valve.project_export_files(snapshot, options~)
+        host_export_directory(opts.words[0], files)
+        host_output(
+          Json::object({
+            "directory": Json::string(opts.words[0]),
+            "files": Json::number(files.length().to_double()),
+          }).stringify() +
+          "\n",
+        )
+      }
     }
     "workspace-query" => {
       reject_write_options(opts)

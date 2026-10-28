@@ -247,6 +247,21 @@ try {
     fs.writeFileSync(plan,JSON.stringify([{op:'query',expression:'/r/path',operation:{op:'replace-prefix',from:'old/',to:'new/'},files:[]}]))
     assert.equal(run(['workspace-edit',file,plan,'--in-place']).status,2);assert.deepEqual(JSON.parse(fs.readFileSync(file)),before);assert.ok(!fs.existsSync(file+'.bak'));
   });
+  test('project directory and ZIP export retain paths and reject every existing target',()=>{
+    const file=path.join(temporary,'export.json'),out=path.join(temporary,'new-project'),files={'main.vdf':'//keep\r\n#base 配置/base.vdf\nr {}','配置/base.vdf':'r {k yes}'},snapshot={format:'moonvalve-project-v1',source:'main.vdf',files};fs.writeFileSync(file,JSON.stringify(snapshot));
+    let r=run(['workspace-export',file,out]);assert.equal(r.status,0,r.stderr);for(const [name,text]of Object.entries(files))assert.equal(fs.readFileSync(path.join(out,name),'utf8'),text);
+    fs.writeFileSync(path.join(out,'sentinel'),'untouched');r=run(['workspace-export',file,out]);assert.equal(r.status,2);assert.equal(fs.readFileSync(path.join(out,'sentinel'),'utf8'),'untouched');
+    const targetFile=path.join(temporary,'existing-file');fs.writeFileSync(targetFile,'untouched');assert.equal(run(['workspace-export',file,targetFile]).status,2);assert.equal(fs.readFileSync(targetFile,'utf8'),'untouched');
+    const invalid=path.join(temporary,'invalid-project');fs.writeFileSync(file,JSON.stringify({...snapshot,files:{...files,'../outside.vdf':'r {}'}}));assert.equal(run(['workspace-export',file,invalid]).status,2);assert.ok(!fs.existsSync(invalid));
+    fs.writeFileSync(file,JSON.stringify(snapshot));const zipName=path.join(temporary,'export.zip');assert.equal(run(['workspace-zip',file,zipName]).status,0);const savedZip=fs.readFileSync(zipName);assert.equal(run(['workspace-zip',file,zipName]).status,2);assert.deepEqual(fs.readFileSync(zipName),savedZip);const zip=runRaw(['workspace-zip',file]);assert.equal(zip.status,0,zip.stderr?.toString());assert.equal(zip.stdout.subarray(0,4).toString('hex'),'504b0304');
+    try{const link=path.join(temporary,'project-link');fs.symlinkSync(out,link,process.platform==='win32'?'junction':'dir');assert.equal(run(['workspace-export',file,link]).status,2);assert.equal(fs.readFileSync(path.join(out,'sentinel'),'utf8'),'untouched');}catch(e){if(!['EPERM','EACCES'].includes(e.code))throw e;}
+  });
+  test('typed KV3 queries retain uint64 precision and batch source edits preserve resource flags',()=>{
+    const file=path.join(temporary,'query-typed.kv3'),plan=path.join(temporary,'query-typed.json'),text='//keep\r\n{assets=[resource:"old/a",resource:"old/b"] note="old/a" n=18446744073709551615}';fs.writeFileSync(file,text);
+    let r=run(['kv3-select',file,'/**?type=integer&>9007199254740993','--headerless']);assert.equal(r.status,0,r.stderr);assert.equal(JSON.parse(r.stdout)[0].value.value,'18446744073709551615');
+    fs.writeFileSync(plan,JSON.stringify({op:'replace-prefix',from:'old/',to:'new/'}));r=run(['kv3-query-edit',file,'/**?flag=resource',plan,'--headerless']);assert.equal(r.status,0,r.stderr);assert.equal(r.stdout,text.replaceAll('resource:"old/','resource:"new/'));assert.equal(fs.readFileSync(file,'utf8'),text);
+    fs.writeFileSync(plan,JSON.stringify({op:'remove'}));assert.equal(run(['kv3-query-edit',file,'/**',plan,'--headerless','--in-place']).status,2);assert.equal(fs.readFileSync(file,'utf8'),text);assert.ok(!fs.existsSync(file+'.bak'));
+  });
   console.log(`${cases} CLI checks passed`);
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });

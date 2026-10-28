@@ -27,6 +27,8 @@ function td(uri){return {textDocument:{uri}};}
     const kv3='file:///project/test.kv3',header='<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n';
     client.notify('textDocument/didOpen',{textDocument:{uri:kv3,languageId:'moonvalve-kv3',version:1,text:header+'{n=18446744073709551615 enabled=true}'}});
     edits=await client.request('textDocument/formatting',td(kv3));assert.match(edits[0].newText,/18446744073709551615/);assert.match(edits[0].newText,/true/);cases++;
+    const kv3Symbols=await client.request('textDocument/documentSymbol',td(kv3));assert.equal(kv3Symbols[0].name,'KV3');assert.ok(kv3Symbols[0].children.some(row=>row.detail.includes('18446744073709551615')));cases++;
+    const kv3Hover=await client.request('textDocument/hover',{...td(kv3),position:{line:1,character:1}});assert.match(kv3Hover.contents.value,/18446744073709551615/);cases++;
     await assert.rejects(client.request('unknown/method'),e=>e.rpcCode===-32601);cases++;
     client.notify('textDocument/didChange',{textDocument:{uri:plain,version:3},contentChanges:[{text:'😀 yes\nr {k }'}]});
     await client.request('textDocument/documentSymbol',td(plain));

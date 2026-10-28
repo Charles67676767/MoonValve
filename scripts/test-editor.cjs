@@ -83,5 +83,12 @@ const assert=require('node:assert/strict'),path=require('node:path'),{pathToFile
     const r=ok({action:'workspace-edit',snapshot,plan:[{op:'query',expression:'/r/path',files:['a'],operation:{op:'replace-prefix',from:'old/',to:'new/'}}]});assert.equal(r.files.a,'//keep\nr {path new/a}');assert.equal(r.files.b,snapshot.files.b);
     assert.equal(run({action:'workspace-edit',snapshot,plan:[{op:'query',expression:'/r/path',files:[],operation:{op:'replace-prefix',from:'old/',to:'new/'}}]}).ok,false);
   });
+  test('project ZIP and typed KV3 worker actions expose exactly the same core behavior',()=>{
+    const snapshot={format:'moonvalve-project-v1',source:'main.vdf',files:{'main.vdf':'r {}','cfg/base.vdf':'r {k yes}'}};const exported=ok({action:'workspace-zip',snapshot}),bytes=Buffer.from(exported.base64,'base64');assert.equal(bytes.length,exported.size);assert.equal(bytes.readUInt32LE(0),0x04034b50);
+    const text='//😀\r\n{arr=[resource:"old/a",resource:"old/b"] n=18446744073709551615}';const q=ok({action:'kv3-query',text,headerless:true,expression:'/arr/*?flag=resource'});assert.equal(q.matches.length,2);
+    const range=ok({action:'kv3-locate',text,headerless:true,path:['n']});assert.equal(Array.from(text).slice(range.selection_start,range.selection_end).join(''),'n');
+    const edited=ok({action:'kv3-query-edit',text,headerless:true,expression:'/arr/*?flag=resource',operation:{op:'replace-prefix',from:'old/',to:'new/'}});assert.equal(edited.text,text.replaceAll('old/','new/'));assert.match(edited.text,/18446744073709551615/);
+    assert.equal(run({action:'kv3-query-edit',text,headerless:true,expression:'/**',operation:{op:'remove'}}).ok,false);
+  });
   console.log(`${cases} editor core checks passed`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

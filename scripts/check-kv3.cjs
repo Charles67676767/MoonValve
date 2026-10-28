@@ -21,6 +21,11 @@ const root=path.resolve(__dirname,'..'),dotnet=process.env.MOONVALVE_DOTNET||'do
     [{op:'insert-field',path:[],index:2,key:'added',value:{type:'array',value:[{type:'null',value:null}]}}]
   ];
   for(const plan of plans){const result=run({action:'kv3-edit',text:original,plan});assert.ok(result.text.includes('// stable\r\n'));assert.ok(result.text.includes('/* keep comma , */'));sources.push(result.text);}
+  for(const [expression,operation]of [
+    ['/arr/*?>1',{op:'remove'}],
+    ['/id',{op:'replace',value:{type:'integer',value:'9007199254740993'}}],
+    ['/nested/title',{op:'replace',value:{type:'string',value:'new'}}]
+  ])sources.push(run({action:'kv3-query-edit',text:original,expression,operation}).text);
   const models=sources.map(text=>run({action:'kv3-parse',text}));
   const requests=sources.flatMap((text,i)=>[{kv3:true,text},{kv3:true,text:models[i].text}]);
   const reference=spawnSync(dotnet,[path.join(root,'tools/reference-dotnet/bin/Release/net10.0/Reference.dll')],{input:requests.map(r=>JSON.stringify(r)).join('\n')+'\n',encoding:'utf8',maxBuffer:16*1024*1024,timeout:60000});

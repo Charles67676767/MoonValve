@@ -1,6 +1,6 @@
 // Run an independent consumer with only a registry dependency, outside this checkout.
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict'),{spawnSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),version=process.argv[2]||process.env.MOONVALVE_REGISTRY_VERSION||/^version\s*=\s*"([^"]+)"/m.exec(fs.readFileSync(path.join(root,'moon.mod'),'utf8'))[1];
+const root=path.resolve(__dirname,'..'),sourceMode=process.argv.includes('--source'),version=process.argv.slice(2).find(arg=>!arg.startsWith('--'))||process.env.MOONVALVE_REGISTRY_VERSION||/^version\s*=\s*"([^"]+)"/m.exec(fs.readFileSync(path.join(root,'moon.mod'),'utf8'))[1];
 assert.match(version,/^\d+\.\d+\.\d+$/);const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'moonvalve-registry-'));
 fs.mkdirSync(path.join(temporary,'cmd/main'),{recursive:true});
 fs.writeFileSync(path.join(temporary,'moon.mod'),`name = "integration/registry-consumer"\nversion = "0.0.0"\nlicense = "MIT"\nimport { "Charles67676767/moonvalve@${version}", }\n`);
@@ -19,6 +19,20 @@ const newFeatures=Number(version.split('.')[1])>=5?String.raw`
   server.handle(Json::object({"jsonrpc":Json::string("2.0"),"method":Json::string("moonvalve/setFile"),"params":Json::object({"uri":Json::string("file:///project/main.vdf"),"text":Json::string("#base base.vdf\nr {}")})})) |> ignore
   let rename = server.handle(Json::object({"jsonrpc":Json::string("2.0"),"id":Json::number(2),"method":Json::string("workspace/willRenameFiles"),"params":Json::object({"files":Json::array([Json::object({"oldUri":Json::string("file:///project/base.vdf"),"newUri":Json::string("file:///project/new.vdf")})])})}))
   assert_true(rename[0].stringify().contains("new.vdf"))
+`:'';
+const features06=Number(version.split('.')[1])>=6?String.raw`
+  let queried = @valve.parse_kv3_preserving("//keep\n{assets=[resource:\"old/a\",resource:\"old/b\"] n=18446744073709551615}",allow_headerless=true)
+  assert_eq(queried.document().select("/**?type=integer&>9007199254740993").length(),1)
+  let typed_migration = queried.edit_query("/assets/*?flag=resource",@valve.KV3ReplacePrefix("old/","new/"))
+  assert_true(typed_migration.text().contains("resource:\"new/a\""))
+  assert_true(typed_migration.range(["n"]).selection_end > 0)
+  let export_snapshot = Json::object({"format":Json::string("moonvalve-project-v1"),"source":Json::string("main.vdf"),"files":Json::object({"main.vdf":Json::string("r {}"),"cfg/base.vdf":Json::string("r {k yes}")})})
+  let archive_bytes = @valve.export_project_zip(export_snapshot)
+  assert_eq(archive_bytes[0:4].to_owned(),b"PK\x03\x04")
+  assert_eq(@valve.project_export_files(export_snapshot).length(),2)
+  server.handle(Json::object({"jsonrpc":Json::string("2.0"),"method":Json::string("moonvalve/setFile"),"params":Json::object({"uri":Json::string("file:///project/types.kv3"),"text":Json::string(@valve.stringify_kv3({header:Some(@valve.generic_kv3_header()),root:kv3.root}))})})) |> ignore
+  let typed_symbols = server.handle(Json::object({"jsonrpc":Json::string("2.0"),"id":Json::number(3),"method":Json::string("textDocument/documentSymbol"),"params":Json::object({"textDocument":Json::object({"uri":Json::string("file:///project/types.kv3")})})}))
+  assert_true(typed_symbols[0].stringify().contains("18446744073709551615"))
 `:'';
 fs.writeFileSync(path.join(temporary,'cmd/main/main.mbt'),`///|
 fn verify() -> Unit raise {
@@ -42,19 +56,24 @@ fn verify() -> Unit raise {
   let initialized = server.handle(@json.parse("{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":1,\\\"method\\\":\\\"initialize\\\",\\\"params\\\":{}}"))
   assert_eq(initialized.length(), 1)
   ${newFeatures}
+  ${features06}
   println("Registry ${version}: parsing, exact integers, queries, source edits, transfer, KV3, workspace and LSP passed")
 }
 ///|
-fn main { verify() catch { error => abort(error.to_string()) } }
+fn main { verify() catch { error => { println(error.to_string());abort("Consumer verification failed") } } }
 `);
 const passed=[];
 function moon(args){const r=spawnSync('moon',['-C',temporary,...args],{cwd:temporary,encoding:'utf8',timeout:180000,maxBuffer:8*1024*1024});if(r.error)throw r.error;assert.equal(r.status,0,r.stderr+'\n'+r.stdout);process.stdout.write(r.stdout);}
 try{
-  assert.ok(!fs.existsSync(path.join(temporary,'moon.work')));moon(['update']);moon(['check','--target','all','--deny-warn']);
+  if(sourceMode)fs.writeFileSync(path.join(temporary,'moon.work'),'members = [".", '+JSON.stringify(root.replace(/\\/g,'/'))+']\n');
+  else {assert.ok(!fs.existsSync(path.join(temporary,'moon.work')));moon(['update']);}
+  moon(['check','--target','all','--deny-warn']);
+  if(!sourceMode){
   const installed=path.join(temporary,'.mooncakes/Charles67676767/moonvalve/moon.mod');assert.ok(fs.existsSync(installed),'The registry dependency must be downloaded');
   assert.ok(!fs.realpathSync(installed).startsWith(root+path.sep),'Consumer must not resolve the checkout');
   assert.match(fs.readFileSync(installed,'utf8'),new RegExp('version\\s*=\\s*"'+version.replace(/\./g,'\\.')+'"'));
+  }
   for(const target of ['wasm','wasm-gc','js','native']){moon(['run','cmd/main','--target',target]);passed.push(target);}
-  fs.mkdirSync(path.join(root,'_build'),{recursive:true});fs.writeFileSync(path.join(root,`_build/registry-check-${version}.json`),JSON.stringify({module:'Charles67676767/moonvalve',version,registry_only:true,targets:passed,features:['parse','int64','query','source-edit','transfer','kv3','workspace','lsp',...(newFeatures?['kv3-preserving','workspace-fields','lsp-file-rename']:[])]},null,2)+'\n');
-  console.log('Independent registry installation verified on all four backends');
+  fs.mkdirSync(path.join(root,'_build'),{recursive:true});fs.writeFileSync(path.join(root,`_build/${sourceMode?'consumer-source-check':'registry-check'}-${version}.json`),JSON.stringify({module:'Charles67676767/moonvalve',version,registry_only:!sourceMode,targets:passed,features:['parse','int64','query','source-edit','transfer','kv3','workspace','lsp',...(newFeatures?['kv3-preserving','workspace-fields','lsp-file-rename']:[]),...(features06?['project-zip','kv3-typed-query','kv3-source-ranges','kv3-navigation']:[])]},null,2)+'\n');
+  console.log(sourceMode?'Source consumer preflight passed on all four backends':'Independent registry installation verified on all four backends');
 }finally{const resolved=fs.realpathSync(temporary),parent=fs.realpathSync(os.tmpdir());assert.ok(resolved.startsWith(parent+path.sep)&&path.basename(resolved).startsWith('moonvalve-registry-'));fs.rmSync(resolved,{recursive:true,force:true});}

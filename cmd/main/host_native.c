@@ -347,3 +347,127 @@ done:
 #endif
   free(temp);free(backup);return result;
 }
+
+
+/* Export only into an exclusively created new directory. Track owned paths so
+ * rollback never enumerates or recursively removes a user-selected tree. */
+static char *mv_export_root;
+static char *mv_export_owned[8192];
+static unsigned char mv_export_is_dir[8192];
+static size_t mv_export_count;
+static void mv_export_remove_owned(const char *path,int directory) {
+#ifdef _WIN32
+  wchar_t *wide=mv_wide(path);if(wide){if(directory)RemoveDirectoryW(wide);else DeleteFileW(wide);free(wide);}
+#else
+  if(directory)rmdir(path);else unlink(path);
+#endif
+}
+static int mv_export_track(const char *path, int directory) {
+  if (mv_export_count >= 8192) return 0;
+  size_t n=strlen(path)+1;char *copy=malloc(n);if(!copy)return 0;
+  memcpy(copy,path,n);mv_export_owned[mv_export_count]=copy;
+  mv_export_is_dir[mv_export_count++]=(unsigned char)directory;return 1;
+}
+static int mv_export_mkdir(const char *path) {
+#ifdef _WIN32
+  wchar_t *wide=mv_wide(path);if(!wide)return -1;
+  int created=CreateDirectoryW(wide,NULL)!=0;
+  DWORD error=GetLastError(),attrs=GetFileAttributesW(wide);free(wide);
+  if(created)return 1;
+  return error==ERROR_ALREADY_EXISTS && attrs!=INVALID_FILE_ATTRIBUTES &&
+    (attrs&FILE_ATTRIBUTE_DIRECTORY) && !(attrs&FILE_ATTRIBUTE_REPARSE_POINT) ? 0 : -1;
+#else
+  if(!mkdir(path,0700))return 1;
+  struct stat st;
+  return errno==EEXIST && !lstat(path,&st) && S_ISDIR(st.st_mode) ? 0 : -1;
+#endif
+}
+MOONBIT_FFI_EXPORT int moonvalve_export_begin(moonbit_bytes_t path) {
+  if(mv_export_root)return 1;
+  const char *target=(const char*)path;
+  size_t n=strlen(target)+1;
+  char *root=malloc(n);if(!root)return 1;memcpy(root,target,n);
+  /* Existing files, directories, symlinks and Windows junctions all fail. */
+#ifdef _WIN32
+  wchar_t *wide=mv_wide(target);if(!wide){free(root);return 1;}
+  int created=CreateDirectoryW(wide,NULL)!=0;free(wide);
+#else
+  int created=!mkdir(target,0700);
+#endif
+  if(!created){free(root);return 1;}
+  mv_export_root=root;mv_export_count=0;
+  return 0;
+}
+MOONBIT_FFI_EXPORT int moonvalve_export_file(moonbit_bytes_t relative,moonbit_bytes_t bytes,int32_t length) {
+  if(!mv_export_root || length<0)return 1;
+  const char *name=(const char*)relative;
+  if(!*name || *name=='/' || strchr(name,'\\') || strchr(name,':') || strstr(name,"../"))return 1;
+  size_t prefix=strlen(mv_export_root),size=prefix+strlen(name)+2;
+  char *path=malloc(size);if(!path)return 1;
+  snprintf(path,size,"%s/%s",mv_export_root,name);
+  for(char *at=path+prefix+1;*at;at++)if(*at=='/'){
+    *at=0;int made=mv_export_mkdir(path);
+    if(made<0){free(path);return 1;}
+    if(made && !mv_export_track(path,1)){mv_export_remove_owned(path,1);free(path);return 1;}
+    *at='/';
+  }
+  FILE *file;
+#ifdef _WIN32
+  wchar_t *wide=mv_wide(path);
+  file=wide?_wfopen(wide,L"wbx"):NULL;free(wide);
+#else
+  file=fopen(path,"wbx");
+#endif
+  if(!file){free(path);return 1;}
+  int tracked=mv_export_track(path,0);
+  if(!tracked){fclose(file);mv_export_remove_owned(path,0);free(path);return 1;}
+  int failed=fwrite(bytes,1,(size_t)length,file)!=(size_t)length;
+  if(fflush(file))failed=1;
+  if(fclose(file))failed=1;
+  free(path);return failed;
+}
+MOONBIT_FFI_EXPORT void moonvalve_export_finish(int32_t success) {
+  if(!mv_export_root)return;
+  while(mv_export_count){size_t i=--mv_export_count;char *path=mv_export_owned[i];
+    if(!success){
+#ifdef _WIN32
+      wchar_t *wide=mv_wide(path);if(wide){if(mv_export_is_dir[i])RemoveDirectoryW(wide);else DeleteFileW(wide);free(wide);}
+#else
+      if(mv_export_is_dir[i])rmdir(path);else unlink(path);
+#endif
+    }
+    free(path);
+  }
+  if(!success){
+#ifdef _WIN32
+    wchar_t *wide=mv_wide(mv_export_root);if(wide){RemoveDirectoryW(wide);free(wide);}
+#else
+    rmdir(mv_export_root);
+#endif
+  }
+  free(mv_export_root);mv_export_root=NULL;
+}
+
+MOONBIT_FFI_EXPORT int moonvalve_write_new(moonbit_bytes_t target,moonbit_bytes_t bytes,int32_t length) {
+  FILE *file;
+#ifdef _WIN32
+  wchar_t *wide=mv_wide((const char*)target);if(!wide)return 1;
+  file=_wfopen(wide,L"wbx");
+#else
+  file=fopen((const char*)target,"wbx");
+#endif
+  if(!file){
+#ifdef _WIN32
+    free(wide);
+#endif
+    return 1;
+  }
+  int failed=fwrite(bytes,1,(size_t)length,file)!=(size_t)length;
+  if(fflush(file))failed=1;if(fclose(file))failed=1;
+#ifdef _WIN32
+  if(failed)DeleteFileW(wide);free(wide);
+#else
+  if(failed)unlink((const char*)target);
+#endif
+  return failed;
+}

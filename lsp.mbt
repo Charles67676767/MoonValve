@@ -445,16 +445,19 @@ fn LspServer::perform(
     raise Failure("Server has shut down")
   }
   if [
-      "textDocument/definition", "textDocument/foldingRange", "textDocument/documentLink",
-      "textDocument/completion", "textDocument/hover",
+      "textDocument/documentSymbol", "textDocument/definition", "textDocument/foldingRange",
+      "textDocument/documentLink", "textDocument/completion", "textDocument/hover",
     ].contains(rpc_method) {
     let uri = lsp_string(lsp_object(params, "textDocument"), "uri")
     if self.documents.get(uri) is Some(document) &&
       lsp_is_kv3(uri, document.text) {
-      return if rpc_method == "textDocument/hover" {
-        Json::null()
-      } else {
-        Json::array([])
+      return self.kv3_navigation(rpc_method, params) catch {
+        _ =>
+          if rpc_method == "textDocument/hover" {
+            Json::null()
+          } else {
+            Json::array([])
+          }
       }
     }
   }

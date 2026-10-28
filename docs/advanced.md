@@ -118,3 +118,5 @@ VS Code 扩展与安装说明见 [extensions/vscode](../extensions/vscode/README
 `moonvalve/referenceTargets {}` 返回缓存内已解析文件的规范化目标 URI；宿主确认目标确实不存在后发送 `moonvalve/setMissingFiles {uris:[...]}`（至多 10000 项）。服务器不将未缓存文件认定为缺失。VS Code 仅在当前工作区内通过 `workspace.fs.stat` 确认 `FileNotFound`，权限失败不当作不存在，不自动读取目标内容。缺失诊断为警告，循环诊断为错误；均附引用链及关联位置，最多 128 条/文档。引用图至多 10000 条边，单次诊断遍历至多 10000 步；循环检查覆盖所有已载入的条件分支。文件修改、关闭、缓存变动及重命名会刷新打开文档的相关诊断。缓存外文件内容不参与循环分析。
 
 VS Code 使用官方 [文件重命名事件](https://code.visualstudio.com/api/references/vscode-api#workspace.onWillRenameFiles) 交回引用编辑，支持编辑器的应用与撤销。扩展运行时仍无第三方 npm 依赖。
+
+0.6 的工程目录/ZIP 导出、KV3 类型查询、快照批量编辑、树形控件与编辑器导航见[工作流说明](kv3-workflows.md)。

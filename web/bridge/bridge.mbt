@@ -52,6 +52,16 @@ fn execute(request : Json) -> Json raise {
         "tree": result.document().to_json(),
       })
     }
+    "workspace-zip" => {
+      guard fields.get("snapshot") is Some(snapshot) else {
+        raise Failure("Expected project snapshot")
+      }
+      let bytes = @valve.export_project_zip(snapshot, options~)
+      Json::object({
+        "base64": Json::string(@base64.encode(bytes[:])),
+        "size": Json::number(bytes.length().to_double()),
+      })
+    }
     "workspace-query" => {
       guard fields.get("snapshot") is Some(snapshot) else {
         raise Failure("Expected workspace snapshot")
@@ -73,6 +83,49 @@ fn execute(request : Json) -> Json raise {
         files~,
         options~,
       )
+    }
+    "kv3-query" | "kv3-query-edit" | "kv3-locate" => {
+      let source = @valve.parse_kv3_preserving(
+        field(fields, "text"),
+        allow_headerless=fields.get("headerless") == Some(Json::boolean(true)),
+      )
+      if action == "kv3-locate" {
+        guard fields.get("path") is Some(Array(parts)) else {
+          raise Failure("Expected KV3 path")
+        }
+        let path = parts.map(v => {
+          guard v is String(s) else { raise Failure("Expected path component") }
+          s
+        })
+        let range = source.range(path)
+        Json::object({
+          "start": Json::number(range.start.to_double()),
+          "end": Json::number(range.end.to_double()),
+          "selection_start": Json::number(range.selection_start.to_double()),
+          "selection_end": Json::number(range.selection_end.to_double()),
+        })
+      } else {
+        let expression = field(fields, "expression")
+        let matches = @valve.kv3_located_values_to_json(
+          source.document().select(expression),
+        )
+        if action == "kv3-query" {
+          Json::object({ "matches": matches })
+        } else {
+          guard fields.get("operation") is Some(operation) else {
+            raise Failure("Expected typed query edit")
+          }
+          let edited = source.edit_query(
+            expression,
+            @valve.kv3_query_edit_from_json(operation),
+          )
+          Json::object({
+            "matches": matches,
+            "text": Json::string(edited.text()),
+            "model": @valve.kv3_to_json(edited.document()),
+          })
+        }
+      }
     }
     "kv3-edit" => {
       guard fields.get("plan") is Some(plan) else {

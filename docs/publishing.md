@@ -7,7 +7,7 @@
 在自己的 MoonBit 项目中运行：
 
 ```sh
-moon add Charles67676767/moonvalve@0.5.1
+moon add Charles67676767/moonvalve@0.6.0
 ```
 
 在调用包的 `moon.pkg` 中添加：
@@ -21,7 +21,7 @@ import { "Charles67676767/moonvalve" @valve }
 ## 独立注册表消费者
 
 ```sh
-node scripts/test-registry.cjs 0.5.1
+node scripts/test-registry.cjs 0.6.0
 ```
 
 脚本在系统临时目录建立全新模块，只声明 Mooncakes 版本依赖，不创建 `moon.work`，不指向仓库源码。刷新注册表后核对实际下载模块的版本及来源路径，再在 wasm、wasm-gc、JS、native 四后端运行：精确 Int64、重复项查询、保留原文编辑、移动复制、KV3 类型模型、多文件重构和 LSP 初始化。成功结果写入被忽略的 `_build/registry-check-VERSION.json`。
@@ -35,3 +35,5 @@ node scripts/test-registry.cjs 0.5.1
 `moon publish --dry-run` 只进行服务端预检。当前固定工具链可能把服务端明确返回的 `202 Accepted / Dry run completed successfully` 报为非零退出；这条成功文本不表示已经发布。正式 `moon publish` 应返回成功，再查询公开版本并运行上述独立消费者。不要只根据本地生成 ZIP 或预检文本宣布发布完成。
 
 认证文件及本机配置不属于发布内容。GitHub 与 Mooncakes 使用同一提交的源码，版本发布后保持不可覆盖。
+
+发布前运行 `node scripts/test-registry.cjs --source`，用源码工作区预检与注册表消费者相同的新能力用例；它明确记录 `registry_only:false`，不能替代发布后的独立安装。0.6 的目录/ZIP 导出、KV3 类型查询和导航也纳入两种接入验证。

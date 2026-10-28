@@ -14,6 +14,8 @@ pub fn changes_from_json(Json) -> Array[Change] raise
 
 pub fn check_inventory(Array[SteamLibrary], Array[InventoryRecord]) -> Array[InventoryIssue]
 
+pub fn compile_kv3_query(String) -> KV3Query raise
+
 pub fn compile_query(String) -> Query raise QueryError
 
 pub fn decode_binary(Bytes, options? : BinaryOptions, string_table? : Array[String]?) -> Array[BinaryEntry] raise BinaryError
@@ -26,6 +28,8 @@ pub fn encode_binary(Array[BinaryEntry], options? : BinaryOptions, string_table?
 
 pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
 
+pub fn export_project_zip(Json, options? : ParseOptions) -> Bytes raise
+
 pub fn generic_kv3_header() -> KV3Header
 
 pub fn inventory_csv(Array[InventoryRecord]) -> String
@@ -33,6 +37,10 @@ pub fn inventory_csv(Array[InventoryRecord]) -> String
 pub fn inventory_total(Array[InventoryRecord]) -> InventoryTotal raise SteamError
 
 pub fn kv3_from_json(Json) -> KV3Document raise
+
+pub fn kv3_located_values_to_json(Array[KV3LocatedValue]) -> Json
+
+pub fn kv3_query_edit_from_json(Json) -> KV3QueryEdit raise
 
 pub fn kv3_to_json(KV3Document) -> Json raise
 
@@ -69,6 +77,8 @@ pub fn parse_kv3(String, options? : ParseOptions, allow_headerless? : Bool) -> K
 pub fn parse_kv3_preserving(String, options? : ParseOptions, allow_headerless? : Bool) -> KV3SourceDocument raise
 
 pub fn parse_preserving(String, options? : ParseOptions) -> SourceDocument raise
+
+pub fn project_export_files(Json, options? : ParseOptions) -> Map[String, String] raise
 
 pub fn query_edit_from_json(Json) -> QueryEdit raise
 
@@ -298,6 +308,7 @@ pub(all) struct KV3Document {
 } derive(Eq, @debug.Debug)
 pub fn KV3Document::equal(Self, Self) -> Bool
 pub fn KV3Document::not_equal(Self, Self) -> Bool
+pub fn KV3Document::select(Self, String) -> Array[KV3LocatedValue] raise
 pub fn KV3Document::to_repr(Self) -> @debug.Repr
 
 pub(all) enum KV3Edit {
@@ -325,11 +336,42 @@ pub fn KV3Header::equal(Self, Self) -> Bool
 pub fn KV3Header::not_equal(Self, Self) -> Bool
 pub fn KV3Header::to_repr(Self) -> @debug.Repr
 
+pub(all) struct KV3LocatedValue {
+  path : Array[String]
+  value : KV3Value
+} derive(Eq, @debug.Debug)
+pub fn KV3LocatedValue::equal(Self, Self) -> Bool
+pub fn KV3LocatedValue::not_equal(Self, Self) -> Bool
+pub fn KV3LocatedValue::to_repr(Self) -> @debug.Repr
+
+type KV3Query
+pub fn KV3Query::select(Self, KV3Document) -> Array[KV3LocatedValue] raise
+
+pub(all) enum KV3QueryEdit {
+  KV3SetValue(KV3Value)
+  KV3ReplacePrefix(String, String)
+  KV3RenameMatches(String)
+  KV3RemoveMatches
+} derive(@debug.Debug)
+pub fn KV3QueryEdit::to_repr(Self) -> @debug.Repr
+
 type KV3SourceDocument
 pub fn KV3SourceDocument::apply_json(Self, Json) -> Self raise
 pub fn KV3SourceDocument::document(Self) -> KV3Document
 pub fn KV3SourceDocument::edit(Self, Array[String], KV3Edit) -> Self raise
+pub fn KV3SourceDocument::edit_query(Self, String, KV3QueryEdit) -> Self raise
+pub fn KV3SourceDocument::range(Self, Array[String]) -> KV3SourceRange raise
 pub fn KV3SourceDocument::text(Self) -> String
+
+pub(all) struct KV3SourceRange {
+  start : Int
+  end : Int
+  selection_start : Int
+  selection_end : Int
+} derive(Eq, @debug.Debug)
+pub fn KV3SourceRange::equal(Self, Self) -> Bool
+pub fn KV3SourceRange::not_equal(Self, Self) -> Bool
+pub fn KV3SourceRange::to_repr(Self) -> @debug.Repr
 
 pub(all) enum KV3Value {
   KV3Null

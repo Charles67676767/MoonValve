@@ -15,8 +15,8 @@ function declarations(text){
   }
   assert.equal(current,'');return result;
 }
-if(contract.previous){
-  const baseline=read(contract.previous.interface);assert.equal(hash(baseline),contract.previous.sha256,'Previous compatibility baseline changed');
+for(const previous of (Array.isArray(contract.previous)?contract.previous:contract.previous?[contract.previous]:[])){
+  const baseline=read(previous.interface);assert.equal(hash(baseline),previous.sha256,'Previous compatibility baseline changed');
   const current=new Set(declarations(source));for(const declaration of declarations(baseline))assert.ok(current.has(declaration),'Previous API declaration removed or changed: '+declaration);
 }
 console.log('Public MoonBit API matches '+contract.series+'.x baseline and retains previous public declarations');

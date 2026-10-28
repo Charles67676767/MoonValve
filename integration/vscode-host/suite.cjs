@@ -27,6 +27,10 @@ exports.run=async()=>{
     await waitFor(()=>vscode.languages.getDiagnostics(plain.uri).length===0,'clear diagnostics');checks.push('diagnostic recovery');
     const kv3=await vscode.workspace.openTextDocument(uri('resource.kv3'));await vscode.window.showTextDocument(kv3);assert.equal(kv3.languageId,'moonvalve-kv3');
     formatting=await command('executeFormatDocumentProvider',kv3.uri,{tabSize:2,insertSpaces:true});const formatted=formattedText(kv3,formatting);assert.match(formatted,/18446744073709551615/);assert.match(formatted,/resource:/);checks.push('KV3 language and exact typed formatting');
+    const kv3Symbols=await command('executeDocumentSymbolProvider',kv3.uri);assert.equal(kv3Symbols[0].name,'KV3');assert.ok(kv3Symbols[0].children.some(row=>row.name==='resources'&&row.children[0].name==='[0]'));checks.push('KV3 object and array outline');
+    const kv3Fold=await command('executeFoldingRangeProvider',kv3.uri);assert.ok(kv3Fold.length);checks.push('KV3 collection folding');
+    const integerPosition=kv3.positionAt(kv3.getText().indexOf('identifier'));const kv3Hover=await command('executeHoverProvider',kv3.uri,integerPosition);assert.match(kv3Hover.flatMap(row=>row.contents).map(item=>typeof item==='string'?item:item.value).join('\n'),/18446744073709551615/);checks.push('KV3 exact integer hover');
+    const kv3Completion=await command('executeCompletionItemProvider',kv3.uri,integerPosition);assert.ok(kv3Completion.items.some(row=>row.label==='true'));checks.push('KV3 literal and flag completion');
     const rename=new vscode.WorkspaceEdit();rename.renameFile(uri('base.vdf'),uri('renamed.vdf'));assert.equal(await vscode.workspace.applyEdit(rename),true);
     await waitFor(()=>main.getText().includes('renamed.vdf'),'automatic reference rename');checks.push('file rename updates incoming reference');
     await main.save();const renamed=await vscode.workspace.openTextDocument(uri('renamed.vdf'));

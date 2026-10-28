@@ -7,6 +7,7 @@ import tempfile
 import zipfile
 import argparse
 import re
+import io
 
 root = pathlib.Path(__file__).resolve().parents[1]
 options = argparse.ArgumentParser()
@@ -38,7 +39,7 @@ with tempfile.TemporaryDirectory(prefix='moonvalve-package-') as temporary:
     result = subprocess.run([str(binary), 'parse', '-'], input='root { key "中文😀" key two }', encoding='utf-8', check=True, capture_output=True)
     assert [row['value'] for row in json.loads(result.stdout)[0]['value']] == ['中文😀', 'two']
     assert (folder / 'web/editor/moonvalve.mjs').is_file()
-    for asset in ['tools.mjs', 'samples.mjs', 'worker.mjs', 'editing.mjs', 'kv3-tools.mjs']:
+    for asset in ['tools.mjs', 'samples.mjs', 'worker.mjs', 'editing.mjs', 'kv3-tools.mjs', 'kv3-tree.mjs']:
         assert (folder / 'web/editor' / asset).is_file()
     streamed = subprocess.run([str(binary), 'stream-query', '-', 'root', 'key'], input='root { key "中文😀" key two }', encoding='utf-8', check=True, capture_output=True)
     assert [json.loads(line)['value'] for line in streamed.stdout.splitlines()] == ['中文😀', 'two']
@@ -49,6 +50,20 @@ with tempfile.TemporaryDirectory(prefix='moonvalve-package-') as temporary:
     assert len(json.loads(selected.stdout)) == 2
     typed = subprocess.run([str(binary), 'kv3-parse', str(folder / 'fixtures/sample.kv3')], encoding='utf-8', check=True, capture_output=True)
     assert '18446744073709551615' in typed.stdout
+    snapshot_file = folder / 'fixtures/workspace-fields.json'
+    snapshot = json.loads(snapshot_file.read_text(encoding='utf-8'))
+    exported = subprocess.run([str(binary), 'workspace-zip', str(snapshot_file)], check=True, capture_output=True)
+    with zipfile.ZipFile(io.BytesIO(exported.stdout)) as project_zip:
+        assert project_zip.testzip() is None
+        assert set(project_zip.namelist()) == set(snapshot['files'])
+        for name, text in snapshot['files'].items():
+            assert project_zip.read(name) == text.encode('utf-8')
+    project_copy = target / 'exported-project'
+    subprocess.run([str(binary), 'workspace-export', str(snapshot_file), str(project_copy)], check=True, capture_output=True)
+    for name, text in snapshot['files'].items():
+        assert (project_copy / name).read_bytes() == text.encode('utf-8')
+    query = subprocess.run([str(binary), 'kv3-select', str(folder / 'fixtures/sample.kv3'), '/**?type=integer&>9007199254740993'], check=True, capture_output=True, encoding='utf-8')
+    assert json.loads(query.stdout)[0]['value']['value'] == '18446744073709551615'
     extension = folder / 'extensions' / f'moonvalve-{module_version}.vsix'
     with zipfile.ZipFile(extension) as bundle:
         assert bundle.testzip() is None

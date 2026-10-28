@@ -247,8 +247,14 @@ fn run(args : Array[String]) -> Unit raise {
     println("  transfer FILE PLAN.json [--dry-run|--in-place]")
     println("  kv3-parse / kv3-format FILE [--headerless]")
     println("  kv3-from-json FILE       Write typed KV3 JSON as text")
+    println("  kv3-select FILE EXPR [--headerless]")
+    println(
+      "  kv3-query-edit FILE EXPR OP.json [--headerless] [--dry-run|--in-place]",
+    )
     println("  kv3-edit FILE PLAN.json [--headerless] [--dry-run|--in-place]")
     println("  workspace-query SNAPSHOT EXPR [SELECTED-FILES.json]")
+    println("  workspace-export SNAPSHOT NEW-DIRECTORY")
+    println("  workspace-zip SNAPSHOT [NEW-ZIP-FILE]")
     println("  workspace-edit SNAPSHOT PLAN.json [--dry-run|--in-place]")
     println("  lsp                     Start UTF-8 framed LSP on stdio")
     println("  stream-json FILE        Emit raw events as JSON Lines")
@@ -292,8 +298,9 @@ fn run(args : Array[String]) -> Unit raise {
   }
   let expanded = [
     "select", "query-edit", "edit-snapshot", "transfer", "kv3-parse", "kv3-format",
-    "kv3-from-json", "kv3-edit", "workspace-query", "workspace-edit", "parse", "format",
-    "query", "query-all", "resolve", "project", "edit", "binary-decode", "binary-encode",
+    "kv3-from-json", "kv3-edit", "kv3-select", "kv3-query-edit", "workspace-query",
+    "workspace-edit", "workspace-export", "workspace-zip", "parse", "format", "query",
+    "query-all", "resolve", "project", "edit", "binary-decode", "binary-encode",
     "cache", "shortcuts", "shortcut-add", "shortcut-set", "shortcut-remove",
   ]
   if !expanded.contains(command) {
@@ -306,7 +313,9 @@ fn run(args : Array[String]) -> Unit raise {
   let file = args[3]
   let opts = command_options(args)
   if opts.headerless &&
-    !["kv3-parse", "kv3-format", "kv3-edit"].contains(command) {
+    !["kv3-parse", "kv3-format", "kv3-edit", "kv3-select", "kv3-query-edit"].contains(
+      command,
+    ) {
     raise InvalidArgument("--headerless is only used when reading KV3")
   }
   if run_advanced(command, file, opts) {

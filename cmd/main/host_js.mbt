@@ -230,3 +230,61 @@ fn host_save(
     raise InvalidArgument(error)
   }
 }
+
+///|
+extern "js" fn host_export_directory_impl(
+  target : String,
+  files : String,
+) -> String =
+  #| function(target,encoded) {
+  #|   const fs=require('node:fs'),path=require('node:path'),owned=[];let created=false;
+  #|   try {
+  #|     const files=JSON.parse(encoded);fs.mkdirSync(target);created=true;
+  #|     for(const name of Object.keys(files).sort()){
+  #|       const parts=name.split('/');let folder=target;
+  #|       for(const part of parts.slice(0,-1)){
+  #|         folder=path.join(folder,part);
+  #|         try{fs.mkdirSync(folder);owned.push([folder,true]);}catch(e){if(e.code!=='EEXIST')throw e;const st=fs.lstatSync(folder);if(!st.isDirectory()||st.isSymbolicLink())throw new Error('Invalid output parent');}
+  #|       }
+  #|       const file=path.join(target,...parts),fd=fs.openSync(file,'wx',0o600);owned.push([file,false]);
+  #|       try{fs.writeFileSync(fd,files[name],{encoding:'utf8'});fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+  #|     }
+  #|     return '';
+  #|   }catch(e){
+  #|     if(created){for(const [name,dir]of owned.reverse()){try{dir?fs.rmdirSync(name):fs.unlinkSync(name);}catch{}}try{fs.rmdirSync(target);}catch{}}
+  #|     return e.message||'Directory export failed';
+  #|   }
+  #| }
+
+///|
+fn host_export_directory(
+  target : String,
+  files : Map[String, String],
+) -> Unit raise {
+  if target.is_empty() || target == "-" || target.contains("\u0000") {
+    raise InvalidArgument("Invalid output directory")
+  }
+  let rows : Map[String, Json] = Map([])
+  for name, text in files {
+    rows[name] = Json::string(text)
+  }
+  let error = host_export_directory_impl(target, Json::object(rows).stringify())
+  if error != "" {
+    raise InvalidArgument(error)
+  }
+}
+
+///|
+extern "js" fn host_write_new_impl(target : String, bytes : Bytes) -> String =
+  #| function(target,bytes){const fs=require('node:fs');let fd,created=false;try{fd=fs.openSync(target,'wx',0o600);created=true;fs.writeFileSync(fd,Buffer.from(bytes));fs.fsyncSync(fd);fs.closeSync(fd);fd=undefined;return '';}catch(e){if(fd!==undefined)try{fs.closeSync(fd);}catch{}if(created)try{fs.unlinkSync(target);}catch{}return e.message||'Output failed';}}
+
+///|
+fn host_write_new(target : String, bytes : Bytes) -> Unit raise {
+  if target.is_empty() || target == "-" || target.contains("\u0000") {
+    raise InvalidArgument("Invalid output filename")
+  }
+  let error = host_write_new_impl(target, bytes)
+  if error != "" {
+    raise InvalidArgument(error)
+  }
+}
