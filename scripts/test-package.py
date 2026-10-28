@@ -64,6 +64,12 @@ with tempfile.TemporaryDirectory(prefix='moonvalve-package-') as temporary:
         assert (project_copy / name).read_bytes() == text.encode('utf-8')
     query = subprocess.run([str(binary), 'kv3-select', str(folder / 'fixtures/sample.kv3'), '/**?type=integer&>9007199254740993'], check=True, capture_output=True, encoding='utf-8')
     assert json.loads(query.stdout)[0]['value']['value'] == '18446744073709551615'
+    mixed = subprocess.run([str(binary), 'workspace-kv3-query', str(folder / 'fixtures/workspace-mixed.json'), '/**?flag=resource'], check=True, capture_output=True, encoding='utf-8')
+    assert len(json.loads(mixed.stdout)) == 2
+    preserving = subprocess.run([str(binary), 'kv3-format-preserving', '-', '--headerless'], input='//keep\n{n=18446744073709551615 arr=[1,2]}', check=True, capture_output=True, encoding='utf-8')
+    assert '//keep' in preserving.stdout and '18446744073709551615' in preserving.stdout
+    refs = subprocess.run([str(binary), 'kv3-resources', str(folder / 'fixtures/sample.kv3'), str(folder / 'fixtures/resource-roots.json')], check=True, capture_output=True, encoding='utf-8')
+    assert json.loads(refs.stdout)[0]['target'] == 'content/materials/moon.vmat'
     extension = folder / 'extensions' / f'moonvalve-{module_version}.vsix'
     with zipfile.ZipFile(extension) as bundle:
         assert bundle.testzip() is None

@@ -2,7 +2,7 @@
   "name": "moonvalve",
   "displayName": "MoonValve KeyValues",
   "description": "MoonBit-powered KV1 and text KV3 language tools.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "Charles67676767",
   "license": "MIT",
   "repository": {
@@ -51,6 +51,12 @@
         "configuration": "./kv3-language-configuration.json"
       }
     ],
+    "commands": [
+      {
+        "command": "moonvalve.findResourceReferences",
+        "title": "MoonValve: Browse Resource References"
+      }
+    ],
     "configuration": {
       "title": "MoonValve",
       "properties": {
@@ -70,6 +76,30 @@
           ],
           "scope": "machine",
           "description": "Arguments passed directly without a shell. For Node.js, use [\"/path/to/moonvalve.cjs\", \"lsp\"]."
+        },
+        "moonvalve.resourceRoots": {
+          "type": "array",
+          "default": [],
+          "scope": "resource",
+          "description": "Explicit resource prefix mappings. directory is relative to the first workspace folder; only resource: file paths are resolved.",
+          "items": {
+            "type": "object",
+            "required": [
+              "prefix",
+              "directory"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "prefix": {
+                "type": "string",
+                "description": "Empty for all resource paths, or a path prefix ending in /."
+              },
+              "directory": {
+                "type": "string",
+                "description": "Relative directory within the first workspace folder, for example content or ."
+              }
+            }
+          }
         },
         "moonvalve.literalPaths": {
           "type": "boolean",

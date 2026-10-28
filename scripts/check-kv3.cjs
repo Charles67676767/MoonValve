@@ -26,6 +26,11 @@ const root=path.resolve(__dirname,'..'),dotnet=process.env.MOONVALVE_DOTNET||'do
     ['/id',{op:'replace',value:{type:'integer',value:'9007199254740993'}}],
     ['/nested/title',{op:'replace',value:{type:'string',value:'new'}}]
   ])sources.push(run({action:'kv3-query-edit',text:original,expression,operation}).text);
+  for(const text of sources.slice()){
+    const formatted=run({action:'kv3-format-preserving',text}).text;
+    assert.equal(run({action:'kv3-format-preserving',text:formatted}).text,formatted,'Preserving formatter must be idempotent');
+    sources.push(formatted);
+  }
   const models=sources.map(text=>run({action:'kv3-parse',text}));
   const requests=sources.flatMap((text,i)=>[{kv3:true,text},{kv3:true,text:models[i].text}]);
   const reference=spawnSync(dotnet,[path.join(root,'tools/reference-dotnet/bin/Release/net10.0/Reference.dll')],{input:requests.map(r=>JSON.stringify(r)).join('\n')+'\n',encoding:'utf8',maxBuffer:16*1024*1024,timeout:60000});

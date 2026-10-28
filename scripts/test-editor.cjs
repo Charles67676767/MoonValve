@@ -90,5 +90,13 @@ const assert=require('node:assert/strict'),path=require('node:path'),{pathToFile
     const edited=ok({action:'kv3-query-edit',text,headerless:true,expression:'/arr/*?flag=resource',operation:{op:'replace-prefix',from:'old/',to:'new/'}});assert.equal(edited.text,text.replaceAll('old/','new/'));assert.match(edited.text,/18446744073709551615/);
     assert.equal(run({action:'kv3-query-edit',text,headerless:true,expression:'/**',operation:{op:'remove'}}).ok,false);
   });
+  test('mixed project worker queries preserve snapshots and formatting retains comments',()=>{
+    const h='<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n',text=h+'//keep\n{a=resource:"old/a" n=18446744073709551615}',snapshot={format:'moonvalve-project-v1',source:'main.vdf',files:{'main.vdf':'r {k v}','a.kv3':text,'b.kv3':text}};
+    assert.equal(ok({action:'workspace-kv3-query',snapshot,expression:'/**?flag=resource'}).length,2);
+    const edited=ok({action:'workspace-edit',snapshot,plan:[{op:'kv3-query',expression:'/**?flag=resource',files:[],operation:{op:'replace-prefix',from:'old/',to:'new/'}}]});assert.match(edited.files['a.kv3'],/resource:"new\/a"/);assert.equal(snapshot.files['a.kv3'],text);
+    const formatted=ok({action:'kv3-format-preserving',text}).text;assert.match(formatted,/\/\/keep/);assert.match(formatted,/18446744073709551615/);assert.equal(ok({action:'kv3-format-preserving',text:formatted}).text,formatted);
+    assert.match(ok({action:'format-preserving',text:'#base base.vdf\nr {k yes [$WIN32]}'}).text,/\[\$WIN32\]/);
+    const refs=ok({action:'kv3-resources',text,roots:[{prefix:'',directory:'content'}]});assert.equal(refs[0].target,'content/old/a');
+  });
   console.log(`${cases} editor core checks passed`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

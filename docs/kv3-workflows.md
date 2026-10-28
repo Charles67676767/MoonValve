@@ -61,3 +61,5 @@ moonvalve kv3-query-edit fixtures/sample.kv3 '/**?flag=resource&^="materials/"' 
 树当前最多展示 5000 个展开节点，折叠分支或使用查询可缩小范围。源文件或头部选项改变后，旧树和旧预览失效，需要重新解析。
 
 VS Code 的文本 KV3 现支持对象/数组大纲、折叠、显示类型与精确数值的悬浮，以及语法字面量/标记补全。大纲与折叠各有 5000 项预算。文件指令跳转与重命名引用维护继续针对 KV1；KV3 不自动推断游戏资源根目录或字段 schema。`KV3SourceDocument::range(path)` 返回 Unicode 标量偏移，可供宿主转换为 UTF-16 编辑器位置。
+
+0.7 新增混合工程类型查询、保留注释格式化与显式资源映射导航，详见[工程工作流](project-workflows.md)。

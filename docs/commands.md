@@ -55,3 +55,7 @@ moonvalve shortcut-remove shortcuts.vdf 0 --in-place
 快捷方式定义包含 name、exe、start_dir、launch_options 和 tags。新增时 name/exe 必填；更新仅替换定义中提供的字段并保留 App ID 及未知数据。库 API 允许调用方另行显式调整 ID。默认向标准输出写新的二进制；预览、备份和原地保存规则与文本编辑一致。运行中的 Steam 可能重新写入快捷方式配置，因此应在 Steam 退出后保存。
 
 查询、快照批量编辑、移动复制、文本 KV3、多文件重构与 LSP 的用法、JSON 格式和边界见 [进阶功能](advanced.md)。
+
+## 0.7 新入口
+
+`workspace-kv3-query`、`format-preserving`、`kv3-format-preserving`、`kv3-resources` 与 `kv3-resource-edit` 的完整示例及输入格式见[工程工作流](project-workflows.md)。原有规范化命令保持原行为。

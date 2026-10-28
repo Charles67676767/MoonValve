@@ -18,6 +18,33 @@ fn execute(request : Json) -> Json raise {
     escape_sequences: !literal,
   }
   match action {
+    "format-preserving" => {
+      let result = @valve.parse_preserving(field(fields, "text"), options~).format_preserving()
+      Json::object({
+        "text": Json::string(result.text()),
+        "tree": result.document().to_json(),
+      })
+    }
+    "kv3-format-preserving" => {
+      let result = @valve.parse_kv3_preserving(
+        field(fields, "text"),
+        allow_headerless=fields.get("headerless") == Some(Json::boolean(true)),
+      ).format_preserving()
+      Json::object({
+        "text": Json::string(result.text()),
+        "model": @valve.kv3_to_json(result.document()),
+      })
+    }
+    "kv3-resources" => {
+      let roots = @valve.resource_roots_from_json(
+        fields.get("roots").unwrap_or(Json::array([])),
+      )
+      let source = @valve.parse_kv3_preserving(
+        field(fields, "text"),
+        allow_headerless=fields.get("headerless") == Some(Json::boolean(true)),
+      )
+      @valve.resource_references_to_json(source.resources(roots~))
+    }
     "query" | "query-edit" => {
       let source = @valve.parse_preserving(field(fields, "text"), options~)
       let expression = field(fields, "expression")
@@ -62,7 +89,7 @@ fn execute(request : Json) -> Json raise {
         "size": Json::number(bytes.length().to_double()),
       })
     }
-    "workspace-query" => {
+    "workspace-query" | "workspace-kv3-query" => {
       guard fields.get("snapshot") is Some(snapshot) else {
         raise Failure("Expected workspace snapshot")
       }
@@ -77,12 +104,17 @@ fn execute(request : Json) -> Json raise {
           })
         _ => raise Failure("Expected selected files")
       }
-      @valve.query_workspace_snapshot(
-        snapshot,
-        field(fields, "expression"),
-        files~,
-        options~,
-      )
+      let expression = field(fields, "expression")
+      if action == "workspace-kv3-query" {
+        @valve.query_workspace_kv3_snapshot(
+          snapshot,
+          expression,
+          files~,
+          options~,
+        )
+      } else {
+        @valve.query_workspace_snapshot(snapshot, expression, files~, options~)
+      }
     }
     "kv3-query" | "kv3-query-edit" | "kv3-locate" => {
       let source = @valve.parse_kv3_preserving(

@@ -171,13 +171,14 @@ export function setupTools(api) {
   async function jump(name, offset) {
     const files = api.files();
     if (!(name in files)) throw new Error('工程中不存在文件：' + name);
+    if(/\.kv3$/i.test(name)||files[name].trimStart().startsWith('<!-- kv3')){await kv3Tools.loadKV3(files[name],name);return;}
     await api.load(files[name], name, 'text'); show('config'); api.highlight(offset); api.status(`已定位 ${name} 的原始位置`);
   }
   function invalidateProject() { project = null; analyzedFiles = null; $('project-graph').replaceChildren(); $('project-origins').replaceChildren(); $('project-state').textContent = '选择入口并分析引用。'; }
   async function setProject(files, source) {
     projectHistory=[];$('project-op-undo').disabled=true;
-    api.setFiles(files); invalidateProject(); renderFiles(); $('project-entry').value = source;
-    await api.load(files[source], source, 'text'); show('project');
+    api.setFiles(files); await kv3Tools.syncProject(files); invalidateProject(); renderFiles(); $('project-entry').value = source;
+    await jump(source,0); show('project');
   }
   $('project-open').onclick = () => $('project-input').click();
   $('project-import').onclick = () => $('project-snapshot').click();
@@ -193,7 +194,7 @@ export function setupTools(api) {
     const source=names.includes(snapshot.source)?snapshot.source:names.sort()[0];await setProject(snapshot.files,source);
   });
   $('project-input').onchange = guard(async event => {
-    const files = [...event.target.files].filter(f => /\.(vdf|acf|res|txt)$/i.test(f.name)); event.target.value = '';
+    const files = [...event.target.files].filter(f => /\.(vdf|acf|res|txt|kv|kv3)$/i.test(f.name)); event.target.value = '';
     if (!files.length || files.length > 64 || files.reduce((n, f) => n + f.size, 0) > 16 * 1024 * 1024) throw new Error('工程需包含 1–64 个文本文件，合计最多 16 MiB。');
     const virtual = Object.create(null);
     for (const file of files) { const name = file.webkitRelativePath.split('/').slice(1).join('/'); virtual[name] = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true}).decode(await file.arrayBuffer()); }
@@ -202,7 +203,8 @@ export function setupTools(api) {
   $('project-demo').onclick = guard(() => setProject({
     'main.vdf': '// Moon Harbor · 工程入口\n#base "config/defaults.vdf"\n#include "config/extra.vdf"\nroot\n{\n  name "Moon Harbor"\n  platform windows [$WIN32]\n  platform linux [$LINUX]\n}\n',
     'config/defaults.vdf': '// 默认设置\nroot\n{\n  name "Default Name"\n  quality high\n  resources { path "materials/moon" }\n}\n',
-    'config/extra.vdf': '// 附加条目\nextra { tag controller tag singleplayer }\n'
+    'config/extra.vdf': '// 附加条目\nextra { tag controller tag singleplayer }\n',
+    'assets/moon.kv3':'<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n// 材质配置\n{path=resource:"old/moon.vmat" id=18446744073709551615}\n'
   }, 'main.vdf'));
   function checkOriginsFresh() {
     const files = api.files();
@@ -244,7 +246,7 @@ export function setupTools(api) {
   });
   let projectHistory=[];
   const snapshot=()=>({format:'moonvalve-project-v1',source:$('project-entry').value,files:api.files()});
-  async function restore(snapshot){api.setFiles(snapshot.files,false);invalidateProject();renderFiles();$('project-entry').value=snapshot.source;await api.load(snapshot.files[snapshot.source],snapshot.source,'text');show('project');}
+  async function restore(snapshot){api.setFiles(snapshot.files,false);await kv3Tools.syncProject(snapshot.files);invalidateProject();renderFiles();$('project-entry').value=snapshot.source;await jump(snapshot.source,0);show('project');}
   $('project-zip').onclick=guard(async()=>{
     const before=snapshot(),stamp=JSON.stringify([before,api.options()]);
     const result=await api.core({action:'workspace-zip',snapshot:before,...api.options()});
@@ -252,28 +254,32 @@ export function setupTools(api) {
     const bytes=Uint8Array.from(atob(result.base64),c=>c.charCodeAt(0));api.download(bytes,'moonvalve-project.zip','application/zip');api.status('已导出工程文件，ZIP 内保留原相对路径。');
   });
   const projectQuery=()=>({expression:$('project-query-expression').value,files:$('project-query-files').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)});
-  function queryStamp(){return JSON.stringify([snapshot(),api.options()]);}
+  const typedProject=()=>$('project-query-format').value==='kv3';
+  const queryAction=()=>typedProject()?'workspace-kv3-query':'workspace-query';
+  function queryStamp(){return JSON.stringify([snapshot(),api.options(),$('project-query-format').value]);}
   function renderWorkspaceMatches(rows,stamp){
     const total=rows.reduce((n,row)=>n+row.matches.length,0);$('project-query-count').textContent=total+' 个字段 · '+rows.length+' 个文件';$('project-query-results').replaceChildren();
     let shown=0;
     for(const row of rows)for(const match of row.matches){
       if(shown++>=1000)continue;
-      const item=button(row.file+' · '+match.path.map(p=>p.key+'['+p.occurrence+']').join(' / ')+' · '+(Array.isArray(match.value)?'对象':match.value),guard(async()=>{
+      const typed=typedProject();
+      const item=button(row.file+' · '+match.path.map(p=>typed?p:p.key+'['+p.occurrence+']').join(' / ')+' · '+(typed?JSON.stringify(match.value):Array.isArray(match.value)?'对象':match.value),guard(async()=>{
         if(queryStamp()!==stamp)throw new Error('工程或选项已变化，请重新查询。');
-        const files=api.files();await api.load(files[row.file],row.file,'text');show('config');api.selectPath(match.path);
+        await jump(row.file,0);if(typed)await kv3Tools.revealKV3(match.path);else api.selectPath(match.path);
       }));$('project-query-results').append(item);
     }
     if(total>1000)$('project-query-count').textContent+='（显示前 1000 项）';
   }
   $('project-query-run').onclick=guard(async()=>{
-    const stamp=queryStamp(),query=projectQuery(),rows=await api.core({action:'workspace-query',snapshot:snapshot(),...query,...api.options()});
+    const stamp=queryStamp(),query=projectQuery(),rows=await api.core({action:queryAction(),snapshot:snapshot(),...query,...api.options()});
     if(queryStamp()!==stamp)throw new Error('工程或选项已变化，请重新查询。');renderWorkspaceMatches(rows,stamp);
   });
   $('project-query-preview').onclick=guard(async()=>{
     const before=snapshot(),stamp=queryStamp(),query=projectQuery(),op=$('project-query-operation').value;
-    const operation=op==='replace-prefix'?{op,from:$('project-query-value').value,to:$('project-query-to').value}:op==='remove'?{op}:{op,value:$('project-query-value').value};
-    const rows=await api.core({action:'workspace-query',snapshot:before,...query,...api.options()});
-    const result=await api.core({action:'workspace-edit',snapshot:before,plan:[{op:'query',...query,operation}],...api.options()});
+    const typed=typedProject();
+    const operation=op==='replace-prefix'?{op,from:$('project-query-value').value,to:$('project-query-to').value}:op==='remove'?{op}:op==='rename'&&typed?{op,key:$('project-query-value').value}:{op,value:typed?JSON.parse($('project-query-value').value):$('project-query-value').value};
+    const rows=await api.core({action:queryAction(),snapshot:before,...query,...api.options()});
+    const result=await api.core({action:'workspace-edit',snapshot:before,plan:[{op:typed?'kv3-query':'query',...query,operation}],...api.options()});
     if(queryStamp()!==stamp)throw new Error('工程或选项已变化，请重新预览。');renderWorkspaceMatches(rows,stamp);
     api.preview(JSON.stringify(result,null,2),'工程字段批量修改 · '+rows.reduce((n,r)=>n+r.matches.length,0)+' 项匹配',async()=>{
       if(queryStamp()!==stamp)throw new Error('工程或选项已变化，请重新预览。');
@@ -288,5 +294,6 @@ export function setupTools(api) {
   });
   $('project-op-undo').onclick=guard(async()=>{if(projectHistory.length){await restore(projectHistory.pop());$('project-op-undo').disabled=!projectHistory.length;}});
   api.subscribe(() => { if (panel === 'shortcuts') guard(refreshShortcuts)(); });
-  return {show, renderFiles,...setupKV3(api,show)};
+  const kv3Tools=setupKV3(api,show);
+  return {show, renderFiles,...kv3Tools};
 }

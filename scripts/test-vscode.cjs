@@ -4,8 +4,12 @@ const root=path.resolve(__dirname,'..'),test=require('../extensions/vscode/node_
   const version=JSON.parse(fs.readFileSync(path.join(root,'extensions/vscode/package.json'),'utf8')).version;
   const build=path.join(root,'_build/vscode-e2e'),workspace=path.join(build,'workspace'),extensions=path.join(build,'extensions'),user=path.join(build,'user');
   fs.mkdirSync(path.join(workspace,'.vscode'),{recursive:true});fs.mkdirSync(path.join(user,'User'),{recursive:true});
+  fs.writeFileSync(path.join(workspace,'.vscode/settings.json'),'{}\n');
   const native=['_build/native/release/build/cmd/main/main.exe','_build/native/release/build/cmd/main/main'].map(p=>path.join(root,p)).find(fs.existsSync);assert.ok(native,'Build native release CLI first');
-  fs.writeFileSync(path.join(user,'User/settings.json'),JSON.stringify({'moonvalve.serverPath':native,'moonvalve.serverArgs':['lsp'],'telemetry.telemetryLevel':'off','workbench.startupEditor':'none','extensions.autoUpdate':false}));
+  fs.writeFileSync(path.join(user,'User/settings.json'),JSON.stringify({'moonvalve.serverPath':native,'moonvalve.serverArgs':['lsp'],'moonvalve.resourceRoots':[{prefix:'',directory:'content'}],'telemetry.telemetryLevel':'off','workbench.startupEditor':'none','extensions.autoUpdate':false}));
+  const assets=path.join(workspace,'content/materials');fs.mkdirSync(assets,{recursive:true});
+  for(const name of ['moon-renamed.vmat','absent.vmat']){const file=path.join(assets,name);if(fs.existsSync(file))fs.unlinkSync(file);}
+  fs.writeFileSync(path.join(assets,'moon.vmat'),'synthetic resource fixture');
   const renamedFixture=path.join(workspace,'renamed.vdf');if(fs.existsSync(renamedFixture))fs.unlinkSync(renamedFixture);
   fs.writeFileSync(path.join(workspace,'main.vdf'),'#base base.vdf\nroot\n{\n tag one\n tag two\n}\n');fs.writeFileSync(path.join(workspace,'base.vdf'),'root { inherited yes }');fs.writeFileSync(path.join(workspace,'plain.vdf'),'root {key "😀"}');
   fs.copyFileSync(path.join(root,'fixtures/sample.kv3'),path.join(workspace,'resource.kv3'));

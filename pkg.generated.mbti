@@ -82,6 +82,8 @@ pub fn project_export_files(Json, options? : ParseOptions) -> Map[String, String
 
 pub fn query_edit_from_json(Json) -> QueryEdit raise
 
+pub fn query_workspace_kv3_snapshot(Json, String, files? : Array[String], options? : ParseOptions) -> Json raise
+
 pub fn query_workspace_snapshot(Json, String, files? : Array[String], options? : ParseOptions) -> Json raise
 
 pub fn read_app_manifest(Document) -> SteamApp raise SteamError
@@ -89,6 +91,10 @@ pub fn read_app_manifest(Document) -> SteamApp raise SteamError
 pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
 
 pub fn read_shortcut_file(Array[BinaryEntry]) -> ShortcutFile raise SteamError
+
+pub fn resource_references_to_json(Array[ResourceReference]) -> Json
+
+pub fn resource_roots_from_json(Json) -> Array[ResourceRoot] raise
 
 pub fn select_inventory(Array[InventoryRecord], filter? : String, sort? : String) -> Array[InventoryRecord] raise SteamError
 
@@ -360,7 +366,10 @@ pub fn KV3SourceDocument::apply_json(Self, Json) -> Self raise
 pub fn KV3SourceDocument::document(Self) -> KV3Document
 pub fn KV3SourceDocument::edit(Self, Array[String], KV3Edit) -> Self raise
 pub fn KV3SourceDocument::edit_query(Self, String, KV3QueryEdit) -> Self raise
+pub fn KV3SourceDocument::format_preserving(Self) -> Self raise
 pub fn KV3SourceDocument::range(Self, Array[String]) -> KV3SourceRange raise
+pub fn KV3SourceDocument::resources(Self, roots? : Array[ResourceRoot]) -> Array[ResourceReference] raise
+pub fn KV3SourceDocument::rewrite_resources(Self, Array[ResourceRoot], Map[String, String]) -> Self raise
 pub fn KV3SourceDocument::text(Self) -> String
 
 pub(all) struct KV3SourceRange {
@@ -462,6 +471,26 @@ pub fn ResolvedProject::not_equal(Self, Self) -> Bool
 pub fn ResolvedProject::to_json(Self) -> Json
 pub fn ResolvedProject::to_repr(Self) -> @debug.Repr
 
+pub(all) struct ResourceReference {
+  path : Array[String]
+  resource : String
+  target : String?
+  status : String
+  start : Int
+  end : Int
+} derive(Eq, @debug.Debug)
+pub fn ResourceReference::equal(Self, Self) -> Bool
+pub fn ResourceReference::not_equal(Self, Self) -> Bool
+pub fn ResourceReference::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ResourceRoot {
+  prefix : String
+  directory : String
+} derive(Eq, @debug.Debug)
+pub fn ResourceRoot::equal(Self, Self) -> Bool
+pub fn ResourceRoot::not_equal(Self, Self) -> Bool
+pub fn ResourceRoot::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Selector {
   key : String
   occurrence : Int
@@ -484,6 +513,7 @@ pub fn SourceDocument::document(Self) -> Document
 pub fn SourceDocument::edit(Self, Array[Selector], Edit) -> Self raise
 pub fn SourceDocument::edit_query(Self, String, QueryEdit) -> Self raise
 pub fn SourceDocument::evaluate(Self, Array[String]) -> Document raise ParseError
+pub fn SourceDocument::format_preserving(Self) -> Self raise
 pub fn SourceDocument::locations(Self, String) -> Array[ResolvedOrigin]
 pub fn SourceDocument::text(Self) -> String
 pub fn SourceDocument::transfer(Self, Array[Selector], Array[Selector], Int, copy? : Bool) -> Self raise
@@ -578,10 +608,12 @@ pub fn Workspace::add_file(Self, String, String) -> Self raise
 pub fn Workspace::apply(Self, Json) -> Self raise
 pub fn Workspace::copy_file(Self, String, String) -> Self raise
 pub fn Workspace::edit_query(Self, String, QueryEdit, files? : Array[String]) -> Self raise
+pub fn Workspace::edit_query_kv3(Self, String, KV3QueryEdit, files? : Array[String]) -> Self raise
 pub fn Workspace::files(Self) -> Map[String, String]
 pub fn Workspace::remove_file(Self, String) -> Self raise
 pub fn Workspace::rename_file(Self, String, String) -> Self raise
 pub fn Workspace::select(Self, String, files? : Array[String]) -> Json raise
+pub fn Workspace::select_kv3(Self, String, files? : Array[String]) -> Json raise
 pub fn Workspace::to_json(Self) -> Json
 
 // Type aliases

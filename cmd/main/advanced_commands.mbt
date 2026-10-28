@@ -23,6 +23,85 @@ fn run_advanced(
   opts : CommandOptions,
 ) -> Bool raise {
   match command {
+    "format-preserving" | "kv3-format-preserving" => {
+      if !opts.words.is_empty() ||
+        opts.resolve ||
+        opts.root is Some(_) ||
+        opts.symbols is Some(_) ||
+        (command == "kv3-format-preserving" && opts.literal) {
+        raise InvalidArgument(
+          "Whitespace formatting retains raw conditions and takes no resolved view",
+        )
+      }
+      let before = host_read_bytes(file)
+      let text = @utf8.decode(before[:])
+      let result = if command == "kv3-format-preserving" {
+        @valve.parse_kv3_preserving(text, allow_headerless=opts.headerless)
+        .format_preserving()
+        .text()
+      } else {
+        @valve.parse_preserving(text, options={
+          ..@valve.ParseOptions::default(),
+          escape_sequences: !opts.literal,
+        })
+        .format_preserving()
+        .text()
+      }
+      emit_changed(file, before, @utf8.encode(result[:]), opts, true)
+    }
+    "kv3-resources" => {
+      reject_write_options(opts)
+      if opts.words.length() > 1 ||
+        opts.literal ||
+        opts.resolve ||
+        opts.root is Some(_) ||
+        opts.symbols is Some(_) {
+        raise InvalidArgument("kv3-resources FILE [ROOTS.json]")
+      }
+      let roots = if opts.words.is_empty() {
+        []
+      } else {
+        @valve.resource_roots_from_json(
+          @json.parse(input_text(opts.words[0])[:]),
+        )
+      }
+      let source = @valve.parse_kv3_preserving(
+        input_text(file),
+        allow_headerless=opts.headerless,
+      )
+      host_output(
+        @valve.resource_references_to_json(source.resources(roots~)).stringify() +
+        "\n",
+      )
+    }
+    "kv3-resource-edit" => {
+      if opts.words.length() != 2 ||
+        opts.literal ||
+        opts.resolve ||
+        opts.root is Some(_) ||
+        opts.symbols is Some(_) {
+        raise InvalidArgument("kv3-resource-edit FILE ROOTS.json MOVES.json")
+      }
+      let roots = @valve.resource_roots_from_json(
+        @json.parse(input_text(opts.words[0])[:]),
+      )
+      guard @json.parse(input_text(opts.words[1])[:]) is Object(rows) else {
+        raise InvalidArgument("Expected resource move map")
+      }
+      let moves : Map[String, String] = Map([])
+      for from, value in rows {
+        guard value is String(to) else {
+          raise InvalidArgument("Expected destination path")
+        }
+        moves[from] = to
+      }
+      let before = host_read_bytes(file)
+      let result = @valve.parse_kv3_preserving(
+        @utf8.decode(before[:]),
+        allow_headerless=opts.headerless,
+      ).rewrite_resources(roots, moves)
+      emit_changed(file, before, @utf8.encode(result.text()[:]), opts, true)
+    }
     "select" => {
       reject_write_options(opts)
       if opts.words.length() != 1 {
@@ -162,7 +241,7 @@ fn run_advanced(
         )
       }
     }
-    "workspace-query" => {
+    "workspace-query" | "workspace-kv3-query" => {
       reject_write_options(opts)
       if opts.words.length() < 1 ||
         opts.words.length() > 2 ||
@@ -186,15 +265,26 @@ fn run_advanced(
       } else {
         []
       }
-      let result = @valve.query_workspace_snapshot(
-        @json.parse(input_text(file)[:]),
-        opts.words[0],
-        files~,
-        options={
-          ..@valve.ParseOptions::default(),
-          escape_sequences: !opts.literal,
-        },
-      )
+      let snapshot = @json.parse(input_text(file)[:])
+      let options = {
+        ..@valve.ParseOptions::default(),
+        escape_sequences: !opts.literal,
+      }
+      let result = if command == "workspace-kv3-query" {
+        @valve.query_workspace_kv3_snapshot(
+          snapshot,
+          opts.words[0],
+          files~,
+          options~,
+        )
+      } else {
+        @valve.query_workspace_snapshot(
+          snapshot,
+          opts.words[0],
+          files~,
+          options~,
+        )
+      }
       host_output(result.stringify() + "\n")
     }
     "workspace-edit" => {

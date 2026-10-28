@@ -140,6 +140,12 @@ fn LspServer::kv3_navigation(
   let source = parse_kv3_preserving(document.text)
   let coordinates = lsp_coordinates(document.text)
   match rpc_method {
+    "textDocument/definition" =>
+      self.resource_links(
+        uri,
+        Some(lsp_offset(document.text, lsp_object(params, "position"))),
+      )
+    "textDocument/documentLink" => self.resource_links(uri, None)
     "textDocument/documentSymbol" =>
       Json::array([
         lsp_kv3_symbol(source, source.doc.root, [], "KV3", coordinates, {
@@ -218,6 +224,22 @@ fn LspServer::kv3_navigation(
       let value = kv3_at(source.doc.root, indices)
       let span = source.spans[key]
       let (start, end) = source.keys.get(key).unwrap_or((span.start, span.end))
+      let mut resource_detail = ""
+      if value is KV3Flag("resource", KV3String(_)) {
+        for reference in source.resources(roots=self.resource_roots) {
+          if reference.start == span.start {
+            resource_detail = "\nResource: " +
+              (match reference.target {
+                Some(path) =>
+                  self.resource_states.get(path).unwrap_or("unchecked") +
+                  "\n" +
+                  path
+                None => reference.status
+              })
+            break
+          }
+        }
+      }
       Json::object({
         "contents": Json::object({
           "kind": Json::string("plaintext"),
@@ -227,7 +249,8 @@ fn LspServer::kv3_navigation(
               kv3_path_names(source.doc.root, indices).map(s => Json::string(s)),
             ).stringify() +
             "\n" +
-            kv3_summary(value),
+            kv3_summary(value) +
+            resource_detail,
           ),
         }),
         "range": coordinates.range(start, end),

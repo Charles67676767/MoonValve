@@ -34,6 +34,24 @@ const features06=Number(version.split('.')[1])>=6?String.raw`
   let typed_symbols = server.handle(Json::object({"jsonrpc":Json::string("2.0"),"id":Json::number(3),"method":Json::string("textDocument/documentSymbol"),"params":Json::object({"textDocument":Json::object({"uri":Json::string("file:///project/types.kv3")})})}))
   assert_true(typed_symbols[0].stringify().contains("18446744073709551615"))
 `:'';
+const features07=Number(version.split('.')[1])>=7?String.raw`
+  let preserving = @valve.parse_preserving("//keep\nr {k yes [$WIN32]}").format_preserving()
+  assert_true(preserving.text().contains("[$WIN32]"))
+  assert_eq(preserving.format_preserving().text(),preserving.text())
+  let typed_source = @valve.parse_kv3_preserving(@valve.stringify_kv3({header:Some(@valve.generic_kv3_header()),root:kv3.root}))
+  let typed_formatted = typed_source.format_preserving()
+  assert_eq(typed_formatted.format_preserving().text(),typed_formatted.text())
+  let mixed = @valve.new_workspace({"main.vdf":"r {k yes}","typed.kv3":typed_source.text()})
+  assert_true(mixed.select_kv3("/**?type=integer").stringify().contains("18446744073709551615"))
+  let typed_changed = mixed.edit_query_kv3("/**?type=integer",@valve.KV3SetValue(@valve.KV3Integer("9007199254740993")))
+  assert_true(typed_changed.files()["typed.kv3"].contains("9007199254740993"))
+  assert_eq(typed_changed.files()["main.vdf"],"r {k yes}")
+  let roots : Array[@valve.ResourceRoot] = [{prefix:"",directory:"content"}]
+  let refs = typed_source.resources(roots~)
+  assert_eq(refs.length(),1)
+  assert_eq(refs[0].target,Some("content/moon"))
+  assert_true(typed_source.rewrite_resources(roots,{"content/moon":"content/new"}).text().contains("resource:\"new\""))
+`:'';
 fs.writeFileSync(path.join(temporary,'cmd/main/main.mbt'),`///|
 fn verify() -> Unit raise {
   assert_eq(@valve.version(), "${version}")
@@ -57,6 +75,7 @@ fn verify() -> Unit raise {
   assert_eq(initialized.length(), 1)
   ${newFeatures}
   ${features06}
+  ${features07}
   println("Registry ${version}: parsing, exact integers, queries, source edits, transfer, KV3, workspace and LSP passed")
 }
 ///|
@@ -74,6 +93,6 @@ try{
   assert.match(fs.readFileSync(installed,'utf8'),new RegExp('version\\s*=\\s*"'+version.replace(/\./g,'\\.')+'"'));
   }
   for(const target of ['wasm','wasm-gc','js','native']){moon(['run','cmd/main','--target',target]);passed.push(target);}
-  fs.mkdirSync(path.join(root,'_build'),{recursive:true});fs.writeFileSync(path.join(root,`_build/${sourceMode?'consumer-source-check':'registry-check'}-${version}.json`),JSON.stringify({module:'Charles67676767/moonvalve',version,registry_only:!sourceMode,targets:passed,features:['parse','int64','query','source-edit','transfer','kv3','workspace','lsp',...(newFeatures?['kv3-preserving','workspace-fields','lsp-file-rename']:[]),...(features06?['project-zip','kv3-typed-query','kv3-source-ranges','kv3-navigation']:[])]},null,2)+'\n');
+  fs.mkdirSync(path.join(root,'_build'),{recursive:true});fs.writeFileSync(path.join(root,`_build/${sourceMode?'consumer-source-check':'registry-check'}-${version}.json`),JSON.stringify({module:'Charles67676767/moonvalve',version,registry_only:!sourceMode,targets:passed,features:['parse','int64','query','source-edit','transfer','kv3','workspace','lsp',...(newFeatures?['kv3-preserving','workspace-fields','lsp-file-rename']:[]),...(features06?['project-zip','kv3-typed-query','kv3-source-ranges','kv3-navigation']:[]),...(features07?['mixed-workspace','preserving-format','resource-mapping','resource-rewrite']:[])]},null,2)+'\n');
   console.log(sourceMode?'Source consumer preflight passed on all four backends':'Independent registry installation verified on all four backends');
 }finally{const resolved=fs.realpathSync(temporary),parent=fs.realpathSync(os.tmpdir());assert.ok(resolved.startsWith(parent+path.sep)&&path.basename(resolved).startsWith('moonvalve-registry-'));fs.rmSync(resolved,{recursive:true,force:true});}

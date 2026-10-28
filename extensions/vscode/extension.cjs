@@ -37,10 +37,30 @@ async function activate(context) {
   }));
   context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(document=>{if(supported(document))notify('textDocument/didClose',docParam(document));scheduleReferences();}));
   let cached=new Map(),cacheComplete=true;
-  let referenceTimer,referenceGeneration=0;
+  let referenceTimer,referenceGeneration=0,resourceConfigurationRevision=0;
   function scheduleReferences(){
     referenceGeneration++;clearTimeout(referenceTimer);
     referenceTimer=setTimeout(()=>refreshReferences(referenceGeneration).catch(error=>channel.appendLine('References: '+error.message)),120);
+  }
+  async function configureResources(){
+    const folder=vscode.workspace.workspaceFolders?.[0];
+    const rows=vscode.workspace.getConfiguration('moonvalve').get('resourceRoots',[]);
+    if(!Array.isArray(rows)||rows.length>32)throw new Error('resourceRoots 需为最多 32 项的数组。');
+    const roots=rows.map(row=>{
+      if(!folder||typeof row.prefix!=='string'||typeof row.directory!=='string'||!row.directory||row.directory.includes('\\')||row.directory.startsWith('/')||row.directory.includes(':')||row.directory.split('/').some(p=>p==='..'||p===''))throw new Error('资源目录需为首个工作区内的相对路径。');
+      const uri=row.directory==='.'?folder.uri:vscode.Uri.joinPath(folder.uri,row.directory);
+      if(!vscode.workspace.getWorkspaceFolder(uri))throw new Error('资源目录不在工作区内。');
+      return {prefix:row.prefix,uri:uri.toString()};
+    });
+    await client.request('moonvalve/setResourceRoots',{roots});scheduleReferences();
+  }
+  async function applyResourceConfiguration(){
+    const revision=++resourceConfigurationRevision;
+    try{await configureResources();}catch(error){
+      if(revision!==resourceConfigurationRevision)return;
+      notify('moonvalve/setResourceRoots',{roots:[]});scheduleReferences();
+      channel.appendLine(error.message);vscode.window.showWarningMessage('MoonValve 资源配置：'+error.message);
+    }
   }
   async function refreshReferences(generation){
     const targets=await client.request('moonvalve/referenceTargets'),missing=[];
@@ -52,9 +72,22 @@ async function activate(context) {
       }));
       if(generation!==referenceGeneration)return;
     }
-    if(generation===referenceGeneration)notify('moonvalve/setMissingFiles',{uris:missing});
+    if(generation!==referenceGeneration)return;
+    notify('moonvalve/setMissingFiles',{uris:missing});
+    const resources=await client.request('moonvalve/resourceTargets'),states=[];
+    for(let start=0;start<resources.length;start+=16){
+      await Promise.all(resources.slice(start,start+16).map(async value=>{
+        const uri=vscode.Uri.parse(value);let status='unavailable';
+        if(vscode.workspace.getWorkspaceFolder(uri))try{const info=await vscode.workspace.fs.stat(uri);status=(info.type&vscode.FileType.File)?'present':'unavailable';}catch(error){if(error.code==='FileNotFound')status='missing';}
+        states.push({uri:value,status});
+      }));
+      if(generation!==referenceGeneration)return;
+    }
+    if(generation===referenceGeneration)notify('moonvalve/setResourceStates',{states});
   }
   context.subscriptions.push({dispose(){clearTimeout(referenceTimer);referenceGeneration++;}});
+  await applyResourceConfiguration();
+  if(vscode.workspace.onDidChangeConfiguration)context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(event=>{if(event.affectsConfiguration('moonvalve.resourceRoots'))applyResourceConfiguration();}));
   for(const document of vscode.workspace.textDocuments)open(document);
   async function cache(uri) {
     if(!vscode.workspace.getWorkspaceFolder(uri))return;
@@ -71,6 +104,8 @@ async function activate(context) {
   const glob='**/*.{vdf,acf,res,kv,kv3,txt}',watcher=vscode.workspace.createFileSystemWatcher(glob);context.subscriptions.push(watcher);
   watcher.onDidChange(uri=>cache(uri),null,context.subscriptions);watcher.onDidCreate(uri=>cache(uri),null,context.subscriptions);
   watcher.onDidDelete(uri=>{cached.delete(uri.toString());notify('moonvalve/removeFile',{uri:uri.toString()});scheduleReferences();},null,context.subscriptions);
+  const assetWatcher=vscode.workspace.createFileSystemWatcher('**/*');context.subscriptions.push(assetWatcher);
+  assetWatcher.onDidCreate(()=>scheduleReferences(),null,context.subscriptions);assetWatcher.onDidDelete(()=>scheduleReferences(),null,context.subscriptions);
   context.subscriptions.push(vscode.workspace.onWillRenameFiles(event=>{
     event.waitUntil((async()=>{
       if(!cacheComplete)throw new Error('工程超过缓存限制或存在未载入文件，无法完整预览引用修改。请缩小工作区。');
@@ -94,6 +129,12 @@ async function activate(context) {
     }
     scheduleReferences();
   }));
+  if(vscode.commands?.registerCommand)context.subscriptions.push(vscode.commands.registerCommand('moonvalve.findResourceReferences',safe(async()=>{
+    const rows=await client.request('moonvalve/resourceReferences');
+    const choices=rows.map(row=>({label:row.resource,description:row.status,detail:row.uri,row}));
+    const selected=await vscode.window.showQuickPick(choices,{placeHolder:'选择资源引用，跳转到配置中的使用位置',matchOnDetail:true});
+    if(selected){const row=selected.row,document=await vscode.workspace.openTextDocument(vscode.Uri.parse(row.uri)),editor=await vscode.window.showTextDocument(document);editor.selection=new vscode.Selection(toRange(row.range).start,toRange(row.range).end);editor.revealRange(toRange(row.range));}
+  })));
   function symbols(rows){return rows.map(row=>{const symbol=new vscode.DocumentSymbol(row.name,row.detail||'',row.kind-1,toRange(row.range),toRange(row.selectionRange));symbol.children=symbols(row.children||[]);return symbol;});}
   context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(selector,{provideDocumentSymbols:safe(async doc=>symbols(await ask('textDocument/documentSymbol',doc)))}));
   context.subscriptions.push(vscode.languages.registerDefinitionProvider(selector,{provideDefinition:safe(async(doc,p)=>(await ask('textDocument/definition',doc,{position:position(p)})).map(row=>new vscode.Location(vscode.Uri.parse(row.uri),toRange(row.range))))}));

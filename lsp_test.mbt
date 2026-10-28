@@ -65,7 +65,7 @@ test "LSP lifecycle UTF16 incremental changes stale versions and close diagnosti
   }
   assert_eq(
     json_field(edits[0], "newText"),
-    Json::string("\"r\"\n{\n  \"k\" \"Moon\"\n}\n"),
+    Json::string("r {\n  k \"Moon\"\n}\n"),
   )
   assert_eq(server.handle(lsp_notify("textDocument/didChange", change)), [])
   let closed = server.handle(lsp_notify("textDocument/didClose", params))
@@ -137,13 +137,11 @@ test "LSP project links definitions completions and symbols use only client supp
     fail("Expected symbols")
   }
   assert_eq(symbols.length(), 2)
-  assert_true(
-    json_field(
-      server.handle(lsp_request("textDocument/formatting", params))[0],
-      "error",
-    )
-    is Object(_),
+  let formatted = json_field(
+    server.handle(lsp_request("textDocument/formatting", params))[0],
+    "result",
   )
+  assert_true(formatted.stringify().contains("#base base.vdf"))
 }
 
 ///|

@@ -17,6 +17,8 @@ struct LspServer {
   mut references_dirty : Bool
   missing_files : Map[String, Bool]
   mut literal : Bool
+  mut resource_roots : Array[ResourceRoot]
+  resource_states : Map[String, String]
 }
 
 ///|
@@ -31,6 +33,8 @@ pub fn new_lsp_server() -> LspServer {
     missing_files: Map([]),
     reference_cache: Map([]),
     references_dirty: true,
+    resource_roots: [],
+    resource_states: Map([]),
   }
 }
 
@@ -243,6 +247,9 @@ fn LspServer::diagnostics(self : LspServer, uri : String) -> Json {
       try {
         if lsp_is_kv3(uri, document.text) {
           parse_kv3(document.text) |> ignore
+          for diagnostic in self.resource_diagnostics(uri) {
+            errors.push(diagnostic)
+          }
         } else {
           self.source(uri) |> ignore
           for diagnostic in self.reference_diagnostics(uri) {
@@ -463,6 +470,49 @@ fn LspServer::perform(
   }
   match rpc_method {
     "initialized" | "$/cancelRequest" => Json::null()
+    "moonvalve/setResourceRoots" => {
+      guard params.get("roots") is Some(Array(rows)) && rows.length() <= 32 else {
+        raise Failure("Expected bounded resource roots")
+      }
+      let roots = rows.map(row => {
+        guard row is Object(fields) else {
+          raise Failure("Expected resource root")
+        }
+        ResourceRoot::{
+          prefix: lsp_string(fields, "prefix"),
+          directory: lsp_virtual_uri(lsp_string(fields, "uri")),
+        }
+      })
+      resource_roots(roots)
+      self.resource_roots = roots
+      self.resource_states.clear()
+      self.publish_open_diagnostics(output)
+      Json::null()
+    }
+    "moonvalve/resourceTargets" => self.resource_targets()
+    "moonvalve/resourceReferences" => self.resource_references()
+    "moonvalve/setResourceStates" => {
+      guard params.get("states") is Some(Array(rows)) && rows.length() <= 10000 else {
+        raise Failure("Expected bounded resource states")
+      }
+      let states : Map[String, String] = Map([])
+      for row in rows {
+        guard row is Object(fields) else {
+          raise Failure("Expected resource state")
+        }
+        let state = lsp_string(fields, "status")
+        if !["present", "missing", "unavailable"].contains(state) {
+          raise Failure("Invalid resource state")
+        }
+        states[lsp_virtual_uri(lsp_string(fields, "uri"))] = state
+      }
+      self.resource_states.clear()
+      for path, state in states {
+        self.resource_states[path] = state
+      }
+      self.publish_open_diagnostics(output)
+      Json::null()
+    }
     "moonvalve/referenceTargets" => self.reference_targets()
     "moonvalve/setMissingFiles" => {
       guard params.get("uris") is Some(Array(uris)) && uris.length() <= 10000 else {
@@ -773,30 +823,9 @@ fn LspServer::perform(
         raise Failure("Document missing")
       }
       let text = if lsp_is_kv3(uri, document.text) {
-        stringify_kv3(parse_kv3(document.text))
+        parse_kv3_preserving(document.text).format_preserving().text()
       } else {
-        let source = self.source(uri)
-        let conditional : Ref[Bool] = { val: false, }
-        let parser = new_stream_parser(
-          event => {
-            if event is Condition(_, _) {
-              conditional.val = true
-            }
-            true
-          },
-          options={
-            ..ParseOptions::default(),
-            escape_sequences: !self.literal,
-          },
-        )
-        parser.feed(document.text)
-        parser.finish()
-        if conditional.val {
-          raise Failure(
-            "Formatting unresolved conditions would change semantics; use source edits",
-          )
-        }
-        stringify(source.doc)
+        self.source(uri).format_preserving().text()
       }
       Json::array([
         Json::object({

@@ -253,6 +253,14 @@ fn run(args : Array[String]) -> Unit raise {
     )
     println("  kv3-edit FILE PLAN.json [--headerless] [--dry-run|--in-place]")
     println("  workspace-query SNAPSHOT EXPR [SELECTED-FILES.json]")
+    println("  workspace-kv3-query SNAPSHOT EXPR [SELECTED-FILES.json]")
+    println(
+      "  format-preserving / kv3-format-preserving FILE [--dry-run|--in-place]",
+    )
+    println("  kv3-resources FILE [ROOTS.json]")
+    println(
+      "  kv3-resource-edit FILE ROOTS.json MOVES.json [--dry-run|--in-place]",
+    )
     println("  workspace-export SNAPSHOT NEW-DIRECTORY")
     println("  workspace-zip SNAPSHOT [NEW-ZIP-FILE]")
     println("  workspace-edit SNAPSHOT PLAN.json [--dry-run|--in-place]")
@@ -297,8 +305,9 @@ fn run(args : Array[String]) -> Unit raise {
     return
   }
   let expanded = [
-    "select", "query-edit", "edit-snapshot", "transfer", "kv3-parse", "kv3-format",
-    "kv3-from-json", "kv3-edit", "kv3-select", "kv3-query-edit", "workspace-query",
+    "workspace-kv3-query", "format-preserving", "kv3-format-preserving", "kv3-resources",
+    "kv3-resource-edit", "select", "query-edit", "edit-snapshot", "transfer", "kv3-parse",
+    "kv3-format", "kv3-from-json", "kv3-edit", "kv3-select", "kv3-query-edit", "workspace-query",
     "workspace-edit", "workspace-export", "workspace-zip", "parse", "format", "query",
     "query-all", "resolve", "project", "edit", "binary-decode", "binary-encode",
     "cache", "shortcuts", "shortcut-add", "shortcut-set", "shortcut-remove",
@@ -313,9 +322,10 @@ fn run(args : Array[String]) -> Unit raise {
   let file = args[3]
   let opts = command_options(args)
   if opts.headerless &&
-    !["kv3-parse", "kv3-format", "kv3-edit", "kv3-select", "kv3-query-edit"].contains(
-      command,
-    ) {
+    ![
+      "kv3-parse", "kv3-format", "kv3-edit", "kv3-select", "kv3-query-edit", "kv3-format-preserving",
+      "kv3-resources", "kv3-resource-edit",
+    ].contains(command) {
     raise InvalidArgument("--headerless is only used when reading KV3")
   }
   if run_advanced(command, file, opts) {

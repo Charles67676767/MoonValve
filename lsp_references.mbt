@@ -276,7 +276,7 @@ fn LspServer::will_rename(
 ) -> Json raise {
   let moves = lsp_moves(params)
   self.validate_moves(moves)
-  let edits : Array[Json] = []
+  let edits : Array[Json] = self.resource_rename_edits(moves)
   for uri, document in self.documents {
     if lsp_is_kv3(uri, document.text) {
       continue
@@ -379,6 +379,7 @@ fn LspServer::did_rename(
     }
   }
   self.references_dirty = true
+  self.resource_states.clear()
   self.documents.clear()
   self.workspace_files.clear()
   for uri, document in documents {

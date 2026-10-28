@@ -2,7 +2,7 @@
 
 0.4.x 补丁版本保持根包 `Charles67676767/moonvalve` 的公开类型、函数签名、错误类型和默认行为兼容。已发布版本不可覆盖；新增能力和不兼容调整进入经过评审的后续次版本，不通过补丁悄悄修改路径选择、条件、整数精度或事务语义。
 
-`docs/api-contract.json` 记录当前 0.6.0 完整接口 SHA-256 与工具链，并保留 0.4 与 0.5 的原始接口与哈希（`docs/api-0.4.baseline.txt`、`docs/api-0.5.baseline.txt`）。运行 `moon info` 后，`node scripts/check-api.cjs` 检查当前接口基线，并逐项核对旧公开声明仍存在且完全一致。签名检查不能证明全部行为兼容，所以仍需运行核心、CLI、参考实现和注册表消费者检查。仅更新 hash 不能替代迁移说明及次版本评审。
+`docs/api-contract.json` 记录当前 0.7.0 完整接口 SHA-256 与工具链，并保留 0.4、0.5 与 0.6 的原始接口与哈希（对应 docs/api-VERSION.baseline.txt）。运行 `moon info` 后，`node scripts/check-api.cjs` 检查当前接口基线，并逐项核对旧公开声明仍存在且完全一致。签名检查不能证明全部行为兼容，所以仍需运行核心、CLI、参考实现和注册表消费者检查。仅更新 hash 不能替代迁移说明及次版本评审。
 
 兼容规则包括：
 
@@ -25,3 +25,7 @@ LSP 新增文件操作和跨文件诊断，客户端可能收到更多相关文�
 ## 0.5 → 0.6
 
 新增工程导出、`KV3Query` / `KV3LocatedValue` / `KV3QueryEdit` 与 `KV3SourceRange`；旧函数签名、KV1 查询及已发布编辑操作保持原行为。KV3 查询使用独立入口，不向 KV1 的字符串模型隐式加入数值和标记语义。LSP 现在为 KV3 返回文档符号、折叠、类型悬浮和字面量补全。0.6.x 补丁继续保持本系列公开声明；新增能力进入后续次版本。
+
+## 0.6 → 0.7
+
+公开声明保持兼容。新增 KV3 工程查询、保留注释格式化、ResourceRoot / ResourceReference 及资源引用预览。旧工程查询仅选择 KV1，新入口仅选择 KV3，显式选择错误格式报错。LSP 格式化行为改为保留注释和字面值，可处理带条件/指令的 KV1；需要原来规范化输出时继续使用 stringify / stringify_kv3 或 CLI format / kv3-format。资源导航只有显式映射且宿主确认存在时才返回文件链接。配置方法和完整边界见[工程工作流](project-workflows.md)。

@@ -1,8 +1,9 @@
 ///|
-/// Immutable in-memory KV1 workspace. Operations return a new snapshot; hosts
+/// Immutable mixed KV1/text KV3 workspace. Operations return a new snapshot; hosts
 /// decide how to present or save it. No multi-file filesystem atomicity is claimed.
 struct Workspace {
   documents : Map[String, SourceDocument]
+  kv3_documents : Map[String, KV3SourceDocument]
   options : ParseOptions
 }
 
@@ -28,6 +29,7 @@ pub fn new_workspace(
     raise InvalidReference("Workspace requires 1..64 files")
   }
   let documents : Map[String, SourceDocument] = Map([])
+  let kv3_documents : Map[String, KV3SourceDocument] = Map([])
   let mut total = 0
   for name, text in files {
     workspace_path(name) |> ignore
@@ -35,9 +37,13 @@ pub fn new_workspace(
     if total > 16777216 {
       raise InvalidReference("Workspace exceeds 16 million characters")
     }
-    documents[name] = parse_preserving(text, options~)
+    if lsp_is_kv3(name, text) {
+      kv3_documents[name] = parse_kv3_preserving(text, options~)
+    } else {
+      documents[name] = parse_preserving(text, options~)
+    }
   }
-  { documents, options, }
+  { documents, kv3_documents, options, }
 }
 
 ///|
@@ -46,7 +52,15 @@ pub fn Workspace::files(self : Workspace) -> Map[String, String] {
   for name, document in self.documents {
     files[name] = document.text()
   }
+  for name, document in self.kv3_documents {
+    files[name] = document.text()
+  }
   files
+}
+
+///|
+fn Workspace::has_file(self : Workspace, name : String) -> Bool {
+  self.documents.contains(name) || self.kv3_documents.contains(name)
 }
 
 ///|
@@ -123,13 +137,13 @@ pub fn Workspace::rename_file(
 ) -> Workspace raise {
   workspace_path(from) |> ignore
   workspace_path(to) |> ignore
-  if !self.documents.contains(from) {
+  if !self.has_file(from) {
     raise InvalidReference("Source file does not exist")
   }
   if from == to {
     return self
   }
-  if self.documents.contains(to) {
+  if self.has_file(to) {
     raise InvalidReference("Destination already exists")
   }
   let files : Map[String, String] = Map([])
@@ -143,6 +157,9 @@ pub fn Workspace::rename_file(
       Some(to),
     ).text()
   }
+  for name, document in self.kv3_documents {
+    files[if name == from { to } else { name }] = document.text()
+  }
   new_workspace(files, options=self.options)
 }
 
@@ -153,14 +170,18 @@ pub fn Workspace::copy_file(
   to : String,
 ) -> Workspace raise {
   workspace_path(to) |> ignore
-  guard self.documents.get(from) is Some(document) else {
+  if !self.has_file(from) {
     raise InvalidReference("Source file does not exist")
   }
-  if self.documents.contains(to) {
+  if self.has_file(to) {
     raise InvalidReference("Destination already exists")
   }
   let files = self.files()
-  files[to] = rewritten_references(document, from, to, None, None).text()
+  files[to] = match self.documents.get(from) {
+    Some(document) =>
+      rewritten_references(document, from, to, None, None).text()
+    None => self.kv3_documents[from].text()
+  }
   new_workspace(files, options=self.options)
 }
 
@@ -171,7 +192,7 @@ pub fn Workspace::add_file(
   text : String,
 ) -> Workspace raise {
   workspace_path(name) |> ignore
-  if self.documents.contains(name) {
+  if self.has_file(name) {
     raise InvalidReference("File already exists")
   }
   let files = self.files()
@@ -184,7 +205,7 @@ pub fn Workspace::remove_file(
   self : Workspace,
   name : String,
 ) -> Workspace raise {
-  if !self.documents.contains(name) {
+  if !self.has_file(name) {
     raise InvalidReference("File does not exist")
   }
   let files : Map[String, String] = Map([])
@@ -205,6 +226,11 @@ pub fn Workspace::remove_file(
     }
     files[source] = document.text()
   }
+  for source, document in self.kv3_documents {
+    if source != name {
+      files[source] = document.text()
+    }
+  }
   new_workspace(files, options=self.options)
 }
 
@@ -219,6 +245,15 @@ pub fn Workspace::apply(self : Workspace, plan : Json) -> Workspace raise {
       raise InvalidReference("Invalid workspace operation")
     }
     result = match op {
+      "kv3-query" if row.length() == 4 &&
+        row.get("expression") is Some(String(expression)) &&
+        row.get("operation") is Some(operation) &&
+        row.get("files") is Some(files) =>
+        result.edit_query_kv3(
+          expression,
+          kv3_query_edit_from_json(operation),
+          files=workspace_selection(files),
+        )
       "query" if row.length() == 4 &&
         row.get("expression") is Some(String(expression)) &&
         row.get("operation") is Some(operation) &&
@@ -268,8 +303,8 @@ pub fn workspace_from_json(
 ///|
 pub fn Workspace::to_json(self : Workspace) -> Json {
   let rows : Map[String, Json] = Map([])
-  for name, document in self.documents {
-    rows[name] = Json::string(document.text())
+  for name, text in self.files() {
+    rows[name] = Json::string(text)
   }
   Json::object(rows)
 }
@@ -291,7 +326,7 @@ pub fn edit_workspace_snapshot(
   }
   let mut workspace = workspace_from_json(files, options~)
   let mut entry = source
-  if !workspace.documents.contains(entry) {
+  if !workspace.has_file(entry) {
     raise InvalidReference("Snapshot entry is missing")
   }
   for change in changes {
@@ -302,8 +337,8 @@ pub fn edit_workspace_snapshot(
       row.get("to") is Some(String(to)) {
       entry = to
     }
-    if !workspace.documents.contains(entry) {
-      let names = workspace.documents.keys().collect()
+    if !workspace.has_file(entry) {
+      let names = workspace.files().keys().collect()
       names.sort()
       entry = names[0]
     }
@@ -335,13 +370,13 @@ fn Workspace::selected_names(
 ) -> Array[String] raise {
   let selected : Map[String, Bool] = Map([])
   for name in files {
-    if !self.documents.contains(name) || selected.contains(name) {
+    if !self.has_file(name) || selected.contains(name) {
       raise InvalidQuery("Missing or duplicate selected file")
     }
     selected[name] = true
   }
   let names = if files.is_empty() {
-    self.documents.keys().collect()
+    self.files().keys().collect()
   } else {
     files.map(s => s)
   }
@@ -360,6 +395,12 @@ pub fn Workspace::select(
   let rows : Array[Json] = []
   let mut total = 0
   for name in self.selected_names(files) {
+    if !self.documents.contains(name) {
+      if !files.is_empty() {
+        raise InvalidQuery("Selected file is KV3; use typed workspace queries")
+      }
+      continue
+    }
     let matches = query.select(self.documents[name].doc)
     total += matches.length()
     if total > 10000 {
@@ -388,6 +429,9 @@ pub fn Workspace::edit_query(
   self.select(expression, files~) |> ignore
   let output = self.files()
   for name in self.selected_names(files) {
+    if !self.documents.contains(name) {
+      continue
+    }
     output[name] = self.documents[name].edit_query(expression, operation).text()
   }
   new_workspace(output, options=self.options)
@@ -407,7 +451,7 @@ pub fn query_workspace_snapshot(
     raise InvalidReference("Expected MoonValve project snapshot")
   }
   let workspace = workspace_from_json(contents, options~)
-  if !workspace.documents.contains(source) {
+  if !workspace.has_file(source) {
     raise InvalidReference("Snapshot entry is missing")
   }
   workspace.select(expression, files~)

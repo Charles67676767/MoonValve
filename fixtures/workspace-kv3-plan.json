@@ -1,0 +1,1 @@
+[{"op":"kv3-query","expression":"/**?flag=resource","files":[],"operation":{"op":"replace-prefix","from":"old/","to":"new/"}}]

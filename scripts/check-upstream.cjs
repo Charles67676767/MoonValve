@@ -10,6 +10,8 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
     const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes),tree=run({action:'parse',text}).tree;
     assert.equal(tree.length,1);assert.ok(Array.isArray(tree[0].value));
     const formatted=run({action:'format',text}).text;assert.deepEqual(run({action:'parse',text:formatted}).tree,tree);
+    const preserved=run({action:'format-preserving',text}).text;assert.deepEqual(run({action:'parse',text:preserved}).tree,tree);assert.equal(run({action:'format-preserving',text:preserved}).text,preserved);
+    for(const comment of text.match(/\/\/[^\r\n]*/g)||[])assert.ok(preserved.includes(comment),'Preserve production comment text');
     if(file.path==='compatibilitytool.vdf.template'){
       assert.equal(tree[0].key,'compatibilitytools');
       const r=run({action:'query-edit',text,expression:'/**/display_name',operation:{op:'replace',value:'MoonValve compatibility check'}});

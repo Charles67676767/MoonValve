@@ -262,6 +262,26 @@ try {
     fs.writeFileSync(plan,JSON.stringify({op:'replace-prefix',from:'old/',to:'new/'}));r=run(['kv3-query-edit',file,'/**?flag=resource',plan,'--headerless']);assert.equal(r.status,0,r.stderr);assert.equal(r.stdout,text.replaceAll('resource:"old/','resource:"new/'));assert.equal(fs.readFileSync(file,'utf8'),text);
     fs.writeFileSync(plan,JSON.stringify({op:'remove'}));assert.equal(run(['kv3-query-edit',file,'/**',plan,'--headerless','--in-place']).status,2);assert.equal(fs.readFileSync(file,'utf8'),text);assert.ok(!fs.existsSync(file+'.bak'));
   });
+  test('preserving format keeps conditions comments lexical values and supports safe saving',()=>{
+    const file=path.join(temporary,'whitespace.vdf'),text='//keep\r\n#base base.vdf\r\nr {k one [$WIN32] k two [$LINUX]}';fs.writeFileSync(file,text);
+    let r=run(['format-preserving',file]);assert.equal(r.status,0,r.stderr);assert.match(r.stdout,/k one \[\$WIN32\]/);assert.match(r.stdout,/^\/\/keep/);assert.match(r.stdout,/#base base.vdf/);assert.equal(fs.readFileSync(file,'utf8'),text);
+    assert.equal(run(['format-preserving','-'],r.stdout).stdout,r.stdout);
+    r=run(['format-preserving',file,'--in-place']);assert.equal(r.status,0,r.stderr);assert.equal(fs.readFileSync(file+'.bak','utf8'),text);
+    const kv3='//keep\n{n=18446744073709551615 arr=[1,/*x*/2,]}';r=run(['kv3-format-preserving','-','--headerless'],kv3);assert.equal(r.status,0,r.stderr);assert.match(r.stdout,/\/\*x\*\//);assert.match(r.stdout,/18446744073709551615/);assert.equal(run(['kv3-format-preserving','-','--headerless'],r.stdout).stdout,r.stdout);
+  });
+  test('mixed workspace typed query edits only KV3 and exports both formats',()=>{
+    const h=fs.readFileSync(path.join(root,'fixtures/sample.kv3'),'utf8').split(/\r?\n/)[0]+'\n',file=path.join(temporary,'mixed.json'),plan=path.join(temporary,'mixed-plan.json');
+    const files={'main.vdf':'r {path old/kv1}','a.kv3':h+'//keep\n{path=resource:"old/a" n=18446744073709551615}','b.kv3':h+'{path=resource:"old/b"}'};fs.writeFileSync(file,JSON.stringify({format:'moonvalve-project-v1',source:'main.vdf',files}));
+    let r=run(['workspace-kv3-query',file,'/**?flag=resource']);assert.equal(r.status,0,r.stderr);assert.equal(JSON.parse(r.stdout).length,2);
+    fs.writeFileSync(plan,JSON.stringify([{op:'kv3-query',expression:'/**?flag=resource',files:[],operation:{op:'replace-prefix',from:'old/',to:'new/'}}]));r=run(['workspace-edit',file,plan]);assert.equal(r.status,0,r.stderr);const result=JSON.parse(r.stdout);assert.equal(result.files['main.vdf'],files['main.vdf']);assert.match(result.files['a.kv3'],/resource:"new\/a"/);fs.writeFileSync(file,r.stdout);
+    const out=path.join(temporary,'mixed-out');r=run(['workspace-export',file,out]);assert.equal(r.status,0,r.stderr);assert.equal(fs.readFileSync(path.join(out,'a.kv3'),'utf8'),result.files['a.kv3']);
+  });
+  test('resource report and migration use explicit roots and preserve symbolic names',()=>{
+    const file=path.join(temporary,'resource.kv3'),roots=path.join(temporary,'roots.json'),moves=path.join(temporary,'moves.json'),text='//keep\n{a=resource:"materials/a.vmat" b=resource_name:"materials/a.vmat"}';fs.writeFileSync(file,text);fs.writeFileSync(roots,JSON.stringify([{prefix:'',directory:'content'}]));fs.writeFileSync(moves,JSON.stringify({'content/materials':'content/new'}));
+    let r=run(['kv3-resources',file,roots,'--headerless']);assert.equal(r.status,0,r.stderr);const rows=JSON.parse(r.stdout);assert.equal(rows.length,1);assert.equal(rows[0].target,'content/materials/a.vmat');
+    r=run(['kv3-resource-edit',file,roots,moves,'--headerless']);assert.equal(r.status,0,r.stderr);assert.match(r.stdout,/resource:"new\/a.vmat"/);assert.match(r.stdout,/resource_name:"materials\/a.vmat"/);assert.equal(fs.readFileSync(file,'utf8'),text);
+    fs.writeFileSync(moves,JSON.stringify({'content/materials':'outside'}));assert.equal(run(['kv3-resource-edit',file,roots,moves,'--headerless','--in-place']).status,2);assert.equal(fs.readFileSync(file,'utf8'),text);assert.ok(!fs.existsSync(file+'.bak'));
+  });
   console.log(`${cases} CLI checks passed`);
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });
