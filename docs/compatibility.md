@@ -24,7 +24,10 @@
 | 外部字符串表 | 可显式提供键表读写二进制索引，Steam appinfo 41 自动读取其表 |
 | Steam 缓存 | appinfo 39/40/41、packageinfo 39/40；未知版本拒绝 |
 | 文本 KV3 | 独立模型支持，详见 [进阶功能](advanced.md) |
-| KV2、二进制 KV3、VBKV | 未实现 |
+| 二进制 KV3 | 读取 0—5、写出 4/5，见[资源指南](assets.md) |
+| DMX / KeyValues2 | 独立 UUID 图，KeyValues2 1 与 binary 4/5，见[资源指南](assets.md) |
+| VPK、VMT、本地化 | 独立资源 API，版本与边界见[资源指南](assets.md) |
+| VBKV | 未实现 |
 | 原始注释与排版保留 | SourceDocument 保留未求值条件与引用，支持风格沿用、局部编辑和事务；stringify 规范化写出 |
 
 普通字符串查询区分大小写，路径中的每一层选择第一个同名条目。Steam 模型的字段查询使用 ASCII 不区分大小写匹配，同样选择首项。`Document::to_json` 将每层对象输出为 `[{"key":...,"value":...}]`，不静默折叠成普通 JSON 对象。

@@ -117,13 +117,45 @@ pub fn export_project_zip(
   options? : ParseOptions = ParseOptions::default(),
 ) -> Bytes raise {
   let files = project_export_files(snapshot, options~)
+  export_files_zip(files.map((_, text) => @utf8.encode(text[:])))
+}
+
+///|
+/// Binary-safe deterministic ZIP32 for explicit virtual files.
+pub fn export_files_zip(files : Map[String, Bytes]) -> Bytes raise {
+  if files.length() > 65535 {
+    raise InvalidReference("ZIP entry count exceeds ZIP32 limits")
+  }
+  let seen : Map[String, Bool] = Map([])
+  let mut total = 0
+  for (name, bytes) in files {
+    portable_project_path(name) |> ignore
+    if !resource_relative(name) ||
+      seen.contains(name.to_lower()) ||
+      @utf8.encode(name[:]).length() > 65535 {
+      raise InvalidReference("Unsafe or duplicate ZIP path")
+    }
+    seen[name.to_lower()] = true
+    if bytes.length() > 67108864 - total {
+      raise InvalidReference("ZIP input exceeds 64 MiB")
+    }
+    total += bytes.length()
+  }
+  for name in files.keys() {
+    let parts = name.to_lower().split("/").map(p => p.to_owned()).collect()
+    for i in 1..<parts.length() {
+      if seen.contains(parts[:i].to_owned().join("/")) {
+        raise InvalidReference("ZIP file/directory path collision")
+      }
+    }
+  }
   let names = files.keys().collect()
   names.sort_by((a, b) => a.lexical_compare(b))
   let output = @buffer.Buffer()
   let directory = @buffer.Buffer()
   for name in names {
     let filename = @utf8.encode(name[:])
-    let data = @utf8.encode(files[name][:])
+    let data = files[name]
     let crc = zip_crc32(data)
     let offset = output.length()
     zip_u32(output, 0x04034b50)

@@ -15,3 +15,20 @@ Valve and Steam names identify the supported ecosystem. MoonValve is an independ
 Additional compatibility references: xPaw/SteamAppInfo (Steam cache headers), Corecii/steam-binary-vdf-ts (shortcut format and identifier behavior), and ValveKeyValue 0.70.0.499 (optional .NET test runtime). MoonValve does not vendor their implementation files. The CRC-32 checksum is implemented independently from the standard polynomial and checked against a known vector.
 
 Binary distributions include the MoonBit native runtime and compiled standard-library code. The distribution script supplies Apache-2.0, the standard library's original NOTICE and native-runtime attribution in licenses/. Python and .NET reference dependencies are not included in product packages.
+
+The Zstandard implementation is supplied by `bikallem/compress` 0.3.4 with
+`bikallem/blit` 0.2.2 (Apache-2.0), compiled as MoonBit dependencies. Their upstream
+repositories are https://github.com/bikallem/compress and https://github.com/bikallem/blit.
+Both published packages declare Apache-2.0 in their metadata and README; no separate
+upstream NOTICE file is supplied. The Apache-2.0 license is included under licenses/.
+`moonbitlang/async` 0.16.7 is a transitive module dependency; MoonValve imports the
+Zstandard package only and does not use the async runtime.
+
+Additional format/compatibility references are ValveResourceFormat (MIT), pinned
+format reference commit `2a45474046bdb5eb62c5685cbfad9e085fd2d293`, and srctools (MIT).
+The optional independent test adapters use ValveResourceFormat 20.1.7467,
+srctools 2.7.0 and polib 1.2.0 (MIT); they do not execute in the library, CLI or
+workbench. VPK/LZ4/DMX/localization implementations are written in MoonBit against
+the format layouts; upstream implementation files are not vendored. Original
+game-resource fixtures used for optional local compatibility checks are not
+redistributed by this project. All examples added for asset workflows are synthetic.

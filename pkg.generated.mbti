@@ -10,6 +10,8 @@ pub fn binary_from_json(Json, options? : BinaryOptions) -> Array[BinaryEntry] ra
 
 pub fn binary_to_json(Array[BinaryEntry]) -> Json
 
+pub fn build_dependency_graph(Array[String], GameFileSystem, max_files? : Int, max_bytes? : Int) -> DependencyGraph raise
+
 pub fn changes_from_json(Json) -> Array[Change] raise
 
 pub fn check_inventory(Array[SteamLibrary], Array[InventoryRecord]) -> Array[InventoryIssue]
@@ -18,7 +20,15 @@ pub fn compile_kv3_query(String) -> KV3Query raise
 
 pub fn compile_query(String) -> Query raise QueryError
 
+pub fn create_vpk(Map[String, Bytes], preload_bytes? : Int, options? : BinaryOptions) -> Bytes raise
+
 pub fn decode_binary(Bytes, options? : BinaryOptions, string_table? : Array[String]?) -> Array[BinaryEntry] raise BinaryError
+
+pub fn decode_kv3_binary(Bytes, options? : BinaryOptions) -> KV3BinaryDocument raise
+
+pub fn dmx_from_json(Json) -> DMXDocument raise
+
+pub fn dmx_to_json(DMXDocument) -> Json raise
 
 pub fn document_from_json(Json, options? : ParseOptions) -> Document raise JsonImportError
 
@@ -26,15 +36,31 @@ pub fn edit_workspace_snapshot(Json, Json, options? : ParseOptions) -> Json rais
 
 pub fn encode_binary(Array[BinaryEntry], options? : BinaryOptions, string_table? : Array[String]?) -> Bytes raise BinaryError
 
+pub fn encode_dmx_binary(DMXDocument, version? : Int, options? : BinaryOptions) -> Bytes raise
+
+pub fn encode_kv3_binary(KV3BinaryDocument, version? : Int, compression? : Int, options? : BinaryOptions) -> Bytes raise
+
+pub fn encode_kv3_resource(KV3BinaryDocument, resource_version? : Int, version? : Int, compression? : Int, options? : BinaryOptions) -> Bytes raise
+
 pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
 
+pub fn export_files_zip(Map[String, Bytes]) -> Bytes raise
+
 pub fn export_project_zip(Json, options? : ParseOptions) -> Bytes raise
+
+pub fn gameinfo_search_paths(Document, String, String, language? : String) -> Array[GameSearchPath] raise
 
 pub fn generic_kv3_header() -> KV3Header
 
 pub fn inventory_csv(Array[InventoryRecord]) -> String
 
 pub fn inventory_total(Array[InventoryRecord]) -> InventoryTotal raise SteamError
+
+pub fn kv3_binary_from_document(KV3Document) -> KV3BinaryDocument raise
+
+pub fn kv3_binary_from_json(Json) -> KV3BinaryDocument raise
+
+pub fn kv3_binary_to_json(KV3BinaryDocument) -> Json raise
 
 pub fn kv3_from_json(Json) -> KV3Document raise
 
@@ -48,11 +74,21 @@ pub fn load_project(String, (String) -> String raise, options? : ParseOptions, m
 
 pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> Document raise
 
+pub fn load_vmt(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> VMTMaterial raise
+
+pub fn localization_from_json(Json) -> Localization raise
+
+pub fn localization_issues_to_json(Array[LocalizationIssue]) -> Json
+
+pub fn localization_placeholders(String, syntax? : String) -> Array[String] raise
+
 pub fn located_values_to_json(Array[LocatedValue]) -> Json
 
 pub fn lsp_frame(Json) -> Bytes
 
 pub fn lsp_position(String, Int) -> Json
+
+pub fn mount_game_filesystem(Array[GameMount], max_bytes? : Int) -> GameFileSystem raise
 
 pub fn new_lsp_framer() -> LspFramer
 
@@ -76,7 +112,11 @@ pub fn parse_kv3(String, options? : ParseOptions, allow_headerless? : Bool) -> K
 
 pub fn parse_kv3_preserving(String, options? : ParseOptions, allow_headerless? : Bool) -> KV3SourceDocument raise
 
+pub fn parse_po(String) -> POCatalog raise
+
 pub fn parse_preserving(String, options? : ParseOptions) -> SourceDocument raise
+
+pub fn parse_vmt(String, source? : String, options? : ParseOptions) -> VMTMaterial raise
 
 pub fn project_export_files(Json, options? : ParseOptions) -> Map[String, String] raise
 
@@ -88,9 +128,17 @@ pub fn query_workspace_snapshot(Json, String, files? : Array[String], options? :
 
 pub fn read_app_manifest(Document) -> SteamApp raise SteamError
 
+pub fn read_dmx(Bytes, options? : BinaryOptions) -> DMXDocument raise
+
 pub fn read_library_folders(Document) -> Array[SteamLibrary] raise SteamError
 
+pub fn read_localization(Bytes) -> Localization raise
+
+pub fn read_resource_container(Bytes, options? : BinaryOptions) -> ResourceContainer raise
+
 pub fn read_shortcut_file(Array[BinaryEntry]) -> ShortcutFile raise SteamError
+
+pub fn read_vpk(Bytes, options? : BinaryOptions) -> VPKArchive raise
 
 pub fn resource_references_to_json(Array[ResourceReference]) -> Json
 
@@ -102,7 +150,11 @@ pub fn shortcut_app_id(String, String) -> UInt
 
 pub fn stringify(Document) -> String raise WriteError
 
+pub fn stringify_dmx(DMXDocument, options? : BinaryOptions) -> String raise
+
 pub fn stringify_kv3(KV3Document) -> String raise
+
+pub fn update_po(POCatalog, POCatalog) -> POCatalog raise
 
 pub fn version() -> String
 
@@ -160,6 +212,18 @@ pub suberror WriteError {
 pub fn WriteError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) struct AssetDependency {
+  source : String
+  reference : String
+  target : String?
+  kind : String
+  property : Array[String]
+  status : String
+} derive(Eq, @debug.Debug)
+pub fn AssetDependency::equal(Self, Self) -> Bool
+pub fn AssetDependency::not_equal(Self, Self) -> Bool
+pub fn AssetDependency::to_repr(Self) -> @debug.Repr
+
 pub(all) struct BinaryEntry {
   key : String
   value : BinaryValue
@@ -229,6 +293,62 @@ pub(all) struct Change {
 } derive(@debug.Debug)
 pub fn Change::to_repr(Self) -> @debug.Repr
 
+pub(all) struct DMXAttribute {
+  name : String
+  value : DMXValue
+} derive(Eq, @debug.Debug)
+pub fn DMXAttribute::equal(Self, Self) -> Bool
+pub fn DMXAttribute::not_equal(Self, Self) -> Bool
+pub fn DMXAttribute::to_repr(Self) -> @debug.Repr
+
+pub(all) struct DMXDocument {
+  format_name : String
+  format_version : Int
+  root : String
+  elements : Array[DMXElement]
+} derive(Eq, @debug.Debug)
+pub fn DMXDocument::element(Self, String) -> DMXElement?
+pub fn DMXDocument::equal(Self, Self) -> Bool
+pub fn DMXDocument::external_references(Self) -> Array[String] raise
+pub fn DMXDocument::not_equal(Self, Self) -> Bool
+pub fn DMXDocument::to_repr(Self) -> @debug.Repr
+pub fn DMXDocument::with_attribute(Self, String, String, DMXValue) -> Self raise
+
+pub(all) struct DMXElement {
+  id : String
+  name : String
+  kind : String
+  attributes : Array[DMXAttribute]
+} derive(Eq, @debug.Debug)
+pub fn DMXElement::equal(Self, Self) -> Bool
+pub fn DMXElement::not_equal(Self, Self) -> Bool
+pub fn DMXElement::to_repr(Self) -> @debug.Repr
+
+pub(all) enum DMXValue {
+  DElement(String?)
+  DInt(Int)
+  DFloatBits(UInt)
+  DBool(Bool)
+  DString(String)
+  DBinary(Bytes)
+  DTime(Int)
+  DColor(UInt)
+  DVector(Int, Array[UInt])
+  DArray(Int, Array[DMXValue])
+} derive(Eq, @debug.Debug)
+pub fn DMXValue::equal(Self, Self) -> Bool
+pub fn DMXValue::not_equal(Self, Self) -> Bool
+pub fn DMXValue::to_repr(Self) -> @debug.Repr
+
+type DependencyGraph
+pub fn DependencyGraph::dependents(Self, String, transitive? : Bool) -> Array[String]
+pub fn DependencyGraph::edges(Self) -> Array[AssetDependency]
+pub fn DependencyGraph::export_files(Self, include_base? : Bool, strict? : Bool) -> Map[String, Bytes] raise
+pub fn DependencyGraph::export_vpk(Self, include_base? : Bool, strict? : Bool, options? : BinaryOptions) -> Bytes raise
+pub fn DependencyGraph::export_zip(Self, include_base? : Bool, strict? : Bool) -> Bytes raise
+pub fn DependencyGraph::files(Self) -> Array[MountedFile]
+pub fn DependencyGraph::to_json(Self) -> Json
+
 pub(all) struct Diagnostic {
   code : String
   message : String
@@ -281,6 +401,24 @@ pub fn Entry::equal(Self, Self) -> Bool
 pub fn Entry::not_equal(Self, Self) -> Bool
 pub fn Entry::to_repr(Self) -> @debug.Repr
 
+type GameFileSystem
+pub fn GameFileSystem::locate(Self, String) -> Array[MountCandidate] raise
+pub fn GameFileSystem::read(Self, String) -> MountedFile raise
+
+pub(all) enum GameMount {
+  LooseMount(String, Bool, (String) -> Bool raise, (String) -> Bytes raise)
+  VPKMount(String, Bool, VPKArchive, (Int, Int, Int) -> Bytes raise)
+}
+
+pub(all) struct GameSearchPath {
+  ids : Array[String]
+  directory : String
+  wildcard : Bool
+} derive(Eq, @debug.Debug)
+pub fn GameSearchPath::equal(Self, Self) -> Bool
+pub fn GameSearchPath::not_equal(Self, Self) -> Bool
+pub fn GameSearchPath::to_repr(Self) -> @debug.Repr
+
 pub(all) struct InventoryIssue {
   code : String
   library : String
@@ -307,6 +445,41 @@ pub(all) struct InventoryTotal {
 pub fn InventoryTotal::equal(Self, Self) -> Bool
 pub fn InventoryTotal::not_equal(Self, Self) -> Bool
 pub fn InventoryTotal::to_repr(Self) -> @debug.Repr
+
+pub(all) struct KV3BinaryDocument {
+  version : Int
+  compression : Int
+  format_id : String
+  root : KV3BinaryValue
+} derive(Eq, @debug.Debug)
+pub fn KV3BinaryDocument::document(Self) -> KV3Document raise
+pub fn KV3BinaryDocument::edit_query(Self, String, KV3QueryEdit) -> Self raise
+pub fn KV3BinaryDocument::equal(Self, Self) -> Bool
+pub fn KV3BinaryDocument::not_equal(Self, Self) -> Bool
+pub fn KV3BinaryDocument::select(Self, String) -> Array[KV3BinaryLocatedValue] raise
+pub fn KV3BinaryDocument::to_repr(Self) -> @debug.Repr
+
+pub(all) struct KV3BinaryLocatedValue {
+  path : Array[String]
+  value : KV3BinaryValue
+} derive(Eq, @debug.Debug)
+pub fn KV3BinaryLocatedValue::equal(Self, Self) -> Bool
+pub fn KV3BinaryLocatedValue::not_equal(Self, Self) -> Bool
+pub fn KV3BinaryLocatedValue::to_repr(Self) -> @debug.Repr
+
+pub(all) enum KV3BinaryValue {
+  BNull
+  BBool(Bool)
+  BNumber(Int, UInt64)
+  BString(String)
+  BBlob(Bytes)
+  BArray(Array[KV3BinaryValue])
+  BObject(Array[(String, KV3BinaryValue)])
+  BFlag(String, KV3BinaryValue)
+} derive(Eq, @debug.Debug)
+pub fn KV3BinaryValue::equal(Self, Self) -> Bool
+pub fn KV3BinaryValue::not_equal(Self, Self) -> Bool
+pub fn KV3BinaryValue::to_repr(Self) -> @debug.Repr
 
 pub(all) struct KV3Document {
   header : KV3Header?
@@ -397,6 +570,45 @@ pub fn KV3Value::equal(Self, Self) -> Bool
 pub fn KV3Value::not_equal(Self, Self) -> Bool
 pub fn KV3Value::to_repr(Self) -> @debug.Repr
 
+pub(all) struct Localization {
+  language : String
+  tokens : Array[LocalizationToken]
+  encoding : String
+} derive(Eq, @debug.Debug)
+pub fn Localization::equal(Self, Self) -> Bool
+pub fn Localization::import_po(Self, POCatalog, String, syntax? : String, allow_fuzzy? : Bool) -> LocalizationImport raise
+pub fn Localization::not_equal(Self, Self) -> Bool
+pub fn Localization::to_json(Self) -> Json raise
+pub fn Localization::to_po(Self, translated? : Self) -> POCatalog raise
+pub fn Localization::to_repr(Self) -> @debug.Repr
+pub fn Localization::validate_translation(Self, Self, syntax? : String) -> Array[LocalizationIssue] raise
+pub fn Localization::write(Self, encoding? : String) -> Bytes raise
+
+pub(all) struct LocalizationImport {
+  document : Localization
+  issues : Array[LocalizationIssue]
+} derive(Eq, @debug.Debug)
+pub fn LocalizationImport::equal(Self, Self) -> Bool
+pub fn LocalizationImport::not_equal(Self, Self) -> Bool
+pub fn LocalizationImport::to_repr(Self) -> @debug.Repr
+
+pub(all) struct LocalizationIssue {
+  token : String
+  code : String
+  message : String
+} derive(Eq, @debug.Debug)
+pub fn LocalizationIssue::equal(Self, Self) -> Bool
+pub fn LocalizationIssue::not_equal(Self, Self) -> Bool
+pub fn LocalizationIssue::to_repr(Self) -> @debug.Repr
+
+pub(all) struct LocalizationToken {
+  name : String
+  text : String
+} derive(Eq, @debug.Debug)
+pub fn LocalizationToken::equal(Self, Self) -> Bool
+pub fn LocalizationToken::not_equal(Self, Self) -> Bool
+pub fn LocalizationToken::to_repr(Self) -> @debug.Repr
+
 pub(all) struct LocatedValue {
   path : Array[Selector]
   value : Value
@@ -418,6 +630,47 @@ type LspServer
 pub fn LspServer::exit_code(Self) -> Int
 pub fn LspServer::handle(Self, Json) -> Array[Json]
 pub fn LspServer::should_exit(Self) -> Bool
+
+pub(all) struct MountCandidate {
+  mount : String
+  base_game : Bool
+  selected : Bool
+} derive(Eq, @debug.Debug)
+pub fn MountCandidate::equal(Self, Self) -> Bool
+pub fn MountCandidate::not_equal(Self, Self) -> Bool
+pub fn MountCandidate::to_repr(Self) -> @debug.Repr
+
+pub(all) struct MountedFile {
+  path : String
+  mount : String
+  base_game : Bool
+  bytes : Bytes
+} derive(Eq, @debug.Debug)
+pub fn MountedFile::equal(Self, Self) -> Bool
+pub fn MountedFile::not_equal(Self, Self) -> Bool
+pub fn MountedFile::to_repr(Self) -> @debug.Repr
+
+pub(all) struct POCatalog {
+  entries : Array[POEntry]
+  trailing_comments : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn POCatalog::equal(Self, Self) -> Bool
+pub fn POCatalog::not_equal(Self, Self) -> Bool
+pub fn POCatalog::stringify(Self) -> String raise
+pub fn POCatalog::to_repr(Self) -> @debug.Repr
+
+pub(all) struct POEntry {
+  context : String?
+  id : String
+  plural : String?
+  translations : Array[String]
+  comments : Array[String]
+  flags : Array[String]
+  obsolete : Bool
+} derive(Eq, @debug.Debug)
+pub fn POEntry::equal(Self, Self) -> Bool
+pub fn POEntry::not_equal(Self, Self) -> Bool
+pub fn POEntry::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ParseOptions {
   escape_sequences : Bool
@@ -470,6 +723,35 @@ pub fn ResolvedProject::equal(Self, Self) -> Bool
 pub fn ResolvedProject::not_equal(Self, Self) -> Bool
 pub fn ResolvedProject::to_json(Self) -> Json
 pub fn ResolvedProject::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ResourceBlock {
+  kind : String
+  offset : Int
+  bytes : Bytes
+} derive(Eq, @debug.Debug)
+pub fn ResourceBlock::equal(Self, Self) -> Bool
+pub fn ResourceBlock::not_equal(Self, Self) -> Bool
+pub fn ResourceBlock::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ResourceContainer {
+  version : Int
+  declared_size : Int
+  blocks : Array[ResourceBlock]
+  trailing : Bytes
+} derive(Eq, @debug.Debug)
+pub fn ResourceContainer::data(Self, options? : BinaryOptions) -> KV3BinaryDocument raise
+pub fn ResourceContainer::equal(Self, Self) -> Bool
+pub fn ResourceContainer::external_references(Self, options? : BinaryOptions) -> Array[ResourceExternalReference] raise
+pub fn ResourceContainer::not_equal(Self, Self) -> Bool
+pub fn ResourceContainer::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ResourceExternalReference {
+  id : UInt64
+  name : String
+} derive(Eq, @debug.Debug)
+pub fn ResourceExternalReference::equal(Self, Self) -> Bool
+pub fn ResourceExternalReference::not_equal(Self, Self) -> Bool
+pub fn ResourceExternalReference::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ResourceReference {
   path : Array[String]
@@ -592,6 +874,60 @@ pub fn StreamParser::finish(Self) -> Unit raise
 type StreamWriter
 pub fn StreamWriter::finish(Self) -> Unit raise WriteError
 pub fn StreamWriter::write(Self, StreamEvent) -> Unit raise
+
+pub(all) struct VMTMaterial {
+  shader : String
+  parameters : Array[Entry]
+  origins : Array[VMTOrigin]
+  includes : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn VMTMaterial::equal(Self, Self) -> Bool
+pub fn VMTMaterial::not_equal(Self, Self) -> Bool
+pub fn VMTMaterial::stringify(Self) -> String raise
+pub fn VMTMaterial::textures(Self, extra_parameters? : Array[String]) -> Array[VMTTexture] raise
+pub fn VMTMaterial::to_json(Self) -> Json raise
+pub fn VMTMaterial::to_repr(Self) -> @debug.Repr
+pub fn VMTMaterial::with_parameter(Self, String, String) -> Self raise
+
+pub(all) struct VMTOrigin {
+  path : Array[Int]
+  source : String
+  operation : String
+} derive(Eq, @debug.Debug)
+pub fn VMTOrigin::equal(Self, Self) -> Bool
+pub fn VMTOrigin::not_equal(Self, Self) -> Bool
+pub fn VMTOrigin::to_repr(Self) -> @debug.Repr
+
+pub(all) struct VMTTexture {
+  path : Array[String]
+  parameter : String
+  value : String
+  target : String?
+  status : String
+} derive(Eq, @debug.Debug)
+pub fn VMTTexture::equal(Self, Self) -> Bool
+pub fn VMTTexture::not_equal(Self, Self) -> Bool
+pub fn VMTTexture::to_repr(Self) -> @debug.Repr
+
+type VPKArchive
+pub fn VPKArchive::embedded_size(Self) -> Int?
+pub fn VPKArchive::entries(Self) -> Array[VPKEntry]
+pub fn VPKArchive::find(Self, String) -> VPKEntry?
+pub fn VPKArchive::read(Self, String, (Int, Int, Int) -> Bytes raise, verify_crc? : Bool) -> Bytes raise
+pub fn VPKArchive::to_json(Self) -> Json
+pub fn VPKArchive::version(Self) -> Int
+
+pub(all) struct VPKEntry {
+  path : String
+  crc32 : UInt
+  preload : Bytes
+  archive : Int
+  offset : Int
+  length : Int
+} derive(Eq, @debug.Debug)
+pub fn VPKEntry::equal(Self, Self) -> Bool
+pub fn VPKEntry::not_equal(Self, Self) -> Bool
+pub fn VPKEntry::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Value {
   Text(String)

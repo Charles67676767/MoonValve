@@ -1,0 +1,6 @@
+import {
+  "Charles67676767/moonvalve" @valve,
+  "moonbitlang/core/encoding/utf8",
+}
+
+pkgtype(kind: "executable")

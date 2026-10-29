@@ -59,6 +59,10 @@
 
 查询、快照批量编辑、移动复制、文本 KV3、多文件重构与 LSP 的用法、JSON 格式和边界见 [进阶功能](advanced.md)。
 
-0.7.x 与前三个系列的公开接口兼容规则与自动基线检查见 [API 稳定性](api-stability.md)，已发布版本的独立接入验证见 [发布与安装](publishing.md)。
+0.8.x 与此前四个系列的公开接口兼容规则与自动基线检查见 [API 稳定性](api-stability.md)，已发布版本的独立接入验证见 [发布与安装](publishing.md)。
 
 混合工程、保留注释格式化与资源映射 API 见[工程工作流](project-workflows.md)。
+
+## 0.8 资源能力
+
+二进制 KV3、Source 2 DATA/RERL、VPK、GameFileSystem、DependencyGraph、VMT、本地化/PO 与 DMX 的接口、命令和预算见[资源指南](assets.md)。可运行示例：`moon run examples/assets --target js`。
