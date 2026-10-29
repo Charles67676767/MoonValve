@@ -235,8 +235,9 @@ fn host_save(
 extern "js" fn host_export_directory_impl(
   target : String,
   files : String,
+  binary : Bool,
 ) -> String =
-  #| function(target,encoded) {
+  #| function(target,encoded,binary) {
   #|   const fs=require('node:fs'),path=require('node:path'),owned=[];let created=false;
   #|   try {
   #|     const files=JSON.parse(encoded);fs.mkdirSync(target);created=true;
@@ -247,7 +248,7 @@ extern "js" fn host_export_directory_impl(
   #|         try{fs.mkdirSync(folder);owned.push([folder,true]);}catch(e){if(e.code!=='EEXIST')throw e;const st=fs.lstatSync(folder);if(!st.isDirectory()||st.isSymbolicLink())throw new Error('Invalid output parent');}
   #|       }
   #|       const file=path.join(target,...parts),fd=fs.openSync(file,'wx',0o600);owned.push([file,false]);
-  #|       try{fs.writeFileSync(fd,files[name],{encoding:'utf8'});fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+  #|       try{fs.writeFileSync(fd,binary?Buffer.from(files[name],'base64'):files[name],{encoding:'utf8'});fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
   #|     }
   #|     return '';
   #|   }catch(e){
@@ -268,10 +269,59 @@ fn host_export_directory(
   for name, text in files {
     rows[name] = Json::string(text)
   }
-  let error = host_export_directory_impl(target, Json::object(rows).stringify())
+  let error = host_export_directory_impl(
+    target,
+    Json::object(rows).stringify(),
+    false,
+  )
   if error != "" {
     raise InvalidArgument(error)
   }
+}
+
+///|
+fn host_export_binary_directory(
+  target : String,
+  files : Map[String, Bytes],
+) -> Unit raise {
+  @valve.export_files_zip(files) |> ignore
+  if target.is_empty() || target == "-" || target.contains("\u0000") {
+    raise InvalidArgument("Invalid output directory")
+  }
+  let rows = files.map((_, bytes) => Json::string(@base64.encode(bytes[:])))
+  let error = host_export_directory_impl(
+    target,
+    Json::object(rows).stringify(),
+    true,
+  )
+  if error != "" {
+    raise InvalidArgument(error)
+  }
+}
+
+///|
+extern "js" fn host_range_impl(
+  path : String,
+  offset : Int,
+  length : Int,
+) -> FixedArray[Bytes] =
+  #| function(path,offset,length){const fs=require('node:fs');let fd;try{fd=fs.openSync(path,'r');if(!fs.fstatSync(fd).isFile())throw new Error('Expected a regular archive file');const bytes=Buffer.alloc(length);let used=0;while(used<length){const n=fs.readSync(fd,bytes,used,length-used,offset+used);if(!n)throw new Error('Truncated archive byte range');used+=n;}return [bytes,new Uint8Array()];}catch(e){return [new Uint8Array(),Buffer.from(e.message||'Range read failed')];}finally{if(fd!==undefined)fs.closeSync(fd);}}
+
+///|
+fn host_read_range(path : String, offset : Int, length : Int) -> Bytes raise {
+  if path == "-" ||
+    path.contains("\u0000") ||
+    @utf8.encode(path[:]).length() > 32767 ||
+    offset < 0 ||
+    length < 0 ||
+    length > 67108864 {
+    raise InvalidArgument("Invalid bounded file range")
+  }
+  let result = host_range_impl(path, offset, length)
+  if !result[1].is_empty() {
+    raise InvalidArgument(@utf8.decode_lossy(result[1][:]))
+  }
+  result[0]
 }
 
 ///|

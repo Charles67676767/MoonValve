@@ -33,10 +33,13 @@ jobs:
       - run: moon test --target ${{ matrix.target }} --deny-warn
       - run: moon run examples/demo --target ${{ matrix.target }}
       - run: moon run examples/advanced --target ${{ matrix.target }}
+      - run: moon run examples/assets --target ${{ matrix.target }}
       - if: matrix.target == 'js'
         run: moon build --target js --release
       - if: matrix.target == 'js'
         run: node scripts/test-cli.cjs
+      - if: matrix.target == 'js'
+        run: node scripts/test-assets-cli.cjs
       - if: matrix.target == 'js'
         run: node scripts/test-lsp.cjs
       - if: matrix.target == 'js'
@@ -57,6 +60,8 @@ jobs:
         run: moon build --target native --release
       - if: matrix.target == 'native'
         run: node scripts/test-cli.cjs --native
+      - if: matrix.target == 'native'
+        run: node scripts/test-assets-cli.cjs --native
       - if: matrix.target == 'native'
         run: node scripts/test-lsp.cjs --native
       - if: matrix.target == 'native'
@@ -113,6 +118,7 @@ jobs:
       - run: moon test --target js
       - run: moon build --target js --release
       - run: node scripts/test-cli.cjs
+      - run: node scripts/test-assets-cli.cjs
       - run: node scripts/test-lsp.cjs
       - run: node scripts/test-extension.cjs
       - run: node scripts/test-stream-pipe.cjs
@@ -120,6 +126,7 @@ jobs:
       - run: moon test --target native
       - run: moon build --target native --release
       - run: node scripts/test-cli.cjs --native
+      - run: node scripts/test-assets-cli.cjs --native
       - run: node scripts/test-lsp.cjs --native
       - run: node scripts/test-stream-pipe.cjs --native
       - uses: actions/setup-python@v5
@@ -162,6 +169,15 @@ jobs:
       - run: dotnet build tools/reference-dotnet/Reference.csproj --no-restore -c Release
       - run: node scripts/check-dotnet.cjs
       - run: node scripts/check-kv3.cjs
+      - run: dotnet restore tools/reference-resources/Reference.csproj --locked-mode
+      - run: dotnet build tools/reference-resources/Reference.csproj --no-restore -c Release
+      - run: node scripts/check-binary-kv3.cjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r tools/requirements-reference.txt
+      - run: node scripts/check-assets.cjs
+      - run: node scripts/fuzz-assets.cjs
       - run: node scripts/fuzz.cjs
       - run: node scripts/check-upstream.cjs
       - run: node scripts/test-registry.cjs --source

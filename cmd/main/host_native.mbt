@@ -274,6 +274,18 @@ fn host_export_directory(
   target : String,
   files : Map[String, String],
 ) -> Unit raise {
+  host_export_binary_directory(
+    target,
+    files.map((_, text) => @utf8.encode(text[:])),
+  )
+}
+
+///|
+fn host_export_binary_directory(
+  target : String,
+  files : Map[String, Bytes],
+) -> Unit raise {
+  @valve.export_files_zip(files) |> ignore
   if target.is_empty() ||
     target == "-" ||
     target.contains("\u0000") ||
@@ -290,7 +302,7 @@ fn host_export_directory(
     let names = files.keys().collect()
     names.sort_by((a, b) => a.lexical_compare(b))
     for name in names {
-      let bytes = @utf8.encode(files[name][:])
+      let bytes = files[name]
       if native_export_file(os_path(name), bytes, bytes.length()) != 0 {
         raise InvalidArgument(
           "Directory export failed; owned output files were rolled back",
@@ -299,6 +311,31 @@ fn host_export_directory(
     }
   }
   native_export_finish(1)
+}
+
+///|
+#borrow(path)
+extern "C" fn native_read_range(
+  path : Bytes,
+  offset : Int,
+  length : Int,
+) -> Bytes = "moonvalve_read_range"
+
+///|
+fn host_read_range(path : String, offset : Int, length : Int) -> Bytes raise {
+  if path == "-" ||
+    path.contains("\u0000") ||
+    @utf8.encode(path[:]).length() > 32767 ||
+    offset < 0 ||
+    length < 0 ||
+    length > 67108864 {
+    raise InvalidArgument("Invalid bounded file range")
+  }
+  let bytes = native_read_range(os_path(path), offset, length)
+  if native_failed() != 0 {
+    raise InvalidArgument("Unable to read complete archive byte range")
+  }
+  bytes
 }
 
 ///|

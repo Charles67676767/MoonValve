@@ -15,6 +15,7 @@ fs.mkdirSync(destination,{recursive:true});
 copy(binary,path.join(destination,process.platform==='win32'?'moonvalve.exe':'moonvalve'));
 copy(path.join(root,'_build/js/release/build/cmd/main/main.js'),path.join(destination,'moonvalve.cjs'));
 for(const file of ['LICENSE','NOTICE.md','pkg.generated.mbti'])copy(path.join(root,file),path.join(destination,file));
+copyTree(path.join(root,'licenses'),path.join(destination,'licenses'));
 copyTree(path.join(root,'docs'),path.join(destination,'docs'));
 copyTree(path.join(root,'fixtures'),path.join(destination,'fixtures'));
 copyTree(path.join(root,'web/editor'),path.join(destination,'web/editor'));

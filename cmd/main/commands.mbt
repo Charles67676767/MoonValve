@@ -238,6 +238,7 @@ fn run(args : Array[String]) -> Unit raise {
   }
   if args.length() <= 2 || args[2] == "help" || args[2] == "--help" {
     help()
+    resource_help()
     println("  version                 Show version information")
     println(
       "  select FILE EXPR        Query paths, duplicates and value filters",
@@ -291,6 +292,9 @@ fn run(args : Array[String]) -> Unit raise {
     return
   }
   let command = args[2]
+  if run_resource_commands(command, args) {
+    return
+  }
   if command == "lsp" {
     if args.length() != 3 {
       raise InvalidArgument("lsp takes no arguments")

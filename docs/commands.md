@@ -59,3 +59,7 @@ moonvalve shortcut-remove shortcuts.vdf 0 --in-place
 ## 0.7 新入口
 
 `workspace-kv3-query`、`format-preserving`、`kv3-format-preserving`、`kv3-resources` 与 `kv3-resource-edit` 的完整示例及输入格式见[工程工作流](project-workflows.md)。原有规范化命令保持原行为。
+
+## 0.8 资源能力
+
+二进制 KV3、Source 2 DATA/RERL、VPK、GameFileSystem、DependencyGraph、VMT、本地化/PO 与 DMX 的接口、命令和预算见[资源指南](assets.md)。可运行示例：`moon run examples/assets --target js`。

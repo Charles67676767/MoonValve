@@ -12,12 +12,61 @@ fn execute(request : Json) -> Json raise {
     raise Failure("Expected a request object")
   }
   let action = field(fields, "action")
+  if execute_resource_tools(action, fields) is Some(result) {
+    return result
+  }
   let literal = fields.get("literal") == Some(Json::boolean(true))
   let options = {
     ..@valve.ParseOptions::default(),
     escape_sequences: !literal,
   }
   match action {
+    "kv3-binary-decode" => {
+      let raw = field(fields, "base64")
+      if raw.length() > 22369624 {
+        raise Failure("Binary KV3 input exceeds byte budget")
+      }
+      let document = @valve.decode_kv3_binary(@base64.decode(raw))
+      Json::object({
+        "model": @valve.kv3_binary_to_json(document),
+        "semantic": @valve.kv3_to_json(document.document()),
+        "text": Json::string(@valve.stringify_kv3(document.document())),
+      })
+    }
+    "kv3-binary-encode" => {
+      guard fields.get("model") is Some(model) else {
+        raise Failure("Expected binary KV3 model")
+      }
+      let document = @valve.kv3_binary_from_json(model)
+      let output = @valve.encode_kv3_binary(
+        document,
+        version=if document.version == 4 { 4 } else { 5 },
+        compression=document.compression,
+      )
+      Json::object({ "base64": Json::string(@base64.encode(output[:])) })
+    }
+    "kv3-to-binary" => {
+      let document = @valve.kv3_binary_from_document(
+        @valve.parse_kv3(
+          field(fields, "text"),
+          allow_headerless=fields.get("headerless") == Some(Json::boolean(true)),
+        ),
+      )
+      let version = match fields.get("version") {
+        Some(Number(n, ..)) if n == 4.0 => 4
+        None | Some(Number(5.0, ..)) => 5
+        _ => raise Failure("Expected binary KV3 version 4 or 5")
+      }
+      let compression = match fields.get("compression") {
+        Some(Number(n, ..)) if n >= 0.0 &&
+          n <= 2.0 &&
+          n == n.to_int().to_double() => n.to_int()
+        None => 0
+        _ => raise Failure("Expected compression 0, 1 or 2")
+      }
+      let output = @valve.encode_kv3_binary(document, version~, compression~)
+      Json::object({ "base64": Json::string(@base64.encode(output[:])) })
+    }
     "format-preserving" => {
       let result = @valve.parse_preserving(field(fields, "text"), options~).format_preserving()
       Json::object({
@@ -431,6 +480,15 @@ pub fn dispatch(input : String) -> String {
           "offset": Json::number(d.offset.to_double()),
           "line": Json::number(d.line.to_double()),
           "column": Json::number(d.column.to_double()),
+        }),
+      }).stringify()
+    @valve.InvalidBinary(offset, message) =>
+      Json::object({
+        "ok": Json::boolean(false),
+        "error": Json::object({
+          "code": Json::string("invalid_binary"),
+          "message": Json::string(message),
+          "offset": Json::number(offset.to_double()),
         }),
       }).stringify()
     error =>

@@ -45,6 +45,31 @@ static wchar_t *mv_wide(const char *text) {
 }
 #endif
 
+MOONBIT_FFI_EXPORT moonbit_bytes_t moonvalve_read_range(moonbit_bytes_t path,int32_t offset,int32_t length) {
+  mv_failed=0;
+  if(offset<0 || length<0 || length>67108864) return mv_error();
+  FILE *file;
+#ifdef _WIN32
+  wchar_t *wide=mv_wide((const char *)path);if(!wide)return mv_error();
+  file=_wfopen(wide,L"rb");free(wide);
+#else
+  file=fopen((const char *)path,"rb");
+#endif
+  if(!file)return mv_error();
+#ifdef _WIN32
+  struct _stat64 info;
+  if(_fstat64(_fileno(file),&info) || (info.st_mode&_S_IFMT)!=_S_IFREG || _fseeki64(file,offset,SEEK_SET)) {fclose(file);return mv_error();}
+#else
+  struct stat info;
+  if(fstat(fileno(file),&info) || !S_ISREG(info.st_mode) || fseeko(file,(off_t)offset,SEEK_SET)) {fclose(file);return mv_error();}
+#endif
+  moonbit_bytes_t bytes=moonbit_make_bytes(length,0);
+  size_t used=fread(bytes,1,(size_t)length,file);
+  if(used!=(size_t)length || ferror(file))mv_failed=1;
+  if(fclose(file))mv_failed=1;
+  return bytes;
+}
+
 /* One active synchronous input stream per CLI invocation; chunks are bounded. */
 static FILE *mv_stream;
 MOONBIT_FFI_EXPORT int moonvalve_stream_open(moonbit_bytes_t path) {

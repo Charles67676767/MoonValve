@@ -52,6 +52,28 @@ const features07=Number(version.split('.')[1])>=7?String.raw`
   assert_eq(refs[0].target,Some("content/moon"))
   assert_true(typed_source.rewrite_resources(roots,{"content/moon":"content/new"}).text().contains("resource:\"new\""))
 `:'';
+const features08=Number(version.split('.')[1])>=8?String.raw`
+  let exact : @valve.KV3BinaryDocument = {version:5,compression:2,format_id:@valve.generic_kv3_header().format_id,root:@valve.BObject([("bits",@valve.BNumber(19,2143289345UL)),("name",@valve.BString("Moon"))])}
+  assert_eq(@valve.decode_kv3_binary(@valve.encode_kv3_binary(exact,compression=2)).root,exact.root)
+  assert_eq(exact.edit_query("/name",@valve.KV3SetValue(@valve.KV3String("Sun"))).select("/bits")[0].value,@valve.BNumber(19,2143289345UL))
+  assert_eq(@valve.read_resource_container(@valve.encode_kv3_resource(exact)).data().root,exact.root)
+  let assets : Map[String,Bytes] = {"materials/moon.vmt":b"UnlitGeneric {$basetexture moon/base}","materials/moon/base.vtf":b"texture"}
+  let archive = @valve.read_vpk(@valve.create_vpk(assets))
+  let filesystem = @valve.mount_game_filesystem([@valve.VPKMount("mod",false,archive,(_,_,_) => abort("Unexpected archive read"))])
+  let closure = @valve.build_dependency_graph(["materials/moon.vmt"],filesystem)
+  assert_eq(closure.export_files().length(),2)
+  assert_eq(@valve.read_vpk(closure.export_vpk()).entries().length(),2)
+  assert_eq(@valve.parse_vmt("UnlitGeneric {$basetexture moon/base}").textures()[0].target,Some("materials/moon/base.vtf"))
+  let source_catalog : @valve.Localization = {language:"English",encoding:"utf16le",tokens:[{name:"Moon_Hello",text:"Hello %s1"}]}
+  let translated_catalog : @valve.Localization = {..source_catalog,language:"schinese",tokens:[{name:"Moon_Hello",text:"Moon %s1"}]}
+  let imported_catalog = source_catalog.import_po(@valve.parse_po(source_catalog.to_po(translated=translated_catalog).stringify()),"schinese")
+  assert_eq(imported_catalog.issues,[])
+  assert_eq(@valve.read_localization(imported_catalog.document.write()).tokens,translated_catalog.tokens)
+  let uuid = "11111111-2222-4333-8444-555555555555"
+  let dmx : @valve.DMXDocument = {format_name:"model",format_version:22,root:uuid,elements:[{id:uuid,name:"Moon",kind:"DmeRoot",attributes:[{name:"self",value:@valve.DElement(Some(uuid))},{name:"bits",value:@valve.DFloatBits(2143289345U)}]}]}
+  assert_eq(@valve.read_dmx(@valve.encode_dmx_binary(dmx)),dmx)
+  assert_eq(@valve.dmx_from_json(@valve.dmx_to_json(dmx)),dmx)
+`:'';
 fs.writeFileSync(path.join(temporary,'cmd/main/main.mbt'),`///|
 fn verify() -> Unit raise {
   assert_eq(@valve.version(), "${version}")
@@ -76,6 +98,7 @@ fn verify() -> Unit raise {
   ${newFeatures}
   ${features06}
   ${features07}
+  ${features08}
   println("Registry ${version}: parsing, exact integers, queries, source edits, transfer, KV3, workspace and LSP passed")
 }
 ///|
@@ -93,6 +116,6 @@ try{
   assert.match(fs.readFileSync(installed,'utf8'),new RegExp('version\\s*=\\s*"'+version.replace(/\./g,'\\.')+'"'));
   }
   for(const target of ['wasm','wasm-gc','js','native']){moon(['run','cmd/main','--target',target]);passed.push(target);}
-  fs.mkdirSync(path.join(root,'_build'),{recursive:true});fs.writeFileSync(path.join(root,`_build/${sourceMode?'consumer-source-check':'registry-check'}-${version}.json`),JSON.stringify({module:'Charles67676767/moonvalve',version,registry_only:!sourceMode,targets:passed,features:['parse','int64','query','source-edit','transfer','kv3','workspace','lsp',...(newFeatures?['kv3-preserving','workspace-fields','lsp-file-rename']:[]),...(features06?['project-zip','kv3-typed-query','kv3-source-ranges','kv3-navigation']:[]),...(features07?['mixed-workspace','preserving-format','resource-mapping','resource-rewrite']:[])]},null,2)+'\n');
+  fs.mkdirSync(path.join(root,'_build'),{recursive:true});fs.writeFileSync(path.join(root,`_build/${sourceMode?'consumer-source-check':'registry-check'}-${version}.json`),JSON.stringify({module:'Charles67676767/moonvalve',version,registry_only:!sourceMode,targets:passed,features:['parse','int64','query','source-edit','transfer','kv3','workspace','lsp',...(newFeatures?['kv3-preserving','workspace-fields','lsp-file-rename']:[]),...(features06?['project-zip','kv3-typed-query','kv3-source-ranges','kv3-navigation']:[]),...(features07?['mixed-workspace','preserving-format','resource-mapping','resource-rewrite']:[]),...(features08?['binary-kv3','resource-data','vpk','mounts','dependency-closure','vmt','localization-po','dmx']:[])]},null,2)+'\n');
   console.log(sourceMode?'Source consumer preflight passed on all four backends':'Independent registry installation verified on all four backends');
 }finally{const resolved=fs.realpathSync(temporary),parent=fs.realpathSync(os.tmpdir());assert.ok(resolved.startsWith(parent+path.sep)&&path.basename(resolved).startsWith('moonvalve-registry-'));fs.rmSync(resolved,{recursive:true,force:true});}

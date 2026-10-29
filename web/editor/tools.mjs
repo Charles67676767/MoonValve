@@ -1,4 +1,5 @@
 import {setupKV3} from './kv3-tools.mjs';
+import {setupAssets} from './asset-tools.mjs';
 // UI state and file selection only. MoonBit owns all format and Steam semantics.
 export function setupTools(api) {
   const $ = id => document.getElementById(id);
@@ -11,9 +12,9 @@ export function setupTools(api) {
   function show(name) {
     panel = name;
     $('open').hidden = $('download').hidden = name !== 'config';
-    $('size').hidden = name === 'cache' || name === 'project' || name === 'kv3';
+    $('size').hidden = name === 'cache' || name === 'project' || name === 'kv3' || name === 'assets';
     for (const tab of document.querySelectorAll('[data-panel]')) tab.classList.toggle('active', tab.dataset.panel === name);
-    for (const key of ['config', 'shortcuts', 'cache', 'project', 'kv3']) $('panel-' + key).hidden = name !== key;
+    for (const key of ['config', 'shortcuts', 'cache', 'project', 'kv3','assets']) $('panel-' + key).hidden = name !== key;
   }
   for (const tab of document.querySelectorAll('[data-panel]')) tab.onclick = guard(async () => {
     show(tab.dataset.panel);
@@ -295,5 +296,6 @@ export function setupTools(api) {
   $('project-op-undo').onclick=guard(async()=>{if(projectHistory.length){await restore(projectHistory.pop());$('project-op-undo').disabled=!projectHistory.length;}});
   api.subscribe(() => { if (panel === 'shortcuts') guard(refreshShortcuts)(); });
   const kv3Tools=setupKV3(api,show);
+  setupAssets(api);
   return {show, renderFiles,...kv3Tools};
 }

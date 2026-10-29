@@ -1,10 +1,10 @@
 # MoonValve
 
-**MoonBit 原生 Valve KeyValues 工具库：KV1、文本 KV3、Steam 清单与编辑器服务。**
+**MoonBit 原生 Valve 数据工具库：KeyValues、VPK、VMT、本地化、DMX 与编辑器服务。**
 
-MoonValve 让 MoonBit 程序可以读取、查询和写出 VDF/ACF 文本，同时保留键的顺序与重复项。核心库没有第三方依赖，也不调用 Python、Valve SDK 或外部解析器。Steam 数据模型和命令行工具建立在同一份解析实现上。
+MoonValve 让 MoonBit 程序可以读取、查询和写出 Valve 配置与游戏资源，同时保留 KV1 键顺序和重复项、二进制数值位与 DMX 的 UUID 图身份。格式实现和命令行使用同一份 MoonBit 核心；Zstandard 使用 Apache-2.0 的 MoonBit 依赖 `bikallem/compress`，不调用 Python、Valve SDK 或外部解析器。Python/.NET 仅用于独立兼容性测试。
 
-当前版本为 `0.7.0`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
+当前版本为 `0.8.0`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
 
 新增查询表达式与快照批量修改、跨对象移动复制、批量编辑优化、文本 KV3、多文件引用重构及标准输入输出 LSP。详见 [进阶功能与边界](docs/advanced.md)，[VS Code 扩展](extensions/vscode/README.md) 可通过 VSIX 安装。
 
@@ -14,6 +14,11 @@ Steam 和 Source 生态使用 KeyValues 保存配置和资源信息。这种格�
 
 ## 已实现
 
+- 二进制 KV3 0—5 读取、4/5 写出及无压缩/LZ4/Zstandard；精确类型查询编辑与 Source 2 DATA/RERL 检查。
+- VPK v1/v2 索引、按需提取、文件 CRC32 校验、v1 创建及显式目录/VPK 搜索路径挂载。
+- VMT Patch 继承与参数来源、纹理引用；资源正反向依赖、基础游戏来源和目录/ZIP/VPK 闭包导出。
+- Valve 本地化 UTF-8/UTF-16、PO/POT 转换更新、翻译上下文和占位符检查。
+- 独立的 DMX UUID 类型图，支持 KeyValues2、binary 4/5、共享/循环/外部引用及同类型数组。
 - KV1 文本解析：嵌套对象、带引号和不带引号的字符串、空值、空对象、`//` 注释、Unicode 和 UTF-8 BOM。
 - 有序条目模型，重复键不覆盖；支持首项查询、全部同名项查询和逐层路径查询。
 - 规范化写出与结构往返，提供保留重复键的 JSON 双向转换。
@@ -167,7 +172,7 @@ docs/                 兼容性、设计与路线图
 
 ## 后续方向
 
-0.7.x 保留 0.4、0.5 与 0.6 系列公开签名，并遵循[兼容约定](docs/api-stability.md)，并通过接口基线、实际配置回归、真实 VS Code 主机及注册表消费者进行验证。KV2、二进制 KV3、VBKV 和未知版本的 Steam 缓存不在当前范围内。详见 [路线图](docs/roadmap.md)。
+0.8.x 保留 0.4—0.7 系列公开签名，遵循[兼容约定](docs/api-stability.md)，并通过接口基线、独立格式参考和注册表消费者验证。DMX 其他二进制版本、VBKV 和未知版本的 Steam 缓存仍需独立扩展。详见[路线图](docs/roadmap.md)。
 
 ## 许可证与参考
 
@@ -196,3 +201,7 @@ moon run cmd/main --target native -- kv3-select fixtures/sample.kv3 '/**?type=in
 ### 0.7 混合工程与资源维护
 
 KV1 与文本 KV3 可在同一工程内分别查询、批量修改并导出；新增保留注释、条件、引用与数字写法的格式化。VS Code 可按显式资源目录跳转、检查缺失文件，并在移动资源时更新已载入 KV3 的引用。配置示例和限制见[工程与资源工作流](docs/project-workflows.md)。
+
+### 0.8 真实资源工作流
+
+六类资源能力提供 MoonBit API、JavaScript/原生命令行和本地工作台入口。运行 `moon run examples/assets --target js` 查看可复现的读取、编辑、依赖闭包与格式转换。格式版本、资源预算、v2 页脚校验边界和完整命令见[资源工具使用指南](docs/assets.md)。

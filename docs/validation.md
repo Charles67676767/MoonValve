@@ -1,6 +1,6 @@
 # 验证与复现
 
-工具链：`moonc v0.10.14+7d59c7ec9`，同版本 `moonbitlang/core`。核心库无第三方包依赖；参考测试使用 `vdf==3.4`（MIT），不参与产品运行。
+工具链：`moonc v0.10.14+7d59c7ec9`，同版本 `moonbitlang/core`。Zstandard 使用 `bikallem/compress` 0.3.4（Apache-2.0）；Python/.NET 参考测试不参与产品运行。新增格式验证命令见[资源指南](assets.md)。
 
 ## 核心与命令行
 
@@ -17,7 +17,7 @@ moon build --target native --release
 node scripts/test-cli.cjs --native
 ```
 
-目前 140 项测试覆盖文本/二进制、重复项、Unicode、资源限制、编辑事务、原文条件保留、查询遍历、类型读取、Steam 快捷方式、缓存分页、分块解析与写出、条件过滤后的来源位置和引用合并，四个后端均运行同一套核心测试。两个 CLI 各运行 33 项端到端验收；编辑器另有 14 项共用核心检查。另有大规模默认项合并测试与百万条目分块示例。
+核心测试覆盖文本/二进制、重复项、Unicode、资源限制、编辑事务、Steam、流式处理和新增资源格式。四个后端运行同一套核心测试；CLI、LSP、工作台和资源端到端测试由 scripts/ 中的脚本验证，输出实际测试数量。另有大规模默认项合并与百万条目分块示例。
 
 流式端到端检查使用超过 16 MiB 的文件和跨 64 KiB 块的 Unicode 输入。`node scripts/test-stream-pipe.cjs`（或加 `--native`）让接收端反复暂停，核对 22,200,011 字节输出的完整 SHA-256；JS 进程设置 48 MiB 堆限制。此限制只约束 V8 堆，不等同于进程总内存或峰值 RSS。
 
