@@ -5,6 +5,7 @@
 ## 核心与命令行
 
 ```sh
+moon update
 moon fmt --check
 moon check --target all --deny-warn
 moon build --target all

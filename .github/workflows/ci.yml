@@ -25,6 +25,7 @@ jobs:
           version: '0.10.14+7d59c7ec9'
           core-version: '0.10.14+7d59c7ec9'
       - run: moon version --all
+      - run: moon update
       - run: moon fmt --check
       - run: moon info
       - run: node scripts/check-api.cjs
@@ -114,6 +115,7 @@ jobs:
         with:
           version: '0.10.14+7d59c7ec9'
           core-version: '0.10.14+7d59c7ec9'
+      - run: moon update
       - run: moon check --target js
       - run: moon test --target js
       - run: moon build --target js --release
@@ -164,6 +166,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - run: moon update
       - run: node scripts/build-editor.cjs
       - run: dotnet restore tools/reference-dotnet/Reference.csproj --locked-mode
       - run: dotnet build tools/reference-dotnet/Reference.csproj --no-restore -c Release

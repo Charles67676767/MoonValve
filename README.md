@@ -50,6 +50,7 @@ Steam 和 Source 生态使用 KeyValues 保存配置和资源信息。这种格�
 git clone https://github.com/Charles67676767/MoonValve.git
 cd MoonValve
 moon version --all
+moon update
 moon check
 moon test
 moon run examples/demo
