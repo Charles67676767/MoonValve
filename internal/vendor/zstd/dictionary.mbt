@@ -1,18 +1,18 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution, formatting, and explicit try/catch replacing removed try? syntax.
+// MoonValve modifications: attribution, formatting, and explicit try/catch replacing removed try? syntax; MoonBit 0.10.18 formatter normalization (type names and optional parameter syntax).
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
 priv struct ZstdDictionary {
   content : Bytes
-  dict_id : UInt
-  rep : Array[Int]
+  dict_id : UInt32
+  rep : Array[Int32]
   lit_table : ZstdHuffmanTable?
   seq_tables : SeqTables?
 }
 
 ///|
-fn default_rep_offsets() -> Array[Int] {
+fn default_rep_offsets() -> Array[Int32] {
   [1, 4, 8]
 }
 
@@ -28,7 +28,7 @@ fn empty_dictionary() -> ZstdDictionary {
 }
 
 ///|
-fn copy_rep_offsets(rep : Array[Int]) -> Array[Int] {
+fn copy_rep_offsets(rep : Array[Int32]) -> Array[Int32] {
   [rep.unsafe_get(0), rep.unsafe_get(1), rep.unsafe_get(2)]
 }
 

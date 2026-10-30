@@ -12,15 +12,15 @@ pub extend CacheFormat with @debug.Debug::{to_repr}
 
 ///|
 pub(all) struct CacheRecord {
-  id : UInt
-  change_number : UInt
+  id : UInt32
+  change_number : UInt32
   token : UInt64
   sha1 : Bytes
   binary_sha1 : Bytes?
-  info_state : UInt?
-  last_updated : UInt?
-  offset : Int
-  length : Int
+  info_state : UInt32?
+  last_updated : UInt32?
+  offset : Int32
+  length : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -35,12 +35,12 @@ pub extend CacheRecord with @debug.Debug::{to_repr}
 struct SteamCache {
   bytes : Bytes
   kind : CacheFormat
-  revision : Int
-  universe_id : UInt
+  revision : Int32
+  universe_id : UInt32
   rows : Array[CacheRecord]
   strings : Array[String]?
   options : BinaryOptions
-  indices : Map[UInt, Int]
+  indices : Map[UInt32, Int32]
 }
 
 ///|
@@ -49,12 +49,12 @@ pub fn SteamCache::format(self : SteamCache) -> CacheFormat {
 }
 
 ///|
-pub fn SteamCache::version(self : SteamCache) -> Int {
+pub fn SteamCache::version(self : SteamCache) -> Int32 {
   self.revision
 }
 
 ///|
-pub fn SteamCache::universe(self : SteamCache) -> UInt {
+pub fn SteamCache::universe(self : SteamCache) -> UInt32 {
   self.universe_id
 }
 
@@ -66,17 +66,17 @@ pub fn SteamCache::records(self : SteamCache) -> Array[CacheRecord] {
 ///|
 pub(all) struct CachePage {
   records : Array[CacheRecord]
-  total : Int
-  offset : Int
+  total : Int32
+  offset : Int32
 }
 
 ///|
 /// Metadata-only pagination never decodes payloads. Query matches decimal IDs.
 pub fn SteamCache::page(
   self : SteamCache,
-  query? : String = "",
-  offset? : Int = 0,
-  limit? : Int = 100,
+  query~ : String = "",
+  offset~ : Int32 = 0,
+  limit~ : Int32 = 100,
 ) -> CachePage raise BinaryError {
   if offset < 0 || limit < 1 || limit > 200 {
     raise InvalidBinary(0, "Invalid page range")
@@ -97,7 +97,7 @@ pub fn SteamCache::page(
 ///|
 pub fn SteamCache::read(
   self : SteamCache,
-  id : UInt,
+  id : UInt32,
 ) -> Array[BinaryEntry]? raise BinaryError {
   if self.indices.get(id) is Some(index) {
     let row = self.rows[index]
@@ -115,7 +115,7 @@ pub fn SteamCache::read(
 ///|
 fn BinaryReader::take(
   self : BinaryReader,
-  length : Int,
+  length : Int32,
 ) -> Bytes raise BinaryError {
   if length < 0 || length > self.bytes.length() - self.pos {
     raise InvalidBinary(self.pos, "Truncated cache field")
@@ -130,8 +130,8 @@ fn BinaryReader::take(
 /// table offsets, identifiers, sentinels and trailing data are checked strictly.
 pub fn open_steam_cache(
   input : Bytes,
-  max_bytes? : Int = 536870912,
-  max_records? : Int = 1000000,
+  max_bytes~ : Int32 = 536870912,
+  max_records~ : Int32 = 1000000,
 ) -> SteamCache raise BinaryError {
   if max_bytes < 8 ||
     max_records < 0 ||
@@ -182,7 +182,7 @@ pub fn open_steam_cache(
     validate_string_table(strings, options) |> ignore
   }
   let rows : Array[CacheRecord] = []
-  let ids : Map[UInt, Int] = Map([])
+  let ids : Map[UInt32, Int32] = Map([])
   while true {
     if r.pos + 4 > table_start {
       raise InvalidBinary(r.pos, "Missing cache sentinel")

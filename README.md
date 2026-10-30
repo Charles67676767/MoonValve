@@ -4,7 +4,7 @@
 
 MoonValve 让 MoonBit 程序可以读取、查询和写出 Valve 配置与游戏资源，同时保留 KV1 键顺序和重复项、二进制数值位与 DMX 的 UUID 图身份。格式实现和命令行使用同一份 MoonBit 核心；Zstandard 使用 Apache-2.0 的 MoonBit 实现 `bikallem/compress`（所需源码及归属记录见 `internal/vendor`），不调用 Python、Valve SDK 或外部解析器。Python/.NET 仅用于独立兼容性测试。
 
-当前版本为 `0.8.2`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
+当前版本为 `0.8.3`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
 
 新增查询表达式与快照批量修改、跨对象移动复制、批量编辑优化、文本 KV3、多文件引用重构及标准输入输出 LSP。详见 [进阶功能与边界](docs/advanced.md)，[VS Code 扩展](extensions/vscode/README.md) 可通过 VSIX 安装。
 
@@ -43,7 +43,7 @@ Steam 和 Source 生态使用 KeyValues 保存配置和资源信息。这种格�
 
 ## 环境与获取代码
 
-- 已验证工具链：`moonc v0.10.14+7d59c7ec9`，配套 `moonbitlang/core` 同版本。
+- 项目要求 MoonBit 0.10.18 或更高版本（满足验收要求的 ≥0.10.16）；已验证工具链：`moonc v0.10.18+6c83a7f62`，配套 `moonbitlang/core` 同版本。
 - JavaScript CLI 需要 Node.js 22 或更高版本；原生 CLI 构建需要 C 编译器，运行时无需 Node。
 
 ```sh

@@ -1,40 +1,44 @@
 ///|
 #borrow(path)
-extern "C" fn native_read(path : Bytes, limit : Int) -> Bytes = "moonvalve_read"
+extern "C" fn native_read(path : Bytes, limit : Int32) -> Bytes = "moonvalve_read"
 
 ///|
 #borrow(path)
 extern "C" fn native_list(path : Bytes) -> Bytes = "moonvalve_list"
 
 ///|
-extern "C" fn native_failed() -> Int = "moonvalve_failed"
+extern "C" fn native_failed() -> Int32 = "moonvalve_failed"
 
 ///|
 #borrow(bytes)
-extern "C" fn native_write(bytes : Bytes, length : Int, stderr : Int) -> Int = "moonvalve_write"
+extern "C" fn native_write(
+  bytes : Bytes,
+  length : Int32,
+  stderr : Int32,
+) -> Int32 = "moonvalve_write"
 
 ///|
-extern "C" fn native_exit(code : Int) -> Unit = "moonvalve_exit"
+extern "C" fn native_exit(code : Int32) -> Unit = "moonvalve_exit"
 
 ///|
-let exit_status : Ref[Int] = { val: 0, }
+let exit_status : Ref[Int32] = { val: 0, }
 
 ///|
 #borrow(path)
-extern "C" fn native_stream_open(path : Bytes) -> Int = "moonvalve_stream_open"
+extern "C" fn native_stream_open(path : Bytes) -> Int32 = "moonvalve_stream_open"
 
 ///|
-extern "C" fn native_stream_chunk(handle : Int) -> Bytes = "moonvalve_stream_chunk"
+extern "C" fn native_stream_chunk(handle : Int32) -> Bytes = "moonvalve_stream_chunk"
 
 ///|
-fn host_stream_chunk(handle : Int) -> Bytes raise CliError {
+fn host_stream_chunk(handle : Int32) -> Bytes raise CliError {
   let result = native_stream_chunk(handle)
   host_stream_check()
   result
 }
 
 ///|
-extern "C" fn host_stream_close(handle : Int) -> Unit = "moonvalve_stream_close"
+extern "C" fn host_stream_close(handle : Int32) -> Unit = "moonvalve_stream_close"
 
 ///|
 fn host_stream_check() -> Unit raise CliError {
@@ -44,7 +48,7 @@ fn host_stream_check() -> Unit raise CliError {
 }
 
 ///|
-fn host_stream_open(path : String) -> Int raise CliError {
+fn host_stream_open(path : String) -> Int32 raise CliError {
   if path.contains("\u0000") || @utf8.encode(path[:]).length() > 32767 {
     raise InvalidArgument("Invalid stream path")
   }
@@ -75,7 +79,7 @@ fn host_read(path : String) -> FixedArray[String] {
 ///|
 fn host_read_bytes(
   path : String,
-  limit? : Int = 16777216,
+  limit~ : Int32 = 16777216,
 ) -> Bytes raise CliError {
   if path.contains("\u0000") || @utf8.encode(path[:]).length() > 32767 {
     raise InvalidArgument("Invalid file path")
@@ -115,10 +119,10 @@ fn host_confined(root : String, relative : String) -> String raise CliError {
 extern "C" fn native_save(
   path : Bytes,
   before : Bytes,
-  before_length : Int,
+  before_length : Int32,
   after : Bytes,
-  after_length : Int,
-) -> Int = "moonvalve_save"
+  after_length : Int32,
+) -> Int32 = "moonvalve_save"
 
 ///|
 fn host_save(
@@ -155,14 +159,14 @@ fn host_output_check() -> Unit raise CliError {
 }
 
 ///|
-fn host_error(message : String, code : Int) -> Unit {
+fn host_error(message : String, code : Int32) -> Unit {
   let bytes = @utf8.encode((message + "\n")[:])
   native_write(bytes, bytes.length(), 1) |> ignore
   exit_status.val = code
 }
 
 ///|
-fn host_exit_code(code : Int) -> Unit {
+fn host_exit_code(code : Int32) -> Unit {
   exit_status.val = code
 }
 
@@ -256,18 +260,18 @@ fn host_manifest_paths(source : String, library : String) -> FixedArray[String] 
 
 ///|
 #borrow(path)
-extern "C" fn native_export_begin(path : Bytes) -> Int = "moonvalve_export_begin"
+extern "C" fn native_export_begin(path : Bytes) -> Int32 = "moonvalve_export_begin"
 
 ///|
 #borrow(path, bytes)
 extern "C" fn native_export_file(
   path : Bytes,
   bytes : Bytes,
-  length : Int,
-) -> Int = "moonvalve_export_file"
+  length : Int32,
+) -> Int32 = "moonvalve_export_file"
 
 ///|
-extern "C" fn native_export_finish(success : Int) -> Unit = "moonvalve_export_finish"
+extern "C" fn native_export_finish(success : Int32) -> Unit = "moonvalve_export_finish"
 
 ///|
 fn host_export_directory(
@@ -317,12 +321,16 @@ fn host_export_binary_directory(
 #borrow(path)
 extern "C" fn native_read_range(
   path : Bytes,
-  offset : Int,
-  length : Int,
+  offset : Int32,
+  length : Int32,
 ) -> Bytes = "moonvalve_read_range"
 
 ///|
-fn host_read_range(path : String, offset : Int, length : Int) -> Bytes raise {
+fn host_read_range(
+  path : String,
+  offset : Int32,
+  length : Int32,
+) -> Bytes raise {
   if path == "-" ||
     path.contains("\u0000") ||
     @utf8.encode(path[:]).length() > 32767 ||
@@ -343,8 +351,8 @@ fn host_read_range(path : String, offset : Int, length : Int) -> Bytes raise {
 extern "C" fn native_write_new(
   path : Bytes,
   bytes : Bytes,
-  length : Int,
-) -> Int = "moonvalve_write_new"
+  length : Int32,
+) -> Int32 = "moonvalve_write_new"
 
 ///|
 fn host_write_new(target : String, bytes : Bytes) -> Unit raise {

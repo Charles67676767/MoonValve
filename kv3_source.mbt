@@ -1,8 +1,8 @@
 ///|
 priv struct KV3Span {
-  start : Int
-  end : Int
-  body : Int
+  start : Int32
+  end : Int32
+  body : Int32
 }
 
 ///|
@@ -12,7 +12,7 @@ struct KV3SourceDocument {
   doc : KV3Document
   options : ParseOptions
   spans : Map[String, KV3Span]
-  keys : Map[String, (Int, Int)]
+  keys : Map[String, (Int32, Int32)]
 }
 
 ///|
@@ -20,8 +20,8 @@ pub(all) enum KV3Edit {
   KV3Replace(KV3Value)
   KV3Remove
   KV3Rename(String)
-  KV3InsertField(Int, String, KV3Value)
-  KV3InsertElement(Int, KV3Value)
+  KV3InsertField(Int32, String, KV3Value)
+  KV3InsertElement(Int32, KV3Value)
 } derive(Debug)
 
 ///|
@@ -30,8 +30,8 @@ pub extend KV3Edit with @debug.Debug::{to_repr}
 ///|
 pub fn parse_kv3_preserving(
   input : String,
-  options? : ParseOptions = ParseOptions::default(),
-  allow_headerless? : Bool = false,
+  options~ : ParseOptions = ParseOptions::default(),
+  allow_headerless~ : Bool = false,
 ) -> KV3SourceDocument raise {
   let spans : Map[String, KV3Span] = Map([])
   let (doc, reader) = kv3_read(input, options, allow_headerless, Some(spans))
@@ -67,11 +67,11 @@ fn kv3_unflag(value : KV3Value) -> KV3Value {
 fn KV3SourceDocument::indices(
   self : KV3SourceDocument,
   path : Array[String],
-) -> Array[Int] raise {
+) -> Array[Int32] raise {
   if path.length() > 128 {
     raise InvalidEdit("KV3 path exceeds 128 components")
   }
-  let indices : Array[Int] = []
+  let indices : Array[Int32] = []
   let mut value = self.doc.root
   for component in path {
     match kv3_unflag(value) {
@@ -106,7 +106,7 @@ fn KV3SourceDocument::indices(
 }
 
 ///|
-fn kv3_at(value : KV3Value, path : Array[Int]) -> KV3Value {
+fn kv3_at(value : KV3Value, path : Array[Int32]) -> KV3Value {
   if path.is_empty() {
     return value
   }
@@ -121,7 +121,7 @@ fn kv3_at(value : KV3Value, path : Array[Int]) -> KV3Value {
 ///|
 fn kv3_modified(
   value : KV3Value,
-  path : Array[Int],
+  path : Array[Int32],
   operation : KV3Edit,
 ) -> KV3Value raise {
   if path.is_empty() && operation is KV3Replace(replacement) {
@@ -225,9 +225,9 @@ fn kv3_render(value : KV3Value, newline : String) -> String raise {
 ///|
 fn KV3SourceDocument::comma(
   self : KV3SourceDocument,
-  start : Int,
-  end : Int,
-) -> Int? raise {
+  start : Int32,
+  end : Int32,
+) -> Int32? raise {
   let reader = KV3Reader::{
     chars: self.chars,
     options: self.options,
@@ -445,10 +445,10 @@ pub fn KV3SourceDocument::apply_json(
 ///|
 /// Zero-based Unicode scalar offsets, suitable for UTF-16 conversion by hosts.
 pub(all) struct KV3SourceRange {
-  start : Int
-  end : Int
-  selection_start : Int
-  selection_end : Int
+  start : Int32
+  end : Int32
+  selection_start : Int32
+  selection_end : Int32
 } derive(Eq, Debug)
 
 ///|

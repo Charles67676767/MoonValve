@@ -10,7 +10,7 @@ pub extend ConditionError with @debug.Debug::{to_repr}
 priv struct ConditionParser {
   chars : Array[Char]
   symbols : Array[String]
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|
@@ -53,7 +53,7 @@ fn ConditionParser::take(self : ConditionParser, c : Char) -> Bool {
 ///|
 fn ConditionParser::read_or(
   self : ConditionParser,
-  depth : Int,
+  depth : Int32,
 ) -> Bool raise ConditionError {
   let mut value = self.read_and(depth)
   while self.take('|') {
@@ -70,7 +70,7 @@ fn ConditionParser::read_or(
 ///|
 fn ConditionParser::read_and(
   self : ConditionParser,
-  depth : Int,
+  depth : Int32,
 ) -> Bool raise ConditionError {
   let mut value = self.read_atom(depth)
   while self.take('&') {
@@ -87,7 +87,7 @@ fn ConditionParser::read_and(
 ///|
 fn ConditionParser::read_atom(
   self : ConditionParser,
-  depth : Int,
+  depth : Int32,
 ) -> Bool raise ConditionError {
   if depth > 64 {
     raise InvalidCondition("Conditional nesting exceeds 64")

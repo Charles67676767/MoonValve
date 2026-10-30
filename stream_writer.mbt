@@ -3,7 +3,7 @@
 /// resolver and are rejected rather than silently changing their meaning.
 struct StreamWriter {
   sink : (String) -> Unit raise
-  mut depth : Int
+  mut depth : Int32
   mut closed : Bool
 }
 

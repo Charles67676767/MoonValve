@@ -4,8 +4,8 @@ priv struct DMXBinaryReader {
   strings : Array[String]
   elements : Array[DMXElement]
   options : BinaryOptions
-  width : Int
-  mut nodes : Int
+  width : Int32
+  mut nodes : Int32
 }
 
 ///|
@@ -20,7 +20,7 @@ fn DMXBinaryReader::string(self : DMXBinaryReader) -> String raise {
 ///|
 fn DMXBinaryReader::value(
   self : DMXBinaryReader,
-  tag : Int,
+  tag : Int32,
   array : Bool,
 ) -> DMXValue raise {
   self.nodes += 1
@@ -61,7 +61,7 @@ fn DMXBinaryReader::value(
     6 => DBinary(self.input.take(self.input.count(self.options.max_bytes)))
     7 => DTime(self.input.uint(4).to_uint().reinterpret_as_int())
     8 => DColor(self.input.uint(4).to_uint())
-    9..=14 =>
+    9..<=14 =>
       DVector(
         tag,
         Array::makei([2, 3, 4, 3, 4, 16][tag - 9], _ => {
@@ -75,9 +75,9 @@ fn DMXBinaryReader::value(
 ///|
 fn dmx_read_binary(
   input : ValveBytes,
-  version : Int,
+  version : Int32,
   format_name : String,
-  format_version : Int,
+  format_version : Int32,
   options : BinaryOptions,
 ) -> DMXDocument raise {
   if version != 4 && version != 5 {
@@ -148,9 +148,9 @@ fn dmx_read_binary(
 fn dmx_binary_value(
   output : @buffer.Buffer,
   value : DMXValue,
-  elements : Map[String, Int],
-  strings : Map[String, Int],
-  width : Int,
+  elements : Map[String, Int32],
+  strings : Map[String, Int32],
+  width : Int32,
   array : Bool,
 ) -> Unit raise {
   match value {
@@ -187,18 +187,18 @@ fn dmx_binary_value(
 ///|
 pub fn encode_dmx_binary(
   document : DMXDocument,
-  version? : Int = 5,
-  options? : BinaryOptions = BinaryOptions::default(),
+  version~ : Int32 = 5,
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> Bytes raise {
   dmx_validate(document, options)
   if version != 4 && version != 5 {
     raise InvalidBinary(0, "DMX binary writer supports versions 4 and 5")
   }
-  let names : Map[String, Int] = Map([])
+  let names : Map[String, Int32] = Map([])
   names["name"] = 0
   let elements = [document.element(document.root).unwrap()] +
     document.elements.filter(e => e.id != document.root)
-  let ids : Map[String, Int] = Map([])
+  let ids : Map[String, Int32] = Map([])
   for i in 0..<elements.length() {
     let element = elements[i]
     ids[element.id] = i

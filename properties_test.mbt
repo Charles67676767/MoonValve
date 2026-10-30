@@ -1,5 +1,5 @@
 ///|
-fn generated_text(seed : Int, depth : Int) -> @moonvalve.Document {
+fn generated_text(seed : Int32, depth : Int32) -> @moonvalve.Document {
   let entries : Array[@moonvalve.Entry] = []
   for i in 0..<(seed % 7 + 1) {
     let key = ["dup", "dup", "中文😀", "space key", "", "quote\"", "path\\"][i]

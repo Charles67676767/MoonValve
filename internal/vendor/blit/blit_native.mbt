@@ -1,5 +1,5 @@
 // Vendored from bikallem/blit 0.2.2, licensed under Apache-2.0.
-// MoonValve modifications: attribution header only.
+// MoonValve modifications: attribution header only; MoonBit 0.10.18 formatter normalization (type names and optional parameter syntax).
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
@@ -8,10 +8,10 @@
 #borrow(dst, src)
 pub extern "c" fn blit_fixed_array(
   dst : FixedArray[Byte],
-  dst_offset : Int,
+  dst_offset : Int32,
   src : FixedArray[Byte],
-  src_offset : Int,
-  length : Int,
+  src_offset : Int32,
+  length : Int32,
 ) -> Unit = "bikallem_blit_blit_fixed_array"
 
 ///|
@@ -20,10 +20,10 @@ pub extern "c" fn blit_fixed_array(
 #borrow(dst, src)
 pub extern "c" fn blit_bytes(
   dst : FixedArray[Byte],
-  dst_offset : Int,
+  dst_offset : Int32,
   src : Bytes,
-  src_offset : Int,
-  length : Int,
+  src_offset : Int32,
+  length : Int32,
 ) -> Unit = "bikallem_blit_blit_fixed_array"
 
 ///|
@@ -31,9 +31,9 @@ pub extern "c" fn blit_bytes(
 #borrow(dst)
 pub extern "c" fn fill_bytes(
   dst : FixedArray[Byte],
-  dst_offset : Int,
+  dst_offset : Int32,
   value : Byte,
-  length : Int,
+  length : Int32,
 ) -> Unit = "bikallem_blit_fill_bytes"
 
 ///|
@@ -42,11 +42,11 @@ pub extern "c" fn fill_bytes(
 #borrow(a, b)
 pub extern "c" fn match_length(
   a : FixedArray[Byte],
-  a_offset : Int,
+  a_offset : Int32,
   b : FixedArray[Byte],
-  b_offset : Int,
-  max_len : Int,
-) -> Int = "bikallem_blit_match_length"
+  b_offset : Int32,
+  max_len : Int32,
+) -> Int32 = "bikallem_blit_match_length"
 
 ///|
 /// Word-at-a-time match length comparison on Bytes (same layout as FixedArray[Byte] in native).
@@ -54,34 +54,34 @@ pub extern "c" fn match_length(
 #borrow(a, b)
 pub extern "c" fn match_length_bytes(
   a : Bytes,
-  a_offset : Int,
+  a_offset : Int32,
   b : Bytes,
-  b_offset : Int,
-  max_len : Int,
-) -> Int = "bikallem_blit_match_length"
+  b_offset : Int32,
+  max_len : Int32,
+) -> Int32 = "bikallem_blit_match_length"
 
 ///|
 /// Subtract `delta` from each of `len` elements, clamping to `floor`.
 /// Used for hash-table window shifting in DEFLATE.
 #borrow(arr)
 pub extern "c" fn shift_int_array(
-  arr : FixedArray[Int],
-  len : Int,
-  delta : Int,
-  floor : Int,
+  arr : FixedArray[Int32],
+  len : Int32,
+  delta : Int32,
+  floor : Int32,
 ) -> Unit = "bikallem_blit_shift_int_array"
 
 ///|
 /// Allocate a FixedArray[Byte] without zeroing memory.
 /// The caller MUST fully initialize the buffer before reading from it.
-pub extern "c" fn make_uninit(len : Int) -> FixedArray[Byte] = "bikallem_blit_make_uninit"
+pub extern "c" fn make_uninit(len : Int32) -> FixedArray[Byte] = "bikallem_blit_make_uninit"
 
 ///|
 /// Allocate a FixedArray[Int] without zeroing memory.
 /// The caller MUST fully initialize all elements before reading.
-pub extern "c" fn make_uninit_int(len : Int) -> FixedArray[Int] = "bikallem_blit_make_uninit_int"
+pub extern "c" fn make_uninit_int(len : Int32) -> FixedArray[Int32] = "bikallem_blit_make_uninit_int"
 
 ///|
 /// Allocate a FixedArray[UInt] without zeroing memory.
 /// The caller MUST fully initialize all elements before reading.
-pub extern "c" fn make_uninit_uint(len : Int) -> FixedArray[UInt] = "bikallem_blit_make_uninit_int"
+pub extern "c" fn make_uninit_uint(len : Int32) -> FixedArray[UInt32] = "bikallem_blit_make_uninit_int"

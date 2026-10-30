@@ -69,7 +69,7 @@ fn dmx_json_string(fields : Map[String, Json], key : String) -> String raise {
 fn dmx_unpack(
   json : Json,
   in_array : Bool,
-  budget : Ref[Int],
+  budget : Ref[Int32],
 ) -> DMXValue raise {
   budget.val += 1
   if budget.val > 100000 {
@@ -123,7 +123,7 @@ fn dmx_unpack(
     (4, False) => DBool(false)
     (5, String(s)) => DString(s)
     (6, String(hex)) => dmx_scalar_text(6, hex)
-    (9..=14, Array(bits)) =>
+    (9..<=14, Array(bits)) =>
       DVector(
         tag,
         bits.map(v => {
@@ -149,7 +149,7 @@ pub fn dmx_from_json(json : Json) -> DMXDocument raise {
     elements.length() <= 100000 else {
     raise InvalidDocument("Invalid DMX JSON document")
   }
-  let budget : Ref[Int] = { val: 0, }
+  let budget : Ref[Int32] = { val: 0, }
   let document = DMXDocument::{
     format_name: dmx_json_string(fields, "format_name"),
     format_version: version.to_int(),

@@ -1,5 +1,5 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution, formatting, and explicit try/catch replacing removed try? syntax.
+// MoonValve modifications: attribution, formatting, and explicit try/catch replacing removed try? syntax; MoonBit 0.10.18 formatter normalization (type names and optional parameter syntax).
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
@@ -167,7 +167,7 @@ fn fixture_sentences() -> Bytes {
 }
 
 ///|
-fn zstd_hex_nibble(c : Byte) -> Int {
+fn zstd_hex_nibble(c : Byte) -> Int32 {
   let n = c.to_int()
   if n >= 48 && n <= 57 {
     return n - 48

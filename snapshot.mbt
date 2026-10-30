@@ -1,12 +1,12 @@
 ///|
 priv struct TextPatch {
-  start : Int
-  end : Int
+  start : Int32
+  end : Int32
   text : String
 }
 
 ///|
-fn index_key(path : Array[Int]) -> String {
+fn index_key(path : Array[Int32]) -> String {
   path.map(i => i.to_string()).join("/")
 }
 
@@ -14,11 +14,11 @@ fn index_key(path : Array[Int]) -> String {
 fn Document::indices(
   self : Document,
   path : Array[Selector],
-) -> Array[Int] raise EditError {
+) -> Array[Int32] raise EditError {
   if path.length() > 128 {
     raise InvalidEdit("Path exceeds 128 levels")
   }
-  let result : Array[Int] = []
+  let result : Array[Int32] = []
   let mut value = Value::Object(self.entries)
   for selector in path {
     guard value is Object(entries) && selector.occurrence >= 0 else {
@@ -106,12 +106,12 @@ fn collect_snapshot_targets(
   index_prefix : String,
   wanted : Map[String, Edit],
   result : Map[String, Edit],
-  depth : Int,
+  depth : Int32,
 ) -> Unit raise {
   if depth > 128 {
     raise InvalidEdit("Snapshot exceeds depth limit")
   }
-  let seen : Map[String, Int] = Map([])
+  let seen : Map[String, Int32] = Map([])
   for i in 0..<entries.length() {
     let entry = entries[i]
     let occurrence = seen.get(entry.key).unwrap_or(0)
@@ -140,7 +140,7 @@ fn snapshot_entries(
   entries : Array[Entry],
   prefix : String,
   operations : Map[String, Edit],
-  depth : Int,
+  depth : Int32,
 ) -> Array[Entry] raise {
   if depth > 128 {
     raise InvalidEdit("Snapshot exceeds depth limit")

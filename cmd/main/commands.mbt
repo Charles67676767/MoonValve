@@ -231,7 +231,7 @@ fn run(args : Array[String]) -> Unit raise {
       Json::object({
         "name": Json::string("MoonValve"),
         "version": Json::string(@valve.version()),
-        "minimum_moonc": Json::string("0.10.14"),
+        "minimum_moonc": Json::string("0.10.18"),
       }).stringify(),
     )
     return

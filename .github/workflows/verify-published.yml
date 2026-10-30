@@ -6,7 +6,7 @@ on:
       version:
         description: Exact Mooncakes version to install
         required: true
-        default: '0.8.2'
+        default: '0.8.3'
 
 permissions:
   contents: read
@@ -21,8 +21,8 @@ jobs:
           node-version: '22'
       - uses: hustcer/setup-moonbit@v1
         with:
-          version: '0.10.14+7d59c7ec9'
-          core-version: '0.10.14+7d59c7ec9'
+          version: '0.10.18+6c83a7f62'
+          core-version: '0.10.18+6c83a7f62'
       - run: node scripts/test-registry.cjs
         env:
           MOONVALVE_REGISTRY_VERSION: ${{ inputs.version }}

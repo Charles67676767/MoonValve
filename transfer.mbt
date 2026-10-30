@@ -1,5 +1,5 @@
 ///|
-fn is_prefix_path(parent : Array[Int], child : Array[Int]) -> Bool {
+fn is_prefix_path(parent : Array[Int32], child : Array[Int32]) -> Bool {
   parent.length() <= child.length() &&
   parent == child[:parent.length()].to_owned()
 }
@@ -7,10 +7,10 @@ fn is_prefix_path(parent : Array[Int], child : Array[Int]) -> Bool {
 ///|
 fn transfer_entries(
   entries : Array[Entry],
-  path : Array[Int],
-  source : Array[Int],
-  target : Array[Int],
-  index : Int,
+  path : Array[Int32],
+  source : Array[Int32],
+  target : Array[Int32],
+  index : Int32,
   copy : Bool,
   inserted : Entry,
 ) -> Array[Entry] {
@@ -48,8 +48,8 @@ pub fn Document::transfer(
   self : Document,
   from : Array[Selector],
   to : Array[Selector],
-  index : Int,
-  copy? : Bool = false,
+  index : Int32,
+  copy~ : Bool = false,
 ) -> Document raise {
   if from.is_empty() {
     raise InvalidEdit("The root cannot be transferred")
@@ -81,7 +81,7 @@ pub fn Document::transfer(
 }
 
 ///|
-fn SourceDocument::line_start(self : SourceDocument, offset : Int) -> Int {
+fn SourceDocument::line_start(self : SourceDocument, offset : Int32) -> Int32 {
   let mut start = offset
   while start > 0 &&
         self.chars[start - 1] != '\n' &&
@@ -96,8 +96,8 @@ fn SourceDocument::line_start(self : SourceDocument, offset : Int) -> Int {
 /// A same-line trailing // comment belongs to the transferred entry.
 fn SourceDocument::block_range(
   self : SourceDocument,
-  indices : Array[Int],
-) -> (Int, Int) raise {
+  indices : Array[Int32],
+) -> (Int32, Int32) raise {
   let span = self.span(indices)
   let line = self.line_start(span.key_start)
   let mut start = if self.chars[line:span.key_start].all(c => {
@@ -224,8 +224,8 @@ pub fn SourceDocument::transfer(
   self : SourceDocument,
   from : Array[Selector],
   to : Array[Selector],
-  index : Int,
-  copy? : Bool = false,
+  index : Int32,
+  copy~ : Bool = false,
 ) -> SourceDocument raise {
   let expected = self.doc.transfer(from, to, index, copy~)
   let source = self.doc.indices(from)

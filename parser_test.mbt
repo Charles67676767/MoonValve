@@ -73,7 +73,7 @@ test "top level duplicates can be queried without loss" {
 fn expect_parse_error(
   input : String,
   code : String,
-  options? : @moonvalve.ParseOptions = @moonvalve.ParseOptions::default(),
+  options~ : @moonvalve.ParseOptions = @moonvalve.ParseOptions::default(),
 ) -> @moonvalve.Diagnostic raise {
   try @moonvalve.parse(input, options~) catch {
     @moonvalve.ParseError(d) => {

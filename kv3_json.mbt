@@ -56,7 +56,7 @@ pub fn kv3_to_json(document : KV3Document) -> Json raise {
 }
 
 ///|
-fn kv3_unpack(json : Json, depth : Int, count : Ref[Int]) -> KV3Value raise {
+fn kv3_unpack(json : Json, depth : Int32, count : Ref[Int32]) -> KV3Value raise {
   count.val += 1
   if depth > 128 || count.val > 100000 {
     raise InvalidDocument("KV3 JSON exceeds resource limit")

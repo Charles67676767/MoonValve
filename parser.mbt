@@ -2,13 +2,13 @@
 priv struct Parser {
   chars : Array[Char]
   options : ParseOptions
-  mut pos : Int
-  mut line : Int
-  mut column : Int
-  mut entry_count : Int
+  mut pos : Int32
+  mut line : Int32
+  mut column : Int32
+  mut entry_count : Int32
   allow_directives : Bool
   capture : Bool
-  path : Array[Int]
+  path : Array[Int32]
   spans : Array[SourceSpan]
   tracing : Bool
   trace_stack : Array[Array[TraceNode]]
@@ -20,7 +20,7 @@ priv struct Parser {
 /// and platform conditionals are rejected rather than silently misinterpreted.
 pub fn parse(
   input : String,
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Document raise ParseError {
   parse_internal(input, options, false).0
 }
@@ -30,7 +30,7 @@ fn parse_internal(
   input : String,
   options : ParseOptions,
   allow_directives : Bool,
-) -> (Document, Int) raise ParseError {
+) -> (Document, Int32) raise ParseError {
   let (doc, count, _) = parse_with_spans(
     input, options, allow_directives, false,
   )
@@ -43,8 +43,8 @@ fn parse_with_spans(
   options : ParseOptions,
   allow_directives : Bool,
   capture : Bool,
-  trace? : Array[TraceNode]? = None,
-) -> (Document, Int, Array[SourceSpan]) raise ParseError {
+  trace~ : Array[TraceNode]? = None,
+) -> (Document, Int32, Array[SourceSpan]) raise ParseError {
   if options.max_depth < 0 ||
     options.max_depth > 256 ||
     options.max_entries < 0 ||
@@ -230,7 +230,7 @@ fn Parser::read_string(self : Parser) -> String raise ParseError {
 ///|
 fn Parser::read_entries(
   self : Parser,
-  depth : Int,
+  depth : Int32,
   nested : Bool,
 ) -> Array[Entry] raise ParseError {
   let entries : Array[Entry] = []

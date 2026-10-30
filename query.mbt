@@ -8,7 +8,7 @@ pub extend QueryError with @debug.Debug::{to_repr}
 
 ///|
 priv enum QueryStep {
-  KeyStep(String, Int?)
+  KeyStep(String, Int32?)
   AnyStep
   RecursiveStep
 }
@@ -192,8 +192,8 @@ fn Query::close_states(self : Query, states : Array[Bool]) -> Unit {
 pub fn Query::select(
   self : Query,
   document : Document,
-  max_matches? : Int = 10000,
-  max_visited? : Int = 1000000,
+  max_matches~ : Int32 = 10000,
+  max_visited~ : Int32 = 1000000,
 ) -> Array[LocatedValue] raise {
   if max_matches < 1 ||
     max_matches > 100000 ||
@@ -211,7 +211,7 @@ pub fn Query::select(
       result.push({ path: [], value, })
     }
   } else {
-    let visited : Ref[Int] = { val: 0, }
+    let visited : Ref[Int32] = { val: 0, }
     self.select_entries(
       document.entries,
       [],
@@ -232,14 +232,14 @@ fn Query::select_entries(
   path : Array[Selector],
   states : Array[Bool],
   result : Array[LocatedValue],
-  visited : Ref[Int],
-  max_matches : Int,
-  max_visited : Int,
+  visited : Ref[Int32],
+  max_matches : Int32,
+  max_visited : Int32,
 ) -> Unit raise {
   if path.length() >= 128 {
     raise InvalidQuery("Document exceeds query depth limit")
   }
-  let occurrences : Map[String, Int] = Map([])
+  let occurrences : Map[String, Int32] = Map([])
   for entry in entries {
     visited.val += 1
     if visited.val > max_visited {

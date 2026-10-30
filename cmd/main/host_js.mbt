@@ -22,7 +22,7 @@ extern "js" fn host_read_impl(path : String) -> FixedArray[String] =
   #| }
 
 ///|
-extern "js" fn host_error(message : String, code : Int) -> Unit =
+extern "js" fn host_error(message : String, code : Int32) -> Unit =
   #| function(message, code) { process.stderr.write(message + '\n'); process.exitCode = code; }
 
 ///|
@@ -42,15 +42,15 @@ fn host_output(text : String) -> Unit {
 }
 
 ///|
-extern "js" fn host_stream_open_impl(path : String) -> Int =
+extern "js" fn host_stream_open_impl(path : String) -> Int32 =
   #| function(path) { try { return path==='-'?0:require('node:fs').openSync(path,'r'); }catch{return -1;} }
 
 ///|
-extern "js" fn host_stream_chunk_impl(handle : Int) -> FixedArray[Bytes] =
+extern "js" fn host_stream_chunk_impl(handle : Int32) -> FixedArray[Bytes] =
   #| function(handle) { try{ const bytes=Buffer.alloc(65536),n=require('node:fs').readSync(handle,bytes,0,bytes.length,null); return [bytes.subarray(0,n),new Uint8Array()]; }catch(e){return [new Uint8Array(),Buffer.from(e.message||'Read failed')];} }
 
 ///|
-fn host_stream_chunk(handle : Int) -> Bytes raise CliError {
+fn host_stream_chunk(handle : Int32) -> Bytes raise CliError {
   let result = host_stream_chunk_impl(handle)
   if !result[1].is_empty() {
     raise InvalidArgument(@utf8.decode_lossy(result[1][:]))
@@ -59,11 +59,11 @@ fn host_stream_chunk(handle : Int) -> Bytes raise CliError {
 }
 
 ///|
-extern "js" fn host_stream_close(handle : Int) -> Unit =
+extern "js" fn host_stream_close(handle : Int32) -> Unit =
   #| function(handle) { if(handle!==0)require('node:fs').closeSync(handle); }
 
 ///|
-fn host_stream_open(path : String) -> Int raise CliError {
+fn host_stream_open(path : String) -> Int32 raise CliError {
   if path.contains("\u0000") || @utf8.encode(path[:]).length() > 32767 {
     raise InvalidArgument("Invalid stream path")
   }
@@ -100,7 +100,7 @@ extern "js" fn host_manifest_paths(
   #| }
 
 ///|
-extern "js" fn host_exit_code(code : Int) -> Unit =
+extern "js" fn host_exit_code(code : Int32) -> Unit =
   #| function(code) { process.exitCode = code; }
 
 ///|
@@ -122,7 +122,10 @@ fn host_finish() -> Unit {
 }
 
 ///|
-extern "js" fn host_bytes_impl(path : String, limit : Int) -> FixedArray[Bytes] =
+extern "js" fn host_bytes_impl(
+  path : String,
+  limit : Int32,
+) -> FixedArray[Bytes] =
   #| function(path, limit) {
   #|   const fs = require('node:fs'); let fd;
   #|   try {
@@ -142,7 +145,7 @@ extern "js" fn host_bytes_impl(path : String, limit : Int) -> FixedArray[Bytes] 
 ///|
 fn host_read_bytes(
   path : String,
-  limit? : Int = 16777216,
+  limit~ : Int32 = 16777216,
 ) -> Bytes raise CliError {
   if path.contains("\u0000") || @utf8.encode(path[:]).length() > 32767 {
     raise InvalidArgument("Invalid file path")
@@ -302,13 +305,17 @@ fn host_export_binary_directory(
 ///|
 extern "js" fn host_range_impl(
   path : String,
-  offset : Int,
-  length : Int,
+  offset : Int32,
+  length : Int32,
 ) -> FixedArray[Bytes] =
   #| function(path,offset,length){const fs=require('node:fs');let fd;try{fd=fs.openSync(path,'r');if(!fs.fstatSync(fd).isFile())throw new Error('Expected a regular archive file');const bytes=Buffer.alloc(length);let used=0;while(used<length){const n=fs.readSync(fd,bytes,used,length-used,offset+used);if(!n)throw new Error('Truncated archive byte range');used+=n;}return [bytes,new Uint8Array()];}catch(e){return [new Uint8Array(),Buffer.from(e.message||'Range read failed')];}finally{if(fd!==undefined)fs.closeSync(fd);}}
 
 ///|
-fn host_read_range(path : String, offset : Int, length : Int) -> Bytes raise {
+fn host_read_range(
+  path : String,
+  offset : Int32,
+  length : Int32,
+) -> Bytes raise {
   if path == "-" ||
     path.contains("\u0000") ||
     @utf8.encode(path[:]).length() > 32767 ||

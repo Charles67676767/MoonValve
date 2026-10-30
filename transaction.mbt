@@ -13,7 +13,7 @@ pub extend Change with @debug.Debug::{to_repr}
 pub fn Document::apply(
   self : Document,
   changes : Array[Change],
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Document raise {
   if changes.length() > 10000 {
     raise InvalidEdit("A transaction supports at most 10000 changes")

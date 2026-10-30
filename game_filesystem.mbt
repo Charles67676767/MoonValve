@@ -1,7 +1,7 @@
 ///|
 pub(all) enum GameMount {
   LooseMount(String, Bool, (String) -> Bool raise, (String) -> Bytes raise)
-  VPKMount(String, Bool, VPKArchive, (Int, Int, Int) -> Bytes raise)
+  VPKMount(String, Bool, VPKArchive, (Int32, Int32, Int32) -> Bytes raise)
 }
 
 ///|
@@ -34,7 +34,7 @@ pub extend MountCandidate with @debug.Debug::{to_repr}
 ///|
 struct GameFileSystem {
   mounts : Array[GameMount]
-  max_bytes : Int
+  max_bytes : Int32
 }
 
 ///|
@@ -49,7 +49,7 @@ fn GameMount::identity(self : GameMount) -> (String, Bool) {
 /// provide explicit filesystem access; no directories are discovered implicitly.
 pub fn mount_game_filesystem(
   mounts : Array[GameMount],
-  max_bytes? : Int = 16777216,
+  max_bytes~ : Int32 = 16777216,
 ) -> GameFileSystem raise {
   if mounts.length() > 128 || max_bytes < 1 || max_bytes > 67108864 {
     raise InvalidReference("Invalid game filesystem budgets")
@@ -156,7 +156,7 @@ pub fn gameinfo_search_paths(
   document : Document,
   gameinfo_directory : String,
   engine_directory : String,
-  language? : String = "english",
+  language~ : String = "english",
 ) -> Array[GameSearchPath] raise {
   if gameinfo_directory.is_empty() ||
     engine_directory.is_empty() ||

@@ -1,17 +1,17 @@
 ///|
 priv struct TraceNode {
-  offset : Int
-  line : Int
-  column : Int
+  offset : Int32
+  line : Int32
+  column : Int32
   children : Array[TraceNode]
 }
 
 ///|
 pub(all) struct SourceLocation {
   source : String
-  offset : Int
-  line : Int
-  column : Int
+  offset : Int32
+  line : Int32
+  column : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -97,7 +97,7 @@ fn collect_origins(
   path : Array[Selector],
   output : Array[ResolvedOrigin],
 ) -> Unit {
-  let occurrences : Map[String, Int] = Map([])
+  let occurrences : Map[String, Int32] = Map([])
   for node in nodes {
     let occurrence = occurrences.get(node.entry.key).unwrap_or(0)
     occurrences[node.entry.key] = occurrence + 1
@@ -114,8 +114,8 @@ fn collect_origins(
 pub fn load_project(
   source : String,
   loader : (String) -> String raise,
-  options? : ParseOptions = ParseOptions::default(),
-  max_files? : Int = 64,
+  options~ : ParseOptions = ParseOptions::default(),
+  max_files~ : Int32 = 64,
 ) -> ResolvedProject raise {
   if max_files < 1 || max_files > 256 {
     raise InvalidReference("max_files must be between 1 and 256")
@@ -190,7 +190,7 @@ pub fn SourceDocument::locations(
   for span in self.spans {
     spans[span.path.map(i => i.to_string()).join("/")] = span
   }
-  let starts : Map[Int, Array[Selector]] = Map([])
+  let starts : Map[Int32, Array[Selector]] = Map([])
   source_paths(self.doc.entries, "", [], spans, starts)
   let result : Array[ResolvedOrigin] = []
   let mut line = 1
@@ -226,9 +226,9 @@ fn source_paths(
   prefix : String,
   path : Array[Selector],
   spans : Map[String, SourceSpan],
-  starts : Map[Int, Array[Selector]],
+  starts : Map[Int32, Array[Selector]],
 ) -> Unit {
-  let occurrences : Map[String, Int] = Map([])
+  let occurrences : Map[String, Int32] = Map([])
   for i in 0..<entries.length() {
     let entry = entries[i]
     let occurrence = occurrences.get(entry.key).unwrap_or(0)

@@ -1,5 +1,5 @@
 ///|
-fn kv3_binary_pack(value : KV3BinaryValue, depth : Int) -> Json raise {
+fn kv3_binary_pack(value : KV3BinaryValue, depth : Int32) -> Json raise {
   if depth > 128 {
     raise InvalidBinary(0, "Binary KV3 JSON exceeds depth")
   }
@@ -69,8 +69,8 @@ pub fn kv3_binary_to_json(document : KV3BinaryDocument) -> Json raise {
 ///|
 fn kv3_binary_unpack(
   json : Json,
-  depth : Int,
-  budget : Ref[Int],
+  depth : Int32,
+  budget : Ref[Int32],
 ) -> KV3BinaryValue raise {
   budget.val += 1
   if depth > 128 || budget.val > 100000 {

@@ -3,7 +3,7 @@
 pub fn Workspace::select_kv3(
   self : Workspace,
   expression : String,
-  files? : Array[String] = [],
+  files~ : Array[String] = [],
 ) -> Json raise {
   let query = compile_kv3_query(expression)
   let rows : Array[Json] = []
@@ -38,7 +38,7 @@ pub fn Workspace::edit_query_kv3(
   self : Workspace,
   expression : String,
   operation : KV3QueryEdit,
-  files? : Array[String] = [],
+  files~ : Array[String] = [],
 ) -> Workspace raise {
   self.select_kv3(expression, files~) |> ignore
   let output = self.files()
@@ -54,8 +54,8 @@ pub fn Workspace::edit_query_kv3(
 pub fn query_workspace_kv3_snapshot(
   snapshot : Json,
   expression : String,
-  files? : Array[String] = [],
-  options? : ParseOptions = ParseOptions::default(),
+  files~ : Array[String] = [],
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Json raise {
   guard snapshot is Object(fields) &&
     fields.get("format") == Some(Json::string("moonvalve-project-v1")) &&

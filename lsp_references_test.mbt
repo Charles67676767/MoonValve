@@ -3,7 +3,7 @@ fn reference_notify(
   server : @moonvalve.LspServer,
   uri : String,
   text : String,
-  opened? : Bool = false,
+  opened~ : Bool = false,
 ) -> Array[Json] {
   if opened {
     server.handle(

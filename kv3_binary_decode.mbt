@@ -9,8 +9,8 @@ priv struct KV3Lanes {
 ///|
 fn kv3_lanes(
   reader : ValveBytes,
-  counts : Array[Int],
-  limit : Int,
+  counts : Array[Int32],
+  limit : Int32,
   old_align : Bool,
 ) -> KV3Lanes raise BinaryError {
   let lanes : Array[ValveBytes] = []
@@ -32,7 +32,7 @@ fn kv3_lanes(
 
 ///|
 priv struct KV3BinaryContext {
-  version : Int
+  version : Int32
   lanes : KV3Lanes
   auxiliary : KV3Lanes
   types : ValveBytes
@@ -40,12 +40,12 @@ priv struct KV3BinaryContext {
   strings : Array[String]
   blobs : Array[Bytes]
   options : BinaryOptions
-  mut nodes : Int
-  mut next_blob : Int
+  mut nodes : Int32
+  mut next_blob : Int32
 }
 
 ///|
-fn kv3_binary_flag_id(id : Int, version : Int) -> String raise BinaryError {
+fn kv3_binary_flag_id(id : Int32, version : Int32) -> String raise BinaryError {
   if version < 3 {
     if (id & 128) != 0 {
       raise InvalidBinary(0, "Invalid legacy KV3 flag")
@@ -77,7 +77,7 @@ fn kv3_binary_flag_id(id : Int, version : Int) -> String raise BinaryError {
 ///|
 fn KV3BinaryContext::tag(
   self : KV3BinaryContext,
-) -> (Int, String) raise BinaryError {
+) -> (Int32, String) raise BinaryError {
   let raw = self.types.uint(1).to_int()
   let flag = if (raw & 128) != 0 {
     kv3_binary_flag_id(self.types.uint(1).to_int(), self.version)
@@ -105,10 +105,10 @@ fn KV3BinaryContext::string(
 ///|
 fn KV3BinaryContext::value(
   self : KV3BinaryContext,
-  tag : Int,
+  tag : Int32,
   flag : String,
   lanes : KV3Lanes,
-  depth : Int,
+  depth : Int32,
 ) -> KV3BinaryValue raise {
   self.nodes += 1
   if depth > self.options.max_depth || self.nodes > self.options.max_entries {
@@ -178,7 +178,7 @@ fn KV3BinaryContext::value(
         raise InvalidBinary(0, "Object node budget exceeded")
       }
       let entries : Array[(String, KV3BinaryValue)] = []
-      let seen : Map[String, Int] = Map([])
+      let seen : Map[String, Int32] = Map([])
       for _ in 0..<count {
         // Modern KV3 stores each property's type before its name's lane read.
         let (kind, annotation) = self.tag()
@@ -206,7 +206,7 @@ fn KV3BinaryContext::value(
 /// Decode lane-encoded KV3 versions 1..5. Legacy VKV3 is dispatched separately.
 pub fn decode_kv3_binary(
   bytes : Bytes,
-  options? : BinaryOptions = BinaryOptions::default(),
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> KV3BinaryDocument raise {
   check_binary_options(options)
   if bytes.length() > options.max_bytes {
@@ -270,7 +270,7 @@ pub fn decode_kv3_binary(
   } else {
     0
   }
-  let counts2 : Array[Int] = []
+  let counts2 : Array[Int32] = []
   let mut object_count = 0
   if version >= 5 {
     for width in [1, 2, 4, 8] {
@@ -339,7 +339,7 @@ pub fn decode_kv3_binary(
   }
   let types = valve_bytes(tail.take(types_size))
   let blobs : Array[Bytes] = []
-  let lengths : Array[Int] = []
+  let lengths : Array[Int32] = []
   let mut remaining_blob = blob_size
   for _ in 0..<blocks {
     let size = tail.count(remaining_blob)

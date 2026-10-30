@@ -37,7 +37,7 @@ fn portable_project_path(name : String) -> String raise {
 /// Only the files explicitly contained in the snapshot are exported.
 pub fn project_export_files(
   snapshot : Json,
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Map[String, String] raise {
   guard snapshot is Object(fields) &&
     fields.get("format") == Some(Json::string("moonvalve-project-v1")) &&
@@ -87,7 +87,7 @@ pub fn project_export_files(
 }
 
 ///|
-fn zip_crc32(bytes : Bytes) -> UInt {
+fn zip_crc32(bytes : Bytes) -> UInt32 {
   let mut crc = 0xffffffffU
   for byte in bytes {
     crc = crc ^ byte.to_uint()
@@ -99,13 +99,13 @@ fn zip_crc32(bytes : Bytes) -> UInt {
 }
 
 ///|
-fn zip_u16(buffer : @buffer.Buffer, n : Int) -> Unit {
+fn zip_u16(buffer : @buffer.Buffer, n : Int32) -> Unit {
   buffer.write_byte((n & 255).to_byte())
   buffer.write_byte(((n >> 8) & 255).to_byte())
 }
 
 ///|
-fn zip_u32(buffer : @buffer.Buffer, n : Int) -> Unit {
+fn zip_u32(buffer : @buffer.Buffer, n : Int32) -> Unit {
   buffer.write_uint_le(n.reinterpret_as_uint())
 }
 
@@ -114,7 +114,7 @@ fn zip_u32(buffer : @buffer.Buffer, n : Int) -> Unit {
 /// No compressor, archive reader or filesystem access is required.
 pub fn export_project_zip(
   snapshot : Json,
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Bytes raise {
   let files = project_export_files(snapshot, options~)
   export_files_zip(files.map((_, text) => @utf8.encode(text[:])))

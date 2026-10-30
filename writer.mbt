@@ -37,7 +37,7 @@ fn write_quoted(
 }
 
 ///|
-fn write_indent(builder : StringBuilder, depth : Int) -> Unit {
+fn write_indent(builder : StringBuilder, depth : Int32) -> Unit {
   for _ in 0..<depth {
     builder.write_string("  ")
   }
@@ -47,7 +47,7 @@ fn write_indent(builder : StringBuilder, depth : Int) -> Unit {
 fn write_entries(
   builder : StringBuilder,
   entries : Array[Entry],
-  depth : Int,
+  depth : Int32,
 ) -> Unit raise WriteError {
   if depth > 128 {
     raise InvalidDocument("Object exceeds writer depth limit of 128")

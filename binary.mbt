@@ -4,11 +4,11 @@
 pub(all) enum BinaryValue {
   ObjectValue(Array[BinaryEntry])
   StringValue(String)
-  Int32Value(Int)
-  Float32Bits(UInt)
-  Pointer32(UInt)
+  Int32Value(Int32)
+  Float32Bits(UInt32)
+  Pointer32(UInt32)
   WideString(String)
-  Color32(UInt)
+  Color32(UInt32)
   UInt64Value(UInt64)
   Int64Value(Int64)
 } derive(Eq, Debug)
@@ -21,10 +21,10 @@ pub(all) struct BinaryEntry {
 
 ///|
 pub(all) struct BinaryOptions {
-  max_depth : Int
-  max_entries : Int
-  max_bytes : Int
-  max_string_bytes : Int
+  max_depth : Int32
+  max_entries : Int32
+  max_bytes : Int32
+  max_string_bytes : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -39,7 +39,7 @@ pub fn BinaryOptions::default() -> BinaryOptions {
 
 ///|
 pub suberror BinaryError {
-  InvalidBinary(Int, String)
+  InvalidBinary(Int32, String)
 } derive(Debug)
 
 ///|
@@ -78,8 +78,8 @@ fn check_binary_options(options : BinaryOptions) -> Unit raise BinaryError {
 priv struct BinaryReader {
   bytes : Bytes
   options : BinaryOptions
-  mut pos : Int
-  mut count : Int
+  mut pos : Int32
+  mut count : Int32
   table : Array[String]?
 }
 
@@ -88,8 +88,8 @@ priv struct BinaryReader {
 /// invalid encodings and unknown types. Appinfo containers and VBKV are separate formats.
 pub fn decode_binary(
   bytes : Bytes,
-  options? : BinaryOptions = BinaryOptions::default(),
-  string_table? : Array[String]? = None,
+  options~ : BinaryOptions = BinaryOptions::default(),
+  string_table~ : Array[String]? = None,
 ) -> Array[BinaryEntry] raise BinaryError {
   check_binary_options(options)
   if bytes.length() > options.max_bytes {
@@ -111,7 +111,7 @@ pub fn decode_binary(
 }
 
 ///|
-fn BinaryReader::byte(self : BinaryReader) -> Int raise BinaryError {
+fn BinaryReader::byte(self : BinaryReader) -> Int32 raise BinaryError {
   guard self.bytes.get(self.pos) is Some(value) else {
     raise InvalidBinary(self.pos, "Unexpected end of binary input")
   }
@@ -122,7 +122,7 @@ fn BinaryReader::byte(self : BinaryReader) -> Int raise BinaryError {
 ///|
 fn BinaryReader::number(
   self : BinaryReader,
-  width : Int,
+  width : Int32,
 ) -> UInt64 raise BinaryError {
   let mut value = 0UL
   for i in 0..<width {
@@ -163,7 +163,7 @@ fn BinaryReader::cstring(
 ///|
 fn BinaryReader::read_binary_entries(
   self : BinaryReader,
-  depth : Int,
+  depth : Int32,
 ) -> Array[BinaryEntry] raise BinaryError {
   let entries : Array[BinaryEntry] = []
   while true {
@@ -218,14 +218,14 @@ fn BinaryReader::read_binary_entries(
 priv struct BinaryWriter {
   buffer : @buffer.Buffer
   options : BinaryOptions
-  mut count : Int
-  table : Map[String, Int]?
+  mut count : Int32
+  table : Map[String, Int32]?
 }
 
 ///|
 fn BinaryWriter::check_size(
   self : BinaryWriter,
-  addition : Int,
+  addition : Int32,
 ) -> Unit raise BinaryError {
   if addition > self.options.max_bytes - self.buffer.length() {
     raise InvalidBinary(self.buffer.length(), "Output exceeds byte limit")
@@ -266,8 +266,8 @@ fn BinaryWriter::string(
 /// types survive a decode/encode round trip without coercion through JSON numbers.
 pub fn encode_binary(
   entries : Array[BinaryEntry],
-  options? : BinaryOptions = BinaryOptions::default(),
-  string_table? : Array[String]? = None,
+  options~ : BinaryOptions = BinaryOptions::default(),
+  string_table~ : Array[String]? = None,
 ) -> Bytes raise BinaryError {
   check_binary_options(options)
   let table = validate_string_table(string_table, options)
@@ -285,7 +285,7 @@ pub fn encode_binary(
 fn BinaryWriter::write_binary_entries(
   self : BinaryWriter,
   entries : Array[BinaryEntry],
-  depth : Int,
+  depth : Int32,
 ) -> Unit raise BinaryError {
   for entry in entries {
     if self.count >= self.options.max_entries {
@@ -356,12 +356,12 @@ fn BinaryWriter::write_binary_entries(
 fn validate_string_table(
   table : Array[String]?,
   options : BinaryOptions,
-) -> Map[String, Int]? raise BinaryError {
+) -> Map[String, Int32]? raise BinaryError {
   guard table is Some(strings) else { return None }
   if strings.length() > 1000000 {
     raise InvalidBinary(0, "String table has too many entries")
   }
-  let result : Map[String, Int] = Map([])
+  let result : Map[String, Int32] = Map([])
   let mut total = 0
   for i in 0..<strings.length() {
     let text = strings[i]

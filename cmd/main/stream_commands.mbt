@@ -50,7 +50,7 @@ fn run_stream(command : String, args : Array[String]) -> Unit raise {
     )
   }
   let parents : Array[String] = []
-  let counts : Array[Int] = [0]
+  let counts : Array[Int32] = [0]
   let path : Array[Json] = []
   let writer = @valve.new_stream_writer(stream_output)
   if command == "stream-csv" {

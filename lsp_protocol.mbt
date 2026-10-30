@@ -1,7 +1,7 @@
 ///|
 struct LspFramer {
   mut buffer : Bytes
-  mut length : Int?
+  mut length : Int32?
   mut closed : Bool
 }
 
@@ -63,7 +63,7 @@ pub fn LspFramer::feed(
         raise Failure("LSP header exceeds 4096 bytes")
       }
       let header = @utf8.decode(bytes[:end])
-      let mut length : Int? = None
+      let mut length : Int32? = None
       for line in header.split("\r\n") {
         guard line.find(":") is Some(colon) else {
           raise Failure("Malformed LSP header")

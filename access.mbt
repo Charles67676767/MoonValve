@@ -99,7 +99,7 @@ fn walk_values(
   if path.length() > 128 {
     raise InvalidAccess(path, "Traversal exceeds 128 levels")
   }
-  let occurrences : Map[String, Int] = Map([])
+  let occurrences : Map[String, Int32] = Map([])
   for entry in entries {
     let occurrence = occurrences.get(entry.key).unwrap_or(0)
     occurrences[entry.key] = occurrence + 1

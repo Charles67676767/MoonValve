@@ -1,14 +1,14 @@
 ///|
 priv struct FormatToken {
-  start : Int
-  end : Int
+  start : Int32
+  end : Int32
   kind : String
 }
 
 ///|
 fn format_tokens(
   chars : Array[Char],
-  verbatim : Map[Int, Int],
+  verbatim : Map[Int32, Int32],
   kv3 : Bool,
 ) -> Array[FormatToken] {
   let result : Array[FormatToken] = []
@@ -72,8 +72,8 @@ fn format_tokens(
 ///|
 fn format_layout(
   text : String,
-  verbatim : Map[Int, Int],
-  breaks : Map[Int, Bool],
+  verbatim : Map[Int32, Int32],
+  breaks : Map[Int32, Bool],
   kv3 : Bool,
 ) -> String {
   let chars = text.to_array()
@@ -138,8 +138,8 @@ fn format_layout(
 pub fn SourceDocument::format_preserving(
   self : SourceDocument,
 ) -> SourceDocument raise {
-  let verbatim : Map[Int, Int] = Map([])
-  let breaks : Map[Int, Bool] = Map([])
+  let verbatim : Map[Int32, Int32] = Map([])
+  let breaks : Map[Int32, Bool] = Map([])
   for span in self.spans {
     verbatim[span.key_start] = span.key_end
     breaks[span.key_start] = true
@@ -163,8 +163,8 @@ pub fn SourceDocument::format_preserving(
 pub fn KV3SourceDocument::format_preserving(
   self : KV3SourceDocument,
 ) -> KV3SourceDocument raise {
-  let verbatim : Map[Int, Int] = Map([])
-  let breaks : Map[Int, Bool] = Map([])
+  let verbatim : Map[Int32, Int32] = Map([])
+  let breaks : Map[Int32, Bool] = Map([])
   for _, (start, end) in self.keys {
     verbatim[start] = end
     breaks[start] = true
@@ -184,7 +184,7 @@ pub fn KV3SourceDocument::format_preserving(
     }
   }
   // Array children have no key span; each original element gets its own line.
-  fn arrays(value : KV3Value, path : Array[Int]) -> Unit {
+  fn arrays(value : KV3Value, path : Array[Int32]) -> Unit {
     match kv3_unflag(value) {
       KV3Array(values) =>
         for i in 0..<values.length() {

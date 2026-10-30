@@ -3,7 +3,7 @@ fn record(
   id : String,
   name : String,
   size : Int64?,
-  library? : String = "lib",
+  library~ : String = "lib",
 ) -> @moonvalve.InventoryRecord {
   {
     library,

@@ -251,8 +251,8 @@ fn asset_scan(
 pub fn build_dependency_graph(
   roots : Array[String],
   filesystem : GameFileSystem,
-  max_files? : Int = 2048,
-  max_bytes? : Int = 67108864,
+  max_files~ : Int32 = 2048,
+  max_bytes~ : Int32 = 67108864,
 ) -> DependencyGraph raise {
   if roots.is_empty() ||
     roots.length() > max_files ||
@@ -333,7 +333,7 @@ pub fn build_dependency_graph(
 pub fn DependencyGraph::dependents(
   self : DependencyGraph,
   target : String,
-  transitive? : Bool = true,
+  transitive~ : Bool = true,
 ) -> Array[String] {
   let queue = [target.to_lower()]
   let seen : Map[String, Bool] = Map([])
@@ -362,8 +362,8 @@ pub fn DependencyGraph::dependents(
 ///|
 pub fn DependencyGraph::export_files(
   self : DependencyGraph,
-  include_base? : Bool = false,
-  strict? : Bool = true,
+  include_base~ : Bool = false,
+  strict~ : Bool = true,
 ) -> Map[String, Bytes] raise {
   if strict &&
     self.edges.any(e => ["missing", "dynamic", "opaque"].contains(e.status)) {
@@ -386,9 +386,9 @@ pub fn DependencyGraph::export_files(
 ///|
 pub fn DependencyGraph::export_vpk(
   self : DependencyGraph,
-  include_base? : Bool = false,
-  strict? : Bool = true,
-  options? : BinaryOptions = BinaryOptions::default(),
+  include_base~ : Bool = false,
+  strict~ : Bool = true,
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> Bytes raise {
   create_vpk(self.export_files(include_base~, strict~), options~)
 }
@@ -396,8 +396,8 @@ pub fn DependencyGraph::export_vpk(
 ///|
 pub fn DependencyGraph::export_zip(
   self : DependencyGraph,
-  include_base? : Bool = false,
-  strict? : Bool = true,
+  include_base~ : Bool = false,
+  strict~ : Bool = true,
 ) -> Bytes raise {
   export_files_zip(self.export_files(include_base~, strict~))
 }

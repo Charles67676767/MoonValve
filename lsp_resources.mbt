@@ -102,7 +102,7 @@ fn LspServer::resource_diagnostics(
 fn LspServer::resource_links(
   self : LspServer,
   uri : String,
-  offset : Int?,
+  offset : Int32?,
 ) -> Json raise {
   let document = self.documents[uri]
   let source = parse_kv3_preserving(document.text)

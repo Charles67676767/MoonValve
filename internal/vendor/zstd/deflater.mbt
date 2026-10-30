@@ -1,19 +1,19 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution header only.
+// MoonValve modifications: attribution header only; MoonBit 0.10.18 formatter normalization (type names and optional parameter syntax).
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
-const ZSTD_STREAM_WINDOW : Int = MAX_WINDOW_SIZE
+const ZSTD_STREAM_WINDOW : Int32 = MAX_WINDOW_SIZE
 
 ///|
 priv struct EncoderState {
   dict : ZstdDictionary
   mut input_buf : @blit.Buffer
-  mut input_pos : Int
+  mut input_pos : Int32
   mut header_emitted : Bool
   mut finished : Bool
   mut history : @blit.Buffer
-  rep : Array[Int]
+  rep : Array[Int32]
   checksum : @checksum.XXH64
 }
 
@@ -22,8 +22,8 @@ struct Deflater(EncoderState)
 
 ///|
 pub fn Deflater::new(
-  level? : CompressionLevel = Default,
-  dict? : Bytes = Bytes::default(),
+  level~ : CompressionLevel = Default,
+  dict~ : Bytes = Bytes::default(),
 ) -> Deflater {
   ignore(level)
   let parsed_dict = parse_dictionary_for_encoder(dict)
@@ -181,7 +181,7 @@ fn compact_encoder_input(s : EncoderState) -> Unit {
 }
 
 ///|
-fn bytes_slice(data : Bytes, start : Int, length : Int) -> Bytes {
+fn bytes_slice(data : Bytes, start : Int32, length : Int32) -> Bytes {
   Bytes::makei(length, fn(i) { data[start + i] })
 }
 
@@ -189,8 +189,8 @@ fn bytes_slice(data : Bytes, start : Int, length : Int) -> Bytes {
 fn write_block_header_buffer(
   dst : @blit.Buffer,
   is_last : Bool,
-  block_type : Int,
-  block_size : Int,
+  block_type : Int32,
+  block_size : Int32,
 ) -> Unit {
   let last_flag = if is_last { 1 } else { 0 }
   let block_header = last_flag | (block_type << 1) | (block_size << 3)
@@ -204,7 +204,7 @@ fn write_encoded_block(
   dst : @blit.Buffer,
   chunk : Bytes,
   prefix : Bytes,
-  rep : Array[Int],
+  rep : Array[Int32],
   is_last : Bool,
 ) -> Unit {
   let chunk_view = chunk[:]

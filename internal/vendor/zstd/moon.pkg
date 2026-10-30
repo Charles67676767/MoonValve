@@ -7,6 +7,6 @@ import {
   "moonbitlang/core/encoding/utf8",
 } for "test"
 
-// Preserve upstream code; suppress only its deprecated API/syntax diagnostics.
+// Preserve upstream code; suppress only its deprecated API/syntax and intentional Result-return diagnostics.
 
-warnings = "-20-27-79"
+warnings = "-20-27-78-79"

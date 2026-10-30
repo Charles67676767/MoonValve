@@ -108,7 +108,7 @@ pub fn read_localization(bytes : Bytes) -> Localization raise {
 ///|
 pub fn Localization::write(
   self : Localization,
-  encoding? : String = self.encoding,
+  encoding~ : String = self.encoding,
 ) -> Bytes raise {
   localization_validate(self)
   let text = stringify({
@@ -151,7 +151,7 @@ fn localization_digit(c : Char) -> Bool {
 /// Sorted identities retain multiplicity, so dropped/repeated parameters differ.
 pub fn localization_placeholders(
   text : String,
-  syntax? : String = "valve",
+  syntax~ : String = "valve",
 ) -> Array[String] raise {
   if text.char_length() > 1048576 {
     raise InvalidDocument("Placeholder input exceeds token budget")
@@ -306,7 +306,7 @@ pub fn localization_placeholders(
 pub fn Localization::validate_translation(
   self : Localization,
   translated : Localization,
-  syntax? : String = "valve",
+  syntax~ : String = "valve",
 ) -> Array[LocalizationIssue] raise {
   localization_validate(self)
   localization_validate(translated)

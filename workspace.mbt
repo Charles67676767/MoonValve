@@ -23,7 +23,7 @@ fn workspace_path(name : String) -> String raise {
 ///|
 pub fn new_workspace(
   files : Map[String, String],
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Workspace raise {
   if files.is_empty() || files.length() > 64 {
     raise InvalidReference("Workspace requires 1..64 files")
@@ -93,7 +93,7 @@ fn rewritten_references(
   moved_to : String?,
 ) -> SourceDocument raise {
   let changes : Array[Change] = []
-  let occurrences : Map[String, Int] = Map([])
+  let occurrences : Map[String, Int32] = Map([])
   for entry in document.doc.entries {
     let occurrence = occurrences.get(entry.key).unwrap_or(0)
     occurrences[entry.key] = occurrence + 1
@@ -285,7 +285,7 @@ pub fn Workspace::apply(self : Workspace, plan : Json) -> Workspace raise {
 ///|
 pub fn workspace_from_json(
   json : Json,
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Workspace raise {
   guard json is Object(rows) else {
     raise InvalidReference("Expected a workspace file map")
@@ -313,7 +313,7 @@ pub fn Workspace::to_json(self : Workspace) -> Json {
 pub fn edit_workspace_snapshot(
   snapshot : Json,
   plan : Json,
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Json raise {
   guard snapshot is Object(fields) &&
     fields.get("format") == Some(Json::string("moonvalve-project-v1")) &&
@@ -389,7 +389,7 @@ fn Workspace::selected_names(
 pub fn Workspace::select(
   self : Workspace,
   expression : String,
-  files? : Array[String] = [],
+  files~ : Array[String] = [],
 ) -> Json raise {
   let query = compile_query(expression)
   let rows : Array[Json] = []
@@ -424,7 +424,7 @@ pub fn Workspace::edit_query(
   self : Workspace,
   expression : String,
   operation : QueryEdit,
-  files? : Array[String] = [],
+  files~ : Array[String] = [],
 ) -> Workspace raise {
   self.select(expression, files~) |> ignore
   let output = self.files()
@@ -441,8 +441,8 @@ pub fn Workspace::edit_query(
 pub fn query_workspace_snapshot(
   snapshot : Json,
   expression : String,
-  files? : Array[String] = [],
-  options? : ParseOptions = ParseOptions::default(),
+  files~ : Array[String] = [],
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Json raise {
   guard snapshot is Object(fields) &&
     fields.get("format") == Some(Json::string("moonvalve-project-v1")) &&

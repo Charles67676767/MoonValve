@@ -62,13 +62,13 @@ pub fn generic_kv3_header() -> KV3Header {
 priv struct KV3Reader {
   chars : Array[Char]
   options : ParseOptions
-  mut pos : Int
-  mut line : Int
-  mut column : Int
-  mut nodes : Int
-  path : Array[Int]
+  mut pos : Int32
+  mut line : Int32
+  mut column : Int32
+  mut nodes : Int32
+  path : Array[Int32]
   spans : Map[String, KV3Span]?
-  keys : Map[String, (Int, Int)]
+  keys : Map[String, (Int32, Int32)]
 }
 
 ///|
@@ -201,7 +201,7 @@ fn kv3_identifier(text : String) -> Bool {
 }
 
 ///|
-fn kv3_hex(c : Char) -> Int? {
+fn kv3_hex(c : Char) -> Int32? {
   if c >= '0' && c <= '9' {
     Some(c.to_int() - 48)
   } else if c >= 'a' && c <= 'f' {
@@ -409,7 +409,7 @@ fn kv3_number(text : String) -> KV3Value raise WriteError {
 }
 
 ///|
-fn KV3Reader::value(self : KV3Reader, depth : Int) -> KV3Value raise {
+fn KV3Reader::value(self : KV3Reader, depth : Int32) -> KV3Value raise {
   self.space()
   let start = self.pos
   let value = self.value_inner(depth)
@@ -422,7 +422,7 @@ fn KV3Reader::value(self : KV3Reader, depth : Int) -> KV3Value raise {
 }
 
 ///|
-fn KV3Reader::value_inner(self : KV3Reader, depth : Int) -> KV3Value raise {
+fn KV3Reader::value_inner(self : KV3Reader, depth : Int32) -> KV3Value raise {
   self.space()
   if depth > self.options.max_depth {
     self.fail("KV3 depth limit exceeded")
@@ -552,8 +552,8 @@ fn KV3Reader::value_inner(self : KV3Reader, depth : Int) -> KV3Value raise {
 /// Text KV3 only. Limits reuse ParseOptions; KV1 condition/literal modes are invalid.
 pub fn parse_kv3(
   input : String,
-  options? : ParseOptions = ParseOptions::default(),
-  allow_headerless? : Bool = false,
+  options~ : ParseOptions = ParseOptions::default(),
+  allow_headerless~ : Bool = false,
 ) -> KV3Document raise {
   kv3_read(input, options, allow_headerless, None).0
 }
@@ -633,8 +633,8 @@ fn kv3_write_string(
 fn kv3_write_value(
   output : StringBuilder,
   value : KV3Value,
-  depth : Int,
-  count : Ref[Int],
+  depth : Int32,
+  count : Ref[Int32],
 ) -> Unit raise {
   count.val += 1
   if depth > 128 || count.val > 100000 {
@@ -742,9 +742,9 @@ pub fn stringify_kv3(document : KV3Document) -> String raise {
 ///|
 fn kv3_check_size(
   value : KV3Value,
-  depth : Int,
-  budget : Ref[Int],
-  nodes : Ref[Int],
+  depth : Int32,
+  budget : Ref[Int32],
+  nodes : Ref[Int32],
 ) -> Unit raise WriteError {
   nodes.val += 1
   if depth > 128 || nodes.val > 100000 {

@@ -27,10 +27,10 @@ pub fn binary_to_json(entries : Array[BinaryEntry]) -> Json {
 ///|
 pub fn binary_from_json(
   json : Json,
-  options? : BinaryOptions = BinaryOptions::default(),
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> Array[BinaryEntry] raise BinaryError {
   check_binary_options(options)
-  let count : Ref[Int] = { val: 0, }
+  let count : Ref[Int32] = { val: 0, }
   let result = binary_json_entries(json, options, 0, count)
   encode_binary(result, options~) |> ignore
   result
@@ -40,8 +40,8 @@ pub fn binary_from_json(
 fn binary_json_entries(
   json : Json,
   options : BinaryOptions,
-  depth : Int,
-  count : Ref[Int],
+  depth : Int32,
+  count : Ref[Int32],
 ) -> Array[BinaryEntry] raise BinaryError {
   guard json is Array(rows) else {
     raise InvalidBinary(0, "Expected a typed entry array")

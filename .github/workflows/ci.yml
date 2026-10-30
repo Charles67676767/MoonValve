@@ -36,8 +36,8 @@ jobs:
           node-version: '22'
       - uses: hustcer/setup-moonbit@v1
         with:
-          version: '0.10.14+7d59c7ec9'
-          core-version: '0.10.14+7d59c7ec9'
+          version: '0.10.18+6c83a7f62'
+          core-version: '0.10.18+6c83a7f62'
       - run: moon version --all
       - run: moon update
       - run: moon fmt --check
@@ -128,8 +128,8 @@ jobs:
           node-version: '22'
       - uses: hustcer/setup-moonbit@v1
         with:
-          version: '0.10.14+7d59c7ec9'
-          core-version: '0.10.14+7d59c7ec9'
+          version: '0.10.18+6c83a7f62'
+          core-version: '0.10.18+6c83a7f62'
       - run: moon update
       - run: moon check --target js
       - run: moon test --target js
@@ -176,8 +176,8 @@ jobs:
           node-version: '22'
       - uses: hustcer/setup-moonbit@v1
         with:
-          version: '0.10.14+7d59c7ec9'
-          core-version: '0.10.14+7d59c7ec9'
+          version: '0.10.18+6c83a7f62'
+          core-version: '0.10.18+6c83a7f62'
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'

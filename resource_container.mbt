@@ -1,14 +1,14 @@
 ///|
 pub(all) struct ResourceBlock {
   kind : String
-  offset : Int
+  offset : Int32
   bytes : Bytes
 } derive(Eq, Debug)
 
 ///|
 pub(all) struct ResourceContainer {
-  version : Int
-  declared_size : Int
+  version : Int32
+  declared_size : Int32
   blocks : Array[ResourceBlock]
   trailing : Bytes
 } derive(Eq, Debug)
@@ -42,7 +42,7 @@ pub extend ResourceExternalReference with @debug.Debug::{to_repr}
 /// fields. Payloads remain bounded slices; unknown blocks are exposed unchanged.
 pub fn read_resource_container(
   bytes : Bytes,
-  options? : BinaryOptions = BinaryOptions::default(),
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> ResourceContainer raise {
   check_binary_options(options)
   if bytes.length() > options.max_bytes {
@@ -60,7 +60,7 @@ pub fn read_resource_container(
     raise InvalidBinary(table, "Invalid resource block table")
   }
   input.pos = table
-  let ranges : Array[(Int, Int)] = [(0, table + count * 12)]
+  let ranges : Array[(Int32, Int32)] = [(0, table + count * 12)]
   let blocks : Array[ResourceBlock] = []
   for _ in 0..<count {
     let kind_bytes = input.take(4)
@@ -90,7 +90,7 @@ pub fn read_resource_container(
 ///|
 pub fn ResourceContainer::data(
   self : ResourceContainer,
-  options? : BinaryOptions = BinaryOptions::default(),
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> KV3BinaryDocument raise {
   let found = self.blocks.filter(b => b.kind == "DATA")
   if found.length() != 1 {
@@ -102,7 +102,7 @@ pub fn ResourceContainer::data(
 ///|
 pub fn ResourceContainer::external_references(
   self : ResourceContainer,
-  options? : BinaryOptions = BinaryOptions::default(),
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> Array[ResourceExternalReference] raise {
   check_binary_options(options)
   if self.blocks.length() > options.max_entries {
@@ -158,10 +158,10 @@ pub fn ResourceContainer::external_references(
 /// needs block-specific relocation and is deliberately a separate operation.
 pub fn encode_kv3_resource(
   document : KV3BinaryDocument,
-  resource_version? : Int = 1,
-  version? : Int = 5,
-  compression? : Int = 0,
-  options? : BinaryOptions = BinaryOptions::default(),
+  resource_version~ : Int32 = 1,
+  version~ : Int32 = 5,
+  compression~ : Int32 = 0,
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> Bytes raise {
   if resource_version < 0 || resource_version > 65535 {
     raise InvalidBinary(0, "Resource version exceeds uint16")

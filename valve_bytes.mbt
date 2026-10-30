@@ -2,7 +2,7 @@
 /// Shared bounded byte cursor for Valve archive and resource containers.
 priv struct ValveBytes {
   data : Bytes
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|
@@ -11,12 +11,15 @@ fn valve_bytes(data : Bytes) -> ValveBytes {
 }
 
 ///|
-fn ValveBytes::remaining(self : ValveBytes) -> Int {
+fn ValveBytes::remaining(self : ValveBytes) -> Int32 {
   self.data.length() - self.pos
 }
 
 ///|
-fn ValveBytes::take(self : ValveBytes, count : Int) -> Bytes raise BinaryError {
+fn ValveBytes::take(
+  self : ValveBytes,
+  count : Int32,
+) -> Bytes raise BinaryError {
   if count < 0 || count > self.remaining() {
     raise InvalidBinary(self.pos, "Truncated Valve byte range")
   }
@@ -26,7 +29,10 @@ fn ValveBytes::take(self : ValveBytes, count : Int) -> Bytes raise BinaryError {
 }
 
 ///|
-fn ValveBytes::uint(self : ValveBytes, width : Int) -> UInt64 raise BinaryError {
+fn ValveBytes::uint(
+  self : ValveBytes,
+  width : Int32,
+) -> UInt64 raise BinaryError {
   if width < 1 || width > 8 || width > self.remaining() {
     raise InvalidBinary(self.pos, "Truncated integer")
   }
@@ -39,7 +45,10 @@ fn ValveBytes::uint(self : ValveBytes, width : Int) -> UInt64 raise BinaryError 
 }
 
 ///|
-fn ValveBytes::count(self : ValveBytes, limit : Int) -> Int raise BinaryError {
+fn ValveBytes::count(
+  self : ValveBytes,
+  limit : Int32,
+) -> Int32 raise BinaryError {
   let n = self.uint(4)
   if n > limit.to_uint64() {
     raise InvalidBinary(self.pos - 4, "Count exceeds resource budget")
@@ -50,7 +59,7 @@ fn ValveBytes::count(self : ValveBytes, limit : Int) -> Int raise BinaryError {
 ///|
 fn ValveBytes::cstring(
   self : ValveBytes,
-  limit : Int,
+  limit : Int32,
 ) -> String raise BinaryError {
   let start = self.pos
   while self.pos < self.data.length() && self.data[self.pos] != b'\x00' {
@@ -70,14 +79,14 @@ fn ValveBytes::cstring(
 }
 
 ///|
-fn valve_uint(output : @buffer.Buffer, n : UInt64, width : Int) -> Unit {
+fn valve_uint(output : @buffer.Buffer, n : UInt64, width : Int32) -> Unit {
   for i in 0..<width {
     output.write_byte(((n >> (i * 8)) & 255UL).to_byte())
   }
 }
 
 ///|
-fn valve_align(n : Int, alignment : Int) -> Int {
+fn valve_align(n : Int32, alignment : Int32) -> Int32 {
   (n + alignment - 1) / alignment * alignment
 }
 
@@ -86,10 +95,10 @@ fn valve_align(n : Int, alignment : Int) -> Int {
 /// dictionary. A frame cannot consume bytes outside its explicit input range.
 fn valve_lz4_decode(
   input : Bytes,
-  expected : Int,
+  expected : Int32,
   dictionary : Bytes,
-  limit : Int,
-  exact? : Bool = true,
+  limit : Int32,
+  exact~ : Bool = true,
 ) -> Bytes raise BinaryError {
   if expected < 0 || expected > limit || dictionary.length() > 65536 {
     raise InvalidBinary(0, "Invalid LZ4 output budget")
@@ -97,7 +106,7 @@ fn valve_lz4_decode(
   let reader = valve_bytes(input)
   let output : Array[Byte] = dictionary.to_array()
   let base = output.length()
-  fn length(initial : Int) -> Int raise BinaryError {
+  fn length(initial : Int32) -> Int32 raise BinaryError {
     let mut n = initial
     if initial == 15 {
       while true {
@@ -148,8 +157,8 @@ fn valve_lz4_decode(
 /// Leave five trailing literals and stop match starts twelve bytes before EOF.
 fn valve_lz4_encode(input : Bytes) -> Bytes {
   let output = @buffer.Buffer()
-  let table : FixedArray[Int] = FixedArray::make(65536, -1)
-  fn extension(rest : Int) {
+  let table : FixedArray[Int32] = FixedArray::make(65536, -1)
+  fn extension(rest : Int32) {
     let mut rest = rest
     while rest >= 255 {
       output.write_byte(b'\xff')
@@ -157,7 +166,7 @@ fn valve_lz4_encode(input : Bytes) -> Bytes {
     }
     output.write_byte(rest.to_byte())
   }
-  fn hash(pos : Int) -> Int {
+  fn hash(pos : Int32) -> Int32 {
     let mut word = 0U
     for i in 0..<4 {
       word = word | (input[pos + i].to_int().reinterpret_as_uint() << (8 * i))
@@ -210,9 +219,9 @@ fn valve_lz4_encode(input : Bytes) -> Bytes {
 ///|
 fn valve_decompress(
   input : Bytes,
-  codec : Int,
-  expected : Int,
-  limit : Int,
+  codec : Int32,
+  expected : Int32,
+  limit : Int32,
 ) -> Bytes raise {
   if expected < 0 || expected > limit || input.length() > limit {
     raise InvalidBinary(0, "Compression budget exceeded")
@@ -230,7 +239,7 @@ fn valve_decompress(
 }
 
 ///|
-fn valve_compress(input : Bytes, codec : Int) -> Bytes raise {
+fn valve_compress(input : Bytes, codec : Int32) -> Bytes raise {
   match codec {
     0 => input
     1 => valve_lz4_encode(input)
@@ -242,7 +251,11 @@ fn valve_compress(input : Bytes, codec : Int) -> Bytes raise {
 ///|
 /// Validate every frame's declared window and boundary before invoking the
 /// streaming decoder. Concatenated frames are decoded separately and bounded.
-fn valve_zstd_decode(input : Bytes, expected : Int, limit : Int) -> Bytes raise {
+fn valve_zstd_decode(
+  input : Bytes,
+  expected : Int32,
+  limit : Int32,
+) -> Bytes raise {
   let reader = valve_bytes(input)
   let output = @buffer.Buffer()
   while reader.remaining() > 0 {

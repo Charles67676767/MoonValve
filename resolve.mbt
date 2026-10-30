@@ -9,10 +9,10 @@ pub extend ResolveError with @debug.Debug::{to_repr}
 ///|
 priv struct ResolveState {
   options : ParseOptions
-  max_files : Int
-  mut files : Int
-  mut chars : Int
-  mut entries : Int
+  max_files : Int32
+  mut files : Int32
+  mut chars : Int32
+  mut entries : Int32
   references : Array[ReferenceEdge]
 }
 
@@ -23,8 +23,8 @@ priv struct ResolveState {
 pub fn load_resolved(
   source : String,
   loader : (String) -> String raise,
-  options? : ParseOptions = ParseOptions::default(),
-  max_files? : Int = 64,
+  options~ : ParseOptions = ParseOptions::default(),
+  max_files~ : Int32 = 64,
 ) -> Document raise {
   load_project(source, loader, options~, max_files~).document
 }
@@ -165,8 +165,8 @@ fn merge_base(
   base : Array[ResolvedNode],
 ) -> Array[ResolvedNode] {
   let result = current.map(e => e)
-  let positions : Map[String, Array[Int]] = Map([])
-  let occurrences : Map[String, Int] = Map([])
+  let positions : Map[String, Array[Int32]] = Map([])
+  let occurrences : Map[String, Int32] = Map([])
   for i in 0..<result.length() {
     let key = reference_key(result[i].entry.key)
     match positions.get(key) {

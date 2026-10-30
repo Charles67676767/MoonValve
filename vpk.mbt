@@ -1,11 +1,11 @@
 ///|
 pub(all) struct VPKEntry {
   path : String
-  crc32 : UInt
+  crc32 : UInt32
   preload : Bytes
-  archive : Int
-  offset : Int
-  length : Int
+  archive : Int32
+  offset : Int32
+  length : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -16,21 +16,21 @@ pub extend VPKEntry with @debug.Debug::{to_repr}
 
 ///|
 struct VPKArchive {
-  version : Int
+  version : Int32
   entries : Array[VPKEntry]
-  lookup : Map[String, Int]
+  lookup : Map[String, Int32]
   directory : Bytes
-  data_offset : Int
-  data_size : Int
+  data_offset : Int32
+  data_size : Int32
 }
 
 ///|
-pub fn VPKArchive::version(self : VPKArchive) -> Int {
+pub fn VPKArchive::version(self : VPKArchive) -> Int32 {
   self.version
 }
 
 ///|
-pub fn VPKArchive::embedded_size(self : VPKArchive) -> Int? {
+pub fn VPKArchive::embedded_size(self : VPKArchive) -> Int32? {
   if self.data_size < 0 {
     None
   } else {
@@ -55,7 +55,7 @@ pub fn VPKArchive::find(self : VPKArchive, path : String) -> VPKEntry? {
 /// the range loader; numbered archives are never eagerly read by this API.
 pub fn read_vpk(
   bytes : Bytes,
-  options? : BinaryOptions = BinaryOptions::default(),
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> VPKArchive raise {
   check_binary_options(options)
   if bytes.length() > options.max_bytes {
@@ -85,7 +85,7 @@ pub fn read_vpk(
   let start = input.pos
   let tree = valve_bytes(input.take(size))
   let entries : Array[VPKEntry] = []
-  let lookup : Map[String, Int] = Map([])
+  let lookup : Map[String, Int32] = Map([])
   while true {
     let extension = tree.cstring(options.max_string_bytes)
     if extension.is_empty() {
@@ -163,8 +163,8 @@ pub fn read_vpk(
 pub fn VPKArchive::read(
   self : VPKArchive,
   path : String,
-  loader : (Int, Int, Int) -> Bytes raise,
-  verify_crc? : Bool = true,
+  loader : (Int32, Int32, Int32) -> Bytes raise,
+  verify_crc~ : Bool = true,
 ) -> Bytes raise {
   guard self.find(path) is Some(entry) else {
     raise InvalidReference("VPK path was not found: " + path)
@@ -209,8 +209,8 @@ fn vpk_cstring(output : @buffer.Buffer, value : String) -> Unit {
 /// uncompressed and CRC32 is computed over the complete original byte stream.
 pub fn create_vpk(
   files : Map[String, Bytes],
-  preload_bytes? : Int = 0,
-  options? : BinaryOptions = BinaryOptions::default(),
+  preload_bytes~ : Int32 = 0,
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> Bytes raise {
   check_binary_options(options)
   if preload_bytes < 0 ||

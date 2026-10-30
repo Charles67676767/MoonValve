@@ -10,7 +10,7 @@ pub fn binary_from_json(Json, options? : BinaryOptions) -> Array[BinaryEntry] ra
 
 pub fn binary_to_json(Array[BinaryEntry]) -> Json
 
-pub fn build_dependency_graph(Array[String], GameFileSystem, max_files? : Int, max_bytes? : Int) -> DependencyGraph raise
+pub fn build_dependency_graph(Array[String], GameFileSystem, max_files? : Int32, max_bytes? : Int32) -> DependencyGraph raise
 
 pub fn changes_from_json(Json) -> Array[Change] raise
 
@@ -20,7 +20,7 @@ pub fn compile_kv3_query(String) -> KV3Query raise
 
 pub fn compile_query(String) -> Query raise QueryError
 
-pub fn create_vpk(Map[String, Bytes], preload_bytes? : Int, options? : BinaryOptions) -> Bytes raise
+pub fn create_vpk(Map[String, Bytes], preload_bytes? : Int32, options? : BinaryOptions) -> Bytes raise
 
 pub fn decode_binary(Bytes, options? : BinaryOptions, string_table? : Array[String]?) -> Array[BinaryEntry] raise BinaryError
 
@@ -36,11 +36,11 @@ pub fn edit_workspace_snapshot(Json, Json, options? : ParseOptions) -> Json rais
 
 pub fn encode_binary(Array[BinaryEntry], options? : BinaryOptions, string_table? : Array[String]?) -> Bytes raise BinaryError
 
-pub fn encode_dmx_binary(DMXDocument, version? : Int, options? : BinaryOptions) -> Bytes raise
+pub fn encode_dmx_binary(DMXDocument, version? : Int32, options? : BinaryOptions) -> Bytes raise
 
-pub fn encode_kv3_binary(KV3BinaryDocument, version? : Int, compression? : Int, options? : BinaryOptions) -> Bytes raise
+pub fn encode_kv3_binary(KV3BinaryDocument, version? : Int32, compression? : Int32, options? : BinaryOptions) -> Bytes raise
 
-pub fn encode_kv3_resource(KV3BinaryDocument, resource_version? : Int, version? : Int, compression? : Int, options? : BinaryOptions) -> Bytes raise
+pub fn encode_kv3_resource(KV3BinaryDocument, resource_version? : Int32, version? : Int32, compression? : Int32, options? : BinaryOptions) -> Bytes raise
 
 pub fn evaluate_condition(String, Array[String]) -> Bool raise ConditionError
 
@@ -70,11 +70,11 @@ pub fn kv3_query_edit_from_json(Json) -> KV3QueryEdit raise
 
 pub fn kv3_to_json(KV3Document) -> Json raise
 
-pub fn load_project(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> ResolvedProject raise
+pub fn load_project(String, (String) -> String raise, options? : ParseOptions, max_files? : Int32) -> ResolvedProject raise
 
-pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> Document raise
+pub fn load_resolved(String, (String) -> String raise, options? : ParseOptions, max_files? : Int32) -> Document raise
 
-pub fn load_vmt(String, (String) -> String raise, options? : ParseOptions, max_files? : Int) -> VMTMaterial raise
+pub fn load_vmt(String, (String) -> String raise, options? : ParseOptions, max_files? : Int32) -> VMTMaterial raise
 
 pub fn localization_from_json(Json) -> Localization raise
 
@@ -86,9 +86,9 @@ pub fn located_values_to_json(Array[LocatedValue]) -> Json
 
 pub fn lsp_frame(Json) -> Bytes
 
-pub fn lsp_position(String, Int) -> Json
+pub fn lsp_position(String, Int32) -> Json
 
-pub fn mount_game_filesystem(Array[GameMount], max_bytes? : Int) -> GameFileSystem raise
+pub fn mount_game_filesystem(Array[GameMount], max_bytes? : Int32) -> GameFileSystem raise
 
 pub fn new_lsp_framer() -> LspFramer
 
@@ -102,7 +102,7 @@ pub fn new_stream_writer((String) -> Unit raise) -> StreamWriter
 
 pub fn new_workspace(Map[String, String], options? : ParseOptions) -> Workspace raise
 
-pub fn open_steam_cache(Bytes, max_bytes? : Int, max_records? : Int) -> SteamCache raise BinaryError
+pub fn open_steam_cache(Bytes, max_bytes? : Int32, max_records? : Int32) -> SteamCache raise BinaryError
 
 pub fn parse(String, options? : ParseOptions) -> Document raise ParseError
 
@@ -146,7 +146,7 @@ pub fn resource_roots_from_json(Json) -> Array[ResourceRoot] raise
 
 pub fn select_inventory(Array[InventoryRecord], filter? : String, sort? : String) -> Array[InventoryRecord] raise SteamError
 
-pub fn shortcut_app_id(String, String) -> UInt
+pub fn shortcut_app_id(String, String) -> UInt32
 
 pub fn stringify(Document) -> String raise WriteError
 
@@ -167,7 +167,7 @@ pub suberror AccessError {
 pub fn AccessError::to_repr(Self) -> @debug.Repr
 
 pub suberror BinaryError {
-  InvalidBinary(Int, String)
+  InvalidBinary(Int32, String)
 } derive(@debug.Debug)
 pub fn BinaryError::to_repr(Self) -> @debug.Repr
 
@@ -233,10 +233,10 @@ pub fn BinaryEntry::not_equal(Self, Self) -> Bool
 pub fn BinaryEntry::to_repr(Self) -> @debug.Repr
 
 pub(all) struct BinaryOptions {
-  max_depth : Int
-  max_entries : Int
-  max_bytes : Int
-  max_string_bytes : Int
+  max_depth : Int32
+  max_entries : Int32
+  max_bytes : Int32
+  max_string_bytes : Int32
 } derive(Eq, @debug.Debug)
 pub fn BinaryOptions::default() -> Self
 pub fn BinaryOptions::equal(Self, Self) -> Bool
@@ -246,11 +246,11 @@ pub fn BinaryOptions::to_repr(Self) -> @debug.Repr
 pub(all) enum BinaryValue {
   ObjectValue(Array[BinaryEntry])
   StringValue(String)
-  Int32Value(Int)
-  Float32Bits(UInt)
-  Pointer32(UInt)
+  Int32Value(Int32)
+  Float32Bits(UInt32)
+  Pointer32(UInt32)
   WideString(String)
-  Color32(UInt)
+  Color32(UInt32)
   UInt64Value(UInt64)
   Int64Value(Int64)
 } derive(Eq, @debug.Debug)
@@ -268,20 +268,20 @@ pub fn CacheFormat::to_repr(Self) -> @debug.Repr
 
 pub(all) struct CachePage {
   records : Array[CacheRecord]
-  total : Int
-  offset : Int
+  total : Int32
+  offset : Int32
 }
 
 pub(all) struct CacheRecord {
-  id : UInt
-  change_number : UInt
+  id : UInt32
+  change_number : UInt32
   token : UInt64
   sha1 : Bytes
   binary_sha1 : Bytes?
-  info_state : UInt?
-  last_updated : UInt?
-  offset : Int
-  length : Int
+  info_state : UInt32?
+  last_updated : UInt32?
+  offset : Int32
+  length : Int32
 } derive(Eq, @debug.Debug)
 pub fn CacheRecord::equal(Self, Self) -> Bool
 pub fn CacheRecord::not_equal(Self, Self) -> Bool
@@ -303,7 +303,7 @@ pub fn DMXAttribute::to_repr(Self) -> @debug.Repr
 
 pub(all) struct DMXDocument {
   format_name : String
-  format_version : Int
+  format_version : Int32
   root : String
   elements : Array[DMXElement]
 } derive(Eq, @debug.Debug)
@@ -326,15 +326,15 @@ pub fn DMXElement::to_repr(Self) -> @debug.Repr
 
 pub(all) enum DMXValue {
   DElement(String?)
-  DInt(Int)
-  DFloatBits(UInt)
+  DInt(Int32)
+  DFloatBits(UInt32)
   DBool(Bool)
   DString(String)
   DBinary(Bytes)
-  DTime(Int)
-  DColor(UInt)
-  DVector(Int, Array[UInt])
-  DArray(Int, Array[DMXValue])
+  DTime(Int32)
+  DColor(UInt32)
+  DVector(Int32, Array[UInt32])
+  DArray(Int32, Array[DMXValue])
 } derive(Eq, @debug.Debug)
 pub fn DMXValue::equal(Self, Self) -> Bool
 pub fn DMXValue::not_equal(Self, Self) -> Bool
@@ -352,9 +352,9 @@ pub fn DependencyGraph::to_json(Self) -> Json
 pub(all) struct Diagnostic {
   code : String
   message : String
-  offset : Int
-  line : Int
-  column : Int
+  offset : Int32
+  line : Int32
+  column : Int32
 } derive(Eq, @debug.Debug)
 pub fn Diagnostic::equal(Self, Self) -> Bool
 pub fn Diagnostic::not_equal(Self, Self) -> Bool
@@ -382,14 +382,14 @@ pub fn Document::read_text(Self, Array[Selector]) -> String raise AccessError
 pub fn Document::select(Self, String) -> Array[LocatedValue] raise
 pub fn Document::to_json(Self) -> Json
 pub fn Document::to_repr(Self) -> @debug.Repr
-pub fn Document::transfer(Self, Array[Selector], Array[Selector], Int, copy? : Bool) -> Self raise
+pub fn Document::transfer(Self, Array[Selector], Array[Selector], Int32, copy? : Bool) -> Self raise
 pub fn Document::walk(Self, (Array[Selector], Value) -> Bool raise) -> Unit raise
 
 pub(all) enum Edit {
   Replace(Value)
   Remove
   Rename(String)
-  Insert(Int, Entry)
+  Insert(Int32, Entry)
 } derive(@debug.Debug)
 pub fn Edit::to_repr(Self) -> @debug.Repr
 
@@ -407,7 +407,7 @@ pub fn GameFileSystem::read(Self, String) -> MountedFile raise
 
 pub(all) enum GameMount {
   LooseMount(String, Bool, (String) -> Bool raise, (String) -> Bytes raise)
-  VPKMount(String, Bool, VPKArchive, (Int, Int, Int) -> Bytes raise)
+  VPKMount(String, Bool, VPKArchive, (Int32, Int32, Int32) -> Bytes raise)
 }
 
 pub(all) struct GameSearchPath {
@@ -440,15 +440,15 @@ pub fn InventoryRecord::to_repr(Self) -> @debug.Repr
 
 pub(all) struct InventoryTotal {
   known_size_bytes : Int64
-  unknown_size_count : Int
+  unknown_size_count : Int32
 } derive(Eq, @debug.Debug)
 pub fn InventoryTotal::equal(Self, Self) -> Bool
 pub fn InventoryTotal::not_equal(Self, Self) -> Bool
 pub fn InventoryTotal::to_repr(Self) -> @debug.Repr
 
 pub(all) struct KV3BinaryDocument {
-  version : Int
-  compression : Int
+  version : Int32
+  compression : Int32
   format_id : String
   root : KV3BinaryValue
 } derive(Eq, @debug.Debug)
@@ -470,7 +470,7 @@ pub fn KV3BinaryLocatedValue::to_repr(Self) -> @debug.Repr
 pub(all) enum KV3BinaryValue {
   BNull
   BBool(Bool)
-  BNumber(Int, UInt64)
+  BNumber(Int32, UInt64)
   BString(String)
   BBlob(Bytes)
   BArray(Array[KV3BinaryValue])
@@ -494,8 +494,8 @@ pub(all) enum KV3Edit {
   KV3Replace(KV3Value)
   KV3Remove
   KV3Rename(String)
-  KV3InsertField(Int, String, KV3Value)
-  KV3InsertElement(Int, KV3Value)
+  KV3InsertField(Int32, String, KV3Value)
+  KV3InsertElement(Int32, KV3Value)
 } derive(@debug.Debug)
 pub fn KV3Edit::to_repr(Self) -> @debug.Repr
 
@@ -546,10 +546,10 @@ pub fn KV3SourceDocument::rewrite_resources(Self, Array[ResourceRoot], Map[Strin
 pub fn KV3SourceDocument::text(Self) -> String
 
 pub(all) struct KV3SourceRange {
-  start : Int
-  end : Int
-  selection_start : Int
-  selection_end : Int
+  start : Int32
+  end : Int32
+  selection_start : Int32
+  selection_end : Int32
 } derive(Eq, @debug.Debug)
 pub fn KV3SourceRange::equal(Self, Self) -> Bool
 pub fn KV3SourceRange::not_equal(Self, Self) -> Bool
@@ -627,7 +627,7 @@ pub(all) enum LspPacket {
 }
 
 type LspServer
-pub fn LspServer::exit_code(Self) -> Int
+pub fn LspServer::exit_code(Self) -> Int32
 pub fn LspServer::handle(Self, Json) -> Array[Json]
 pub fn LspServer::should_exit(Self) -> Bool
 
@@ -674,10 +674,10 @@ pub fn POEntry::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ParseOptions {
   escape_sequences : Bool
-  max_depth : Int
-  max_entries : Int
-  max_input_chars : Int
-  max_token_chars : Int
+  max_depth : Int32
+  max_entries : Int32
+  max_input_chars : Int32
+  max_token_chars : Int32
   conditions : Array[String]?
 } derive(Eq, @debug.Debug)
 pub fn ParseOptions::default() -> Self
@@ -686,7 +686,7 @@ pub fn ParseOptions::not_equal(Self, Self) -> Bool
 pub fn ParseOptions::to_repr(Self) -> @debug.Repr
 
 type Query
-pub fn Query::select(Self, Document, max_matches? : Int, max_visited? : Int) -> Array[LocatedValue] raise
+pub fn Query::select(Self, Document, max_matches? : Int32, max_visited? : Int32) -> Array[LocatedValue] raise
 
 pub(all) enum QueryEdit {
   SetText(String)
@@ -726,7 +726,7 @@ pub fn ResolvedProject::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ResourceBlock {
   kind : String
-  offset : Int
+  offset : Int32
   bytes : Bytes
 } derive(Eq, @debug.Debug)
 pub fn ResourceBlock::equal(Self, Self) -> Bool
@@ -734,8 +734,8 @@ pub fn ResourceBlock::not_equal(Self, Self) -> Bool
 pub fn ResourceBlock::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ResourceContainer {
-  version : Int
-  declared_size : Int
+  version : Int32
+  declared_size : Int32
   blocks : Array[ResourceBlock]
   trailing : Bytes
 } derive(Eq, @debug.Debug)
@@ -758,8 +758,8 @@ pub(all) struct ResourceReference {
   resource : String
   target : String?
   status : String
-  start : Int
-  end : Int
+  start : Int32
+  end : Int32
 } derive(Eq, @debug.Debug)
 pub fn ResourceReference::equal(Self, Self) -> Bool
 pub fn ResourceReference::not_equal(Self, Self) -> Bool
@@ -775,7 +775,7 @@ pub fn ResourceRoot::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Selector {
   key : String
-  occurrence : Int
+  occurrence : Int32
 } derive(Eq, @debug.Debug)
 pub fn Selector::equal(Self, Self) -> Bool
 pub fn Selector::not_equal(Self, Self) -> Bool
@@ -798,14 +798,14 @@ pub fn SourceDocument::evaluate(Self, Array[String]) -> Document raise ParseErro
 pub fn SourceDocument::format_preserving(Self) -> Self raise
 pub fn SourceDocument::locations(Self, String) -> Array[ResolvedOrigin]
 pub fn SourceDocument::text(Self) -> String
-pub fn SourceDocument::transfer(Self, Array[Selector], Array[Selector], Int, copy? : Bool) -> Self raise
+pub fn SourceDocument::transfer(Self, Array[Selector], Array[Selector], Int32, copy? : Bool) -> Self raise
 pub fn SourceDocument::transfer_json(Self, Json) -> Self raise
 
 pub(all) struct SourceLocation {
   source : String
-  offset : Int
-  line : Int
-  column : Int
+  offset : Int32
+  line : Int32
+  column : Int32
 } derive(Eq, @debug.Debug)
 pub fn SourceLocation::equal(Self, Self) -> Bool
 pub fn SourceLocation::not_equal(Self, Self) -> Bool
@@ -824,11 +824,11 @@ pub fn SteamApp::to_repr(Self) -> @debug.Repr
 
 type SteamCache
 pub fn SteamCache::format(Self) -> CacheFormat
-pub fn SteamCache::page(Self, query? : String, offset? : Int, limit? : Int) -> CachePage raise BinaryError
-pub fn SteamCache::read(Self, UInt) -> Array[BinaryEntry]? raise BinaryError
+pub fn SteamCache::page(Self, query? : String, offset? : Int32, limit? : Int32) -> CachePage raise BinaryError
+pub fn SteamCache::read(Self, UInt32) -> Array[BinaryEntry]? raise BinaryError
 pub fn SteamCache::records(Self) -> Array[CacheRecord]
-pub fn SteamCache::universe(Self) -> UInt
-pub fn SteamCache::version(Self) -> Int
+pub fn SteamCache::universe(Self) -> UInt32
+pub fn SteamCache::version(Self) -> Int32
 
 pub(all) struct SteamLibrary {
   index : String
@@ -842,7 +842,7 @@ pub fn SteamLibrary::to_repr(Self) -> @debug.Repr
 
 pub(all) struct SteamShortcut {
   index : String
-  app_id : UInt
+  app_id : UInt32
   name : String
   exe : String
   start_dir : String
@@ -865,8 +865,8 @@ pub fn StreamEvent::not_equal(Self, Self) -> Bool
 pub fn StreamEvent::to_repr(Self) -> @debug.Repr
 
 type StreamParser
-pub fn StreamParser::characters_seen(Self) -> Int
-pub fn StreamParser::entries_seen(Self) -> Int
+pub fn StreamParser::characters_seen(Self) -> Int32
+pub fn StreamParser::entries_seen(Self) -> Int32
 pub fn StreamParser::feed(Self, String) -> Unit raise
 pub fn StreamParser::feed_bytes(Self, Bytes) -> Unit raise
 pub fn StreamParser::finish(Self) -> Unit raise
@@ -890,7 +890,7 @@ pub fn VMTMaterial::to_repr(Self) -> @debug.Repr
 pub fn VMTMaterial::with_parameter(Self, String, String) -> Self raise
 
 pub(all) struct VMTOrigin {
-  path : Array[Int]
+  path : Array[Int32]
   source : String
   operation : String
 } derive(Eq, @debug.Debug)
@@ -910,20 +910,20 @@ pub fn VMTTexture::not_equal(Self, Self) -> Bool
 pub fn VMTTexture::to_repr(Self) -> @debug.Repr
 
 type VPKArchive
-pub fn VPKArchive::embedded_size(Self) -> Int?
+pub fn VPKArchive::embedded_size(Self) -> Int32?
 pub fn VPKArchive::entries(Self) -> Array[VPKEntry]
 pub fn VPKArchive::find(Self, String) -> VPKEntry?
-pub fn VPKArchive::read(Self, String, (Int, Int, Int) -> Bytes raise, verify_crc? : Bool) -> Bytes raise
+pub fn VPKArchive::read(Self, String, (Int32, Int32, Int32) -> Bytes raise, verify_crc? : Bool) -> Bytes raise
 pub fn VPKArchive::to_json(Self) -> Json
-pub fn VPKArchive::version(Self) -> Int
+pub fn VPKArchive::version(Self) -> Int32
 
 pub(all) struct VPKEntry {
   path : String
-  crc32 : UInt
+  crc32 : UInt32
   preload : Bytes
-  archive : Int
-  offset : Int
-  length : Int
+  archive : Int32
+  offset : Int32
+  length : Int32
 } derive(Eq, @debug.Debug)
 pub fn VPKEntry::equal(Self, Self) -> Bool
 pub fn VPKEntry::not_equal(Self, Self) -> Bool

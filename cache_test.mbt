@@ -1,5 +1,5 @@
 ///|
-fn cache_fixture(version : Int, is_package : Bool) -> Bytes raise {
+fn cache_fixture(version : Int32, is_package : Bool) -> Bytes raise {
   let payload = @moonvalve.encode_binary(
     [
       {

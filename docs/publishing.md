@@ -7,7 +7,7 @@
 在自己的 MoonBit 项目中运行：
 
 ```sh
-moon add Charles67676767/moonvalve@0.8.2
+moon add Charles67676767/moonvalve@0.8.3
 ```
 
 在调用包的 `moon.pkg` 中添加：
@@ -21,7 +21,7 @@ import { "Charles67676767/moonvalve" @valve }
 ## 独立注册表消费者
 
 ```sh
-node scripts/test-registry.cjs 0.8.2
+node scripts/test-registry.cjs 0.8.3
 ```
 
 脚本在系统临时目录建立全新模块，只声明 Mooncakes 版本依赖，不创建 `moon.work`，不指向仓库源码。刷新注册表后核对实际下载模块的版本及来源路径，再在 wasm、wasm-gc、JS、native 四后端运行：精确 Int64、重复项查询、保留原文编辑、移动复制、KV3 类型模型、多文件重构和 LSP 初始化。成功结果写入被忽略的 `_build/registry-check-VERSION.json`。

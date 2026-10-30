@@ -1,5 +1,5 @@
 ///|
-fn kv3_symbol_kind(value : KV3Value) -> Int {
+fn kv3_symbol_kind(value : KV3Value) -> Int32 {
   match kv3_unflag(value) {
     KV3Object(_) => 19
     KV3Array(_) => 18
@@ -38,10 +38,10 @@ fn kv3_summary(value : KV3Value) -> String {
 fn lsp_kv3_symbol(
   source : KV3SourceDocument,
   value : KV3Value,
-  path : Array[Int],
+  path : Array[Int32],
   name : String,
   coordinates : LspCoordinates,
-  budget : Ref[Int],
+  budget : Ref[Int32],
 ) -> Json {
   budget.val -= 1
   let span = source.spans[index_key(path)]
@@ -110,7 +110,7 @@ fn lsp_kv3_symbol(
 }
 
 ///|
-fn kv3_path_names(root : KV3Value, indices : Array[Int]) -> Array[String] {
+fn kv3_path_names(root : KV3Value, indices : Array[Int32]) -> Array[String] {
   let names : Array[String] = []
   let mut value = root
   for i in indices {
@@ -212,7 +212,7 @@ fn LspServer::kv3_navigation(
         }
       }
       guard chosen is Some(key) else { return Json::null() }
-      let indices : Array[Int] = if key.is_empty() {
+      let indices : Array[Int32] = if key.is_empty() {
         []
       } else {
         key

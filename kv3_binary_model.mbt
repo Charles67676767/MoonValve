@@ -5,7 +5,7 @@
 pub(all) enum KV3BinaryValue {
   BNull
   BBool(Bool)
-  BNumber(Int, UInt64)
+  BNumber(Int32, UInt64)
   BString(String)
   BBlob(Bytes)
   BArray(Array[KV3BinaryValue])
@@ -21,8 +21,8 @@ pub extend KV3BinaryValue with @debug.Debug::{to_repr}
 
 ///|
 pub(all) struct KV3BinaryDocument {
-  version : Int
-  compression : Int
+  version : Int32
+  compression : Int32
   format_id : String
   root : KV3BinaryValue
 } derive(Eq, Debug)
@@ -34,7 +34,7 @@ pub extend KV3BinaryDocument with Eq::{equal, not_equal}
 pub extend KV3BinaryDocument with @debug.Debug::{to_repr}
 
 ///|
-fn kv3_binary_width(tag : Int) -> Int raise BinaryError {
+fn kv3_binary_width(tag : Int32) -> Int32 raise BinaryError {
   match tag {
     3 | 4 | 5 => 8
     11 | 12 | 19 => 4
@@ -70,8 +70,8 @@ fn kv3_binary_float(n : Double) -> String {
 ///|
 fn KV3BinaryValue::semantic(
   self : KV3BinaryValue,
-  depth : Int,
-  budget : Ref[Int],
+  depth : Int32,
+  budget : Ref[Int32],
 ) -> KV3Value raise {
   budget.val += 1
   if depth > 128 || budget.val > 100000 {
@@ -147,7 +147,10 @@ pub fn KV3BinaryDocument::document(
 }
 
 ///|
-fn kv3_binary_from_value(value : KV3Value, depth : Int) -> KV3BinaryValue raise {
+fn kv3_binary_from_value(
+  value : KV3Value,
+  depth : Int32,
+) -> KV3BinaryValue raise {
   if depth > 128 {
     raise InvalidBinary(0, "KV3 conversion exceeds depth")
   }

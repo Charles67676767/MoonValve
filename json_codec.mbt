@@ -10,7 +10,7 @@ pub extend JsonImportError with @debug.Debug::{to_repr}
 /// Decode the ordered [{key,value}] representation emitted by to_json.
 pub fn document_from_json(
   value : Json,
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Document raise JsonImportError {
   if options.max_depth < 0 ||
     options.max_depth > 256 ||
@@ -25,7 +25,7 @@ pub fn document_from_json(
 ///|
 pub fn parse_json_document(
   text : String,
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> Document raise JsonImportError {
   if options.max_input_chars < 0 || text.char_length() > options.max_input_chars {
     raise InvalidJsonDocument("JSON input exceeds max_input_chars")
@@ -40,8 +40,8 @@ pub fn parse_json_document(
 fn import_entries(
   value : Json,
   options : ParseOptions,
-  depth : Int,
-  count : Ref[Int],
+  depth : Int32,
+  count : Ref[Int32],
 ) -> Array[Entry] raise JsonImportError {
   if depth > options.max_depth {
     raise InvalidJsonDocument("JSON document exceeds max_depth")

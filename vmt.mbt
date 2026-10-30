@@ -1,6 +1,6 @@
 ///|
 pub(all) struct VMTOrigin {
-  path : Array[Int]
+  path : Array[Int32]
   source : String
   operation : String
 } derive(Eq, Debug)
@@ -74,7 +74,7 @@ fn vmt_nodes(
 ///|
 fn vmt_entries(
   nodes : Array[VMTNode],
-  path : Array[Int],
+  path : Array[Int32],
   origins : Array[VMTOrigin],
 ) -> Array[Entry] {
   nodes.mapi((i, node) => {
@@ -105,8 +105,8 @@ fn vmt_read(
 ///|
 pub fn parse_vmt(
   text : String,
-  source? : String = "material.vmt",
-  options? : ParseOptions = ParseOptions::default(),
+  source~ : String = "material.vmt",
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> VMTMaterial raise {
   let (shader, entries) = vmt_read(text, options)
   let origins : Array[VMTOrigin] = []
@@ -123,7 +123,7 @@ fn vmt_patch(
   base : Array[VMTNode],
   patch : Array[VMTNode],
   replace : Bool,
-  depth : Int,
+  depth : Int32,
 ) -> Array[VMTNode] raise {
   if depth > 128 {
     raise InvalidReference("VMT patch depth exceeded")
@@ -131,7 +131,7 @@ fn vmt_patch(
   let output = base.copy()
   for node in patch {
     let key = node.key.to_lower()
-    let mut found : Int? = None
+    let mut found : Int32? = None
     for i in 0..<output.length() {
       if output[i].key.to_lower() == key {
         found = Some(i)
@@ -187,8 +187,8 @@ fn vmt_expand(
   options : ParseOptions,
   stack : Array[String],
   includes : Array[String],
-  chars : Ref[Int],
-  max_files : Int,
+  chars : Ref[Int32],
+  max_files : Int32,
 ) -> (String, Array[VMTNode]) raise {
   if stack.length() >= max_files || stack.contains(source.to_lower()) {
     raise InvalidReference("VMT Patch include cycle or file budget exceeded")
@@ -250,8 +250,8 @@ fn vmt_expand(
 pub fn load_vmt(
   source : String,
   loader : (String) -> String raise,
-  options? : ParseOptions = ParseOptions::default(),
-  max_files? : Int = 64,
+  options~ : ParseOptions = ParseOptions::default(),
+  max_files~ : Int32 = 64,
 ) -> VMTMaterial raise {
   if max_files < 1 || max_files > 128 {
     raise InvalidReference("Invalid VMT file budget")
@@ -347,7 +347,7 @@ fn vmt_textures(
 ///|
 pub fn VMTMaterial::textures(
   self : VMTMaterial,
-  extra_parameters? : Array[String] = [],
+  extra_parameters~ : Array[String] = [],
 ) -> Array[VMTTexture] raise {
   self.stringify() |> ignore
   let output : Array[VMTTexture] = []
@@ -364,7 +364,7 @@ pub fn VMTMaterial::with_parameter(
   value : String,
 ) -> VMTMaterial raise {
   self.stringify() |> ignore
-  let indices : Array[Int] = []
+  let indices : Array[Int32] = []
   for i in 0..<self.parameters.length() {
     if self.parameters[i].key.to_lower() == key.to_lower() {
       indices.push(i)

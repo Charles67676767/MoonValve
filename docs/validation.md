@@ -1,6 +1,6 @@
 # 验证与复现
 
-工具链：`moonc v0.10.14+7d59c7ec9`，同版本 `moonbitlang/core`。Zstandard 使用 `bikallem/compress` 0.3.4 的所需源码（Apache-2.0，来源与原始哈希见 `internal/vendor`）；Python/.NET 参考测试不参与产品运行。新增格式验证命令见[资源指南](assets.md)。
+工具链：`moonc v0.10.18+6c83a7f62`，同版本 `moonbitlang/core`。Zstandard 使用 `bikallem/compress` 0.3.4 的所需源码（Apache-2.0，来源与原始哈希见 `internal/vendor`）；Python/.NET 参考测试不参与产品运行。新增格式验证命令见[资源指南](assets.md)。
 
 ## 核心与命令行
 
@@ -110,4 +110,4 @@ python scripts/test-package.py
 - 182 份 KV3 文档（含保留注释格式化结果）经 ValveKeyValue 参考解析和写出；三份固定 Proton 实际配置增加保留注释格式化与幂等检查。
 - 发布前独立源码消费者和发布后真实注册表消费者覆盖新混合工程、格式化、资源映射与重写接口，均检查四后端。
 
-文档兼容性额外使用 `moonc v0.10.18+6c83a7f62`：检查、JavaScript 测试与文档生成独立于 0.10.14 四后端基线运行，CI 的 `docs-compat` 作业固定该版本。上游压缩源码的原始哈希、修改说明及当前哈希由 `node scripts/check-vendor.cjs` 核验；其测试与 MoonValve 自有测试分开计数。
+主验证基线与文档构建统一使用 `moonc v0.10.18+6c83a7f62` 及同版本标准库，包含四后端检查、构建、测试、Windows 验证、参考实现测试和发布后独立安装验证。CI 的 `docs-compat` 作业补充检查文档生成。上游压缩源码的原始哈希、修改说明及当前哈希由 `node scripts/check-vendor.cjs` 核验；其测试与 MoonValve 自有测试分开计数。

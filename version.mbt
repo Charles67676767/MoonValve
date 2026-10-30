@@ -1,5 +1,5 @@
 ///|
 /// Development version; distribution scripts verify it against moon.mod.
 pub fn version() -> String {
-  "0.8.2"
+  "0.8.3"
 }

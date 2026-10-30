@@ -22,10 +22,10 @@ pub(all) struct Document {
 /// Parsing limits apply to the whole document; depth counts nested objects.
 pub(all) struct ParseOptions {
   escape_sequences : Bool
-  max_depth : Int
-  max_entries : Int
-  max_input_chars : Int
-  max_token_chars : Int
+  max_depth : Int32
+  max_entries : Int32
+  max_input_chars : Int32
+  max_token_chars : Int32
   conditions : Array[String]?
 } derive(Eq, Debug)
 
@@ -47,9 +47,9 @@ pub fn ParseOptions::default() -> ParseOptions {
 pub(all) struct Diagnostic {
   code : String
   message : String
-  offset : Int
-  line : Int
-  column : Int
+  offset : Int32
+  line : Int32
+  column : Int32
 } derive(Eq, Debug)
 
 ///|

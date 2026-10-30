@@ -13,7 +13,7 @@ pub extend KV3BinaryLocatedValue with @debug.Debug::{to_repr}
 ///|
 fn KV3BinaryValue::at(
   self : KV3BinaryValue,
-  indices : Array[Int],
+  indices : Array[Int32],
 ) -> KV3BinaryValue raise {
   let mut value = self
   for i in indices {
@@ -42,7 +42,7 @@ pub fn KV3BinaryDocument::select(
 ///|
 fn kv3_binary_patch(
   value : KV3BinaryValue,
-  path : Array[Int],
+  path : Array[Int32],
   replacements : Map[String, KV3BinaryValue],
   removals : Map[String, Bool],
   renames : Map[String, String],

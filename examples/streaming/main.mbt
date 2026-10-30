@@ -1,6 +1,6 @@
 ///|
 fn demonstrate() -> Unit raise {
-  let pairs : Ref[Int] = { val: 0, }
+  let pairs : Ref[Int32] = { val: 0, }
   let parser = @valve.new_stream_parser(
     event => {
       if event is @valve.Pair(_, _) {

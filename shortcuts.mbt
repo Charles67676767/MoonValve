@@ -1,7 +1,7 @@
 ///|
 pub(all) struct SteamShortcut {
   index : String
-  app_id : UInt
+  app_id : UInt32
   name : String
   exe : String
   start_dir : String
@@ -58,7 +58,7 @@ fn shortcut_text(
 }
 
 ///|
-fn ShortcutFile::root_index(self : ShortcutFile) -> Int raise SteamError {
+fn ShortcutFile::root_index(self : ShortcutFile) -> Int32 raise SteamError {
   let mut result = -1
   for i in 0..<self.entries.length() {
     if self.entries[i].key.equal_ignore_ascii_case("shortcuts") {
@@ -131,7 +131,7 @@ pub fn ShortcutFile::shortcuts(
 
 ///|
 /// Stable Steam shortcut identifier: CRC-32/ISO-HDLC(exe + name), high bit set.
-pub fn shortcut_app_id(name : String, exe : String) -> UInt {
+pub fn shortcut_app_id(name : String, exe : String) -> UInt32 {
   let mut crc = 0xffffffffU
   for byte in @utf8.encode((exe + name)[:]) {
     crc = crc ^ byte.to_uint()
@@ -222,9 +222,9 @@ pub fn ShortcutFile::add(
   self : ShortcutFile,
   name : String,
   exe : String,
-  start_dir? : String = "",
-  launch_options? : String = "",
-  tags? : Array[String] = [],
+  start_dir~ : String = "",
+  launch_options~ : String = "",
+  tags~ : Array[String] = [],
 ) -> ShortcutFile raise SteamError {
   if name.is_empty() || exe.is_empty() {
     raise InvalidManifest("Shortcut name and executable must not be empty")

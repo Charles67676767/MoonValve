@@ -60,7 +60,7 @@ fn po_unquote(text : String) -> String raise {
       'v' => '\u000b'
       '\\' => '\\'
       '"' => '"'
-      '0'..='7' => {
+      '0'..<='7' => {
         let mut n = escape.to_int() - 48
         let mut count = 1
         while count < 3 &&

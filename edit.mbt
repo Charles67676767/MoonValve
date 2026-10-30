@@ -2,7 +2,7 @@
 /// Select the zero-based occurrence of a key, preserving duplicate siblings.
 pub(all) struct Selector {
   key : String
-  occurrence : Int
+  occurrence : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -16,7 +16,7 @@ pub(all) enum Edit {
   Replace(Value)
   Remove
   Rename(String)
-  Insert(Int, Entry)
+  Insert(Int32, Entry)
 } derive(Debug)
 
 ///|
@@ -58,7 +58,7 @@ pub fn Document::edit(
 fn edit_value(
   value : Value,
   path : Array[Selector],
-  level : Int,
+  level : Int32,
   operation : Edit,
 ) -> Value raise EditError {
   if level == path.length() {

@@ -16,7 +16,7 @@ pub(all) struct InventoryIssue {
 ///|
 pub(all) struct InventoryTotal {
   known_size_bytes : Int64
-  unknown_size_count : Int
+  unknown_size_count : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -42,8 +42,8 @@ pub extend InventoryTotal with @debug.Debug::{to_repr}
 /// size. Missing sizes sort last. Identifiers are compared as decimal integers.
 pub fn select_inventory(
   records : Array[InventoryRecord],
-  filter? : String = "",
-  sort? : String = "id",
+  filter~ : String = "",
+  sort~ : String = "id",
 ) -> Array[InventoryRecord] raise SteamError {
   if sort != "id" && sort != "name" && sort != "size" {
     raise InvalidManifest("Unknown inventory sort")
@@ -84,7 +84,7 @@ pub fn select_inventory(
 }
 
 ///|
-fn decimal_compare(a : String, b : String) -> Int {
+fn decimal_compare(a : String, b : String) -> Int32 {
   let x = a.trim_start(chars="0").to_owned()
   let y = b.trim_start(chars="0").to_owned()
   let length = x.length().compare(y.length())

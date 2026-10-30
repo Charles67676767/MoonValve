@@ -1,8 +1,8 @@
 ///|
 priv struct LspReference {
   target : String
-  start : Int
-  end : Int
+  start : Int32
+  end : Int32
 }
 
 ///|
@@ -87,7 +87,7 @@ fn lsp_graph_problem(
   missing : Map[String, Bool],
   stack : Array[String],
   visited : Map[String, Bool],
-  budget : Ref[Int],
+  budget : Ref[Int32],
 ) -> (String, Array[String])? {
   if budget.val <= 0 {
     return None
@@ -295,7 +295,7 @@ fn LspServer::will_rename(
       }
     }
     let changes : Array[Change] = []
-    let occurrences : Map[String, Int] = Map([])
+    let occurrences : Map[String, Int32] = Map([])
     for entry in source.doc.entries {
       let occurrence = occurrences.get(entry.key).unwrap_or(0)
       occurrences[entry.key] = occurrence + 1

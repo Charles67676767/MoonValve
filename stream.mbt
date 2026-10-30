@@ -19,28 +19,28 @@ pub extend StreamEvent with @debug.Debug::{to_repr}
 struct StreamParser {
   options : ParseOptions
   visitor : (StreamEvent) -> Bool raise
-  mut mode : Int
-  mut phase : Int
+  mut mode : Int32
+  mut phase : Int32
   mut key : String
   parents : Array[String]
-  mut skip_depth : Int
+  mut skip_depth : Int32
   mut token : StringBuilder
-  mut token_chars : Int
-  mut count : Int
-  mut offset : Int
-  mut line : Int
-  mut column : Int
+  mut token_chars : Int32
+  mut count : Int32
+  mut offset : Int32
+  mut line : Int32
+  mut column : Int32
   mut previous_cr : Bool
   mut assigned : Bool
   mut closed : Bool
-  mut input_kind : Int
+  mut input_kind : Int32
   mut pending : Bytes
 }
 
 ///|
 pub fn new_stream_parser(
   visitor : (StreamEvent) -> Bool raise,
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> StreamParser raise ParseError {
   parse("", options~) |> ignore
   if options.conditions is Some(_) {
@@ -91,12 +91,12 @@ fn StreamParser::error(
 }
 
 ///|
-pub fn StreamParser::entries_seen(self : StreamParser) -> Int {
+pub fn StreamParser::entries_seen(self : StreamParser) -> Int32 {
   self.count
 }
 
 ///|
-pub fn StreamParser::characters_seen(self : StreamParser) -> Int {
+pub fn StreamParser::characters_seen(self : StreamParser) -> Int32 {
   self.offset
 }
 

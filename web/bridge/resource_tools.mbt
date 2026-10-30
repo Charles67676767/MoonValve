@@ -51,9 +51,9 @@ fn resource_field(fields : Map[String, Json], key : String) -> Json raise {
 fn resource_int(
   fields : Map[String, Json],
   key : String,
-  fallback : Int,
-  max : Int,
-) -> Int raise {
+  fallback : Int32,
+  max : Int32,
+) -> Int32 raise {
   match fields.get(key) {
     None => fallback
     Some(Number(n, ..)) if n >= 0.0 &&

@@ -1,7 +1,7 @@
 ///|
 priv struct LspDocument {
   text : String
-  version : Int
+  version : Int32
   opened : Bool
 }
 
@@ -44,7 +44,7 @@ pub fn LspServer::should_exit(self : LspServer) -> Bool {
 }
 
 ///|
-pub fn LspServer::exit_code(self : LspServer) -> Int {
+pub fn LspServer::exit_code(self : LspServer) -> Int32 {
   if self.shutting_down {
     0
   } else {
@@ -72,7 +72,7 @@ fn lsp_object(
 }
 
 ///|
-fn lsp_int(fields : Map[String, Json], key : String) -> Int raise {
+fn lsp_int(fields : Map[String, Json], key : String) -> Int32 raise {
   guard fields.get(key) is Some(Number(n, ..)) &&
     n >= -2147483648.0 &&
     n <= 2147483647.0 &&
@@ -83,7 +83,7 @@ fn lsp_int(fields : Map[String, Json], key : String) -> Int raise {
 }
 
 ///|
-pub fn lsp_position(text : String, offset : Int) -> Json {
+pub fn lsp_position(text : String, offset : Int32) -> Json {
   let chars = text.to_array()
   let mut line = 0
   let mut column = 0
@@ -108,7 +108,7 @@ pub fn lsp_position(text : String, offset : Int) -> Json {
 }
 
 ///|
-fn lsp_offset(text : String, position : Map[String, Json]) -> Int raise {
+fn lsp_offset(text : String, position : Map[String, Json]) -> Int32 raise {
   let wanted_line = lsp_int(position, "line")
   let wanted_column = lsp_int(position, "character")
   if wanted_line < 0 || wanted_column < 0 {
@@ -147,7 +147,7 @@ fn lsp_offset(text : String, position : Map[String, Json]) -> Int raise {
 }
 
 ///|
-fn lsp_range(text : String, start : Int, end : Int) -> Json {
+fn lsp_range(text : String, start : Int32, end : Int32) -> Json {
   Json::object({
     "start": lsp_position(text, start),
     "end": lsp_position(text, end),
@@ -302,9 +302,9 @@ fn LspServer::diagnostics(self : LspServer, uri : String) -> Json {
 fn lsp_symbols(
   source : SourceDocument,
   entries : Array[Entry],
-  path : Array[Int],
+  path : Array[Int32],
   coordinates : LspCoordinates,
-  budget : Ref[Int],
+  budget : Ref[Int32],
 ) -> Array[Json] raise {
   let rows : Array[Json] = []
   for i in 0..<entries.length() {
@@ -358,7 +358,7 @@ fn LspServer::target_uri(
 fn LspServer::reference_at(
   self : LspServer,
   uri : String,
-  offset : Int,
+  offset : Int32,
 ) -> (SourceDocument, SourceSpan, String)? raise {
   let source = self.source(uri)
   for i in 0..<source.doc.entries.length() {
@@ -840,8 +840,8 @@ fn LspServer::perform(
 
 ///|
 priv struct LspCoordinates {
-  starts : Array[Int]
-  units : Array[Int]
+  starts : Array[Int32]
+  units : Array[Int32]
 }
 
 ///|
@@ -868,7 +868,7 @@ fn lsp_coordinates(text : String) -> LspCoordinates {
 }
 
 ///|
-fn LspCoordinates::position(self : LspCoordinates, offset : Int) -> Json {
+fn LspCoordinates::position(self : LspCoordinates, offset : Int32) -> Json {
   let point = offset.max(0).min(self.units.length() - 1)
   let mut low = 0
   let mut high = self.starts.length()
@@ -889,7 +889,11 @@ fn LspCoordinates::position(self : LspCoordinates, offset : Int) -> Json {
 }
 
 ///|
-fn LspCoordinates::range(self : LspCoordinates, start : Int, end : Int) -> Json {
+fn LspCoordinates::range(
+  self : LspCoordinates,
+  start : Int32,
+  end : Int32,
+) -> Json {
   Json::object({ "start": self.position(start), "end": self.position(end) })
 }
 

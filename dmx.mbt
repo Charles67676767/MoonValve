@@ -3,15 +3,15 @@
 /// Time uses 1/10000-second ticks; floating point components retain IEEE bits.
 pub(all) enum DMXValue {
   DElement(String?)
-  DInt(Int)
-  DFloatBits(UInt)
+  DInt(Int32)
+  DFloatBits(UInt32)
   DBool(Bool)
   DString(String)
   DBinary(Bytes)
-  DTime(Int)
-  DColor(UInt)
-  DVector(Int, Array[UInt])
-  DArray(Int, Array[DMXValue])
+  DTime(Int32)
+  DColor(UInt32)
+  DVector(Int32, Array[UInt32])
+  DArray(Int32, Array[DMXValue])
 } derive(Eq, Debug)
 
 ///|
@@ -31,7 +31,7 @@ pub(all) struct DMXElement {
 ///|
 pub(all) struct DMXDocument {
   format_name : String
-  format_version : Int
+  format_version : Int32
   root : String
   elements : Array[DMXElement]
 } derive(Eq, Debug)
@@ -74,7 +74,7 @@ fn dmx_types() -> Array[String] {
 }
 
 ///|
-fn dmx_type(value : DMXValue) -> Int {
+fn dmx_type(value : DMXValue) -> Int32 {
   match value {
     DElement(_) => 1
     DInt(_) => 2
@@ -92,7 +92,7 @@ fn dmx_type(value : DMXValue) -> Int {
 fn dmx_string_check(
   text : String,
   options : BinaryOptions,
-  total : Ref[Int],
+  total : Ref[Int32],
 ) -> Unit raise {
   let size = @utf8.encode(text[:]).length()
   if text.contains("\u0000") ||
@@ -107,8 +107,8 @@ fn dmx_string_check(
 fn dmx_value_check(
   value : DMXValue,
   options : BinaryOptions,
-  total : Ref[Int],
-  nodes : Ref[Int],
+  total : Ref[Int32],
+  nodes : Ref[Int32],
   array : Bool,
 ) -> Unit raise {
   nodes.val += 1
@@ -173,8 +173,8 @@ fn dmx_validate(document : DMXDocument, options : BinaryOptions) -> Unit raise {
     raise InvalidBinary(0, "Invalid DMX document metadata")
   }
   let ids : Map[String, Bool] = Map([])
-  let total : Ref[Int] = { val: 0, }
-  let nodes : Ref[Int] = { val: 0, }
+  let total : Ref[Int32] = { val: 0, }
+  let nodes : Ref[Int32] = { val: 0, }
   for element in document.elements {
     if dmx_uuid(element.id) != element.id ||
       ids.contains(element.id) ||

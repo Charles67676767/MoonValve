@@ -34,6 +34,11 @@ with tempfile.TemporaryDirectory(prefix='moonvalve-package-') as temporary:
         assert hashlib.sha256((folder / filename).read_bytes()).hexdigest() == digest, filename
     binary = folder / ('moonvalve.exe' if (folder / 'moonvalve.exe').exists() else 'moonvalve')
     version = subprocess.run([str(binary), '--version'], check=True, capture_output=True, encoding='utf-8')
+    build = json.loads((folder / 'BUILD.json').read_text())
+    contract = json.loads((root / 'docs/api-contract.json').read_text())
+    assert build['toolchain'] == contract['toolchain']
+    assert build['minimum_moonc'] == json.loads(version.stdout)['minimum_moonc']
+    assert tuple(map(int, build['minimum_moonc'].split('.'))) >= (0, 10, 16)
     assert json.loads(version.stdout)['version'] == json.loads((folder / 'BUILD.json').read_text())['version']
     assert json.loads(version.stdout)['version'] == module_version
     result = subprocess.run([str(binary), 'parse', '-'], input='root { key "中文😀" key two }', encoding='utf-8', check=True, capture_output=True)

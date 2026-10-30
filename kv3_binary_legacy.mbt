@@ -3,7 +3,7 @@ priv struct KV3LegacyReader {
   input : ValveBytes
   strings : Array[String]
   options : BinaryOptions
-  mut nodes : Int
+  mut nodes : Int32
 }
 
 ///|
@@ -19,7 +19,7 @@ fn KV3LegacyReader::string(self : KV3LegacyReader) -> String raise BinaryError {
 ///|
 fn KV3LegacyReader::tag(
   self : KV3LegacyReader,
-) -> (Int, String) raise BinaryError {
+) -> (Int32, String) raise BinaryError {
   let tag = self.input.uint(1).to_int()
   (
     tag & 127,
@@ -34,9 +34,9 @@ fn KV3LegacyReader::tag(
 ///|
 fn KV3LegacyReader::value(
   self : KV3LegacyReader,
-  tag : Int,
+  tag : Int32,
   flag : String,
-  depth : Int,
+  depth : Int32,
 ) -> KV3BinaryValue raise {
   self.nodes += 1
   if depth > self.options.max_depth || self.nodes > self.options.max_entries {
@@ -65,7 +65,7 @@ fn KV3LegacyReader::value(
     9 => {
       let count = self.input.count(self.options.max_entries - self.nodes)
       let entries : Array[(String, KV3BinaryValue)] = []
-      let seen : Map[String, Int] = Map([])
+      let seen : Map[String, Int32] = Map([])
       for _ in 0..<count {
         let key = self.string()
         let (kind, annotation) = self.tag()

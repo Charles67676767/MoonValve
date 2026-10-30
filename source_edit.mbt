@@ -1,11 +1,11 @@
 ///|
 priv struct SourceSpan {
-  path : Array[Int]
-  key_start : Int
-  key_end : Int
-  value_start : Int
-  value_end : Int
-  entry_end : Int
+  path : Array[Int32]
+  key_start : Int32
+  key_end : Int32
+  value_start : Int32
+  value_end : Int32
+  entry_end : Int32
 }
 
 ///|
@@ -25,7 +25,7 @@ struct SourceDocument {
 ///|
 pub fn parse_preserving(
   input : String,
-  options? : ParseOptions = ParseOptions::default(),
+  options~ : ParseOptions = ParseOptions::default(),
 ) -> SourceDocument raise {
   if options.conditions is Some(_) {
     raise InvalidEdit(
@@ -79,7 +79,7 @@ pub fn SourceDocument::evaluate(
 ///|
 fn SourceDocument::span(
   self : SourceDocument,
-  path : Array[Int],
+  path : Array[Int32],
 ) -> SourceSpan raise EditError {
   match self.span_index.get(index_key(path)) {
     Some(span) => span
@@ -98,7 +98,7 @@ pub fn SourceDocument::edit(
 ) -> SourceDocument raise {
   // Validate the operation before touching source and determine the exact indices.
   let expected = self.doc.edit(path, operation)
-  let indices : Array[Int] = []
+  let indices : Array[Int32] = []
   let mut selected = Value::Object(self.doc.entries)
   for selector in path {
     guard selected is Object(entries) else {
@@ -216,7 +216,7 @@ fn SourceDocument::newline(self : SourceDocument) -> String {
 }
 
 ///|
-fn SourceDocument::line_indent(self : SourceDocument, offset : Int) -> String {
+fn SourceDocument::line_indent(self : SourceDocument, offset : Int32) -> String {
   let chars = self.chars
   let mut start = offset
   while start > 0 && chars[start - 1] != '\n' && chars[start - 1] != '\r' {
@@ -288,7 +288,7 @@ fn SourceDocument::render_entries(
   entries : Array[Entry],
   indent : String,
   quoted : Bool,
-  depth? : Int = 0,
+  depth~ : Int32 = 0,
 ) -> Unit raise WriteError {
   if depth > 128 {
     raise InvalidDocument("Source rendering exceeds 128 levels")

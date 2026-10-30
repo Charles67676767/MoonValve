@@ -27,7 +27,7 @@ struct KV3Query {
 ///|
 priv struct KV3Match {
   path : Array[String]
-  indices : Array[Int]
+  indices : Array[Int32]
   value : KV3Value
 }
 
@@ -178,7 +178,7 @@ fn kv3_integer_parts(text : String) -> (Bool, String) {
 }
 
 ///|
-fn kv3_integer_compare(a : String, b : String) -> Int {
+fn kv3_integer_compare(a : String, b : String) -> Int32 {
   let (an, av) = kv3_integer_parts(a)
   let (bn, bv) = kv3_integer_parts(b)
   if an != bn {
@@ -197,7 +197,7 @@ fn kv3_integer_compare(a : String, b : String) -> Int {
 }
 
 ///|
-fn kv3_scalar_order(a : KV3Value, b : KV3Value) -> Int? {
+fn kv3_scalar_order(a : KV3Value, b : KV3Value) -> Int32? {
   match (a, b) {
     (KV3Integer(a), KV3Integer(b)) => Some(kv3_integer_compare(a, b))
     (KV3Float(a), KV3Float(b)) => {
@@ -266,10 +266,10 @@ fn KV3Query::walk(
   self : KV3Query,
   value : KV3Value,
   path : Array[String],
-  indices : Array[Int],
+  indices : Array[Int32],
   states : Array[Bool],
   result : Array[KV3Match],
-  visited : Ref[Int],
+  visited : Ref[Int32],
   root : Bool,
 ) -> Unit raise {
   visited.val += 1
@@ -405,7 +405,7 @@ fn kv3_prefix_value(
 fn KV3SourceDocument::snapshot_value(
   self : KV3SourceDocument,
   value : KV3Value,
-  path : Array[Int],
+  path : Array[Int32],
   operations : Map[String, KV3Edit],
   patches : Array[TextPatch],
   newline : String,

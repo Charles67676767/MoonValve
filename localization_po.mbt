@@ -135,8 +135,8 @@ pub fn Localization::import_po(
   self : Localization,
   catalog : POCatalog,
   language : String,
-  syntax? : String = "valve",
-  allow_fuzzy? : Bool = false,
+  syntax~ : String = "valve",
+  allow_fuzzy~ : Bool = false,
 ) -> LocalizationImport raise {
   localization_validate(self)
   po_validate(catalog)

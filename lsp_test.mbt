@@ -1,5 +1,5 @@
 ///|
-fn lsp_request(verb : String, params : Json, id? : Int = 1) -> Json {
+fn lsp_request(verb : String, params : Json, id~ : Int32 = 1) -> Json {
   Json::object({
     "jsonrpc": Json::string("2.0"),
     "method": Json::string(verb),

@@ -17,8 +17,8 @@ pub(all) struct ResourceReference {
   resource : String
   target : String?
   status : String
-  start : Int
-  end : Int
+  start : Int32
+  end : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -108,13 +108,13 @@ fn resource_target(path : String, roots : Array[ResourceRoot]) -> String? raise 
 /// localization/entity names are deliberately not guessed to be filesystem paths.
 pub fn KV3SourceDocument::resources(
   self : KV3SourceDocument,
-  roots? : Array[ResourceRoot] = [],
+  roots~ : Array[ResourceRoot] = [],
 ) -> Array[ResourceReference] raise {
   resource_roots(roots)
   let result : Array[ResourceReference] = []
   fn walk(
     value : KV3Value,
-    indices : Array[Int],
+    indices : Array[Int32],
     path : Array[String],
   ) -> Unit raise {
     if value is KV3Flag(flag, KV3String(resource)) && flag == "resource" {
@@ -262,7 +262,7 @@ pub fn KV3SourceDocument::rewrite_resources(
   }
   let patches : Array[TextPatch] = []
   let operations : Map[String, KV3Edit] = Map([])
-  let indices_by_start : Map[Int, String] = Map([])
+  let indices_by_start : Map[Int32, String] = Map([])
   for key, span in self.spans {
     indices_by_start[span.start] = key
   }

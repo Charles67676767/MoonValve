@@ -8,11 +8,11 @@ priv enum DMXToken {
 ///|
 priv struct DMXTextReader {
   chars : Array[Char]
-  mut pos : Int
+  mut pos : Int32
   mut pending : DMXToken?
   elements : Array[DMXElement]
   options : BinaryOptions
-  mut values : Int
+  mut values : Int32
 }
 
 ///|
@@ -100,7 +100,7 @@ fn DMXTextReader::expect(self : DMXTextReader, c : Char) -> Unit raise {
 }
 
 ///|
-fn dmx_float_bits(text : String) -> UInt raise {
+fn dmx_float_bits(text : String) -> UInt32 raise {
   match text.to_lower() {
     "nan" => 0x7fc00000U
     "inf" | "+inf" | "infinity" => 0x7f800000U
@@ -129,7 +129,7 @@ fn dmx_words(text : String) -> Array[String] {
 }
 
 ///|
-fn dmx_scalar_text(tag : Int, text : String) -> DMXValue raise {
+fn dmx_scalar_text(tag : Int32, text : String) -> DMXValue raise {
   match tag {
     1 => DElement(if text.is_empty() { None } else { Some(dmx_uuid(text)) })
     2 => DInt(@strconv.parse_int(text[:]))
@@ -180,7 +180,7 @@ fn dmx_scalar_text(tag : Int, text : String) -> DMXValue raise {
       }
       DColor(bits)
     }
-    9..=14 => {
+    9..<=14 => {
       let parts = dmx_words(text)
       if parts.length() != [2, 3, 4, 3, 4, 16][tag - 9] {
         raise InvalidBinary(0, "DMX vector dimension mismatch")
@@ -195,7 +195,7 @@ fn dmx_scalar_text(tag : Int, text : String) -> DMXValue raise {
 fn DMXTextReader::element(
   self : DMXTextReader,
   kind : String,
-  depth : Int,
+  depth : Int32,
 ) -> String raise {
   if depth > self.options.max_depth ||
     self.elements.length() >= self.options.max_entries {
@@ -296,7 +296,7 @@ fn dmx_fix_reference(value : DMXValue, ids : Map[String, String]) -> DMXValue {
 fn dmx_read_text(
   text : String,
   format_name : String,
-  format_version : Int,
+  format_version : Int32,
   options : BinaryOptions,
 ) -> DMXDocument raise {
   let reader = DMXTextReader::{
@@ -353,7 +353,7 @@ fn dmx_read_text(
 ///|
 pub fn read_dmx(
   bytes : Bytes,
-  options? : BinaryOptions = BinaryOptions::default(),
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> DMXDocument raise {
   check_binary_options(options)
   if bytes.length() > options.max_bytes {
@@ -431,7 +431,7 @@ fn dmx_scalar_string(value : DMXValue) -> String raise {
 /// IEEE NaN payloads belong to binary serialization; text normalizes them.
 pub fn stringify_dmx(
   document : DMXDocument,
-  options? : BinaryOptions = BinaryOptions::default(),
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> String raise {
   dmx_validate(document, options)
   let output = StringBuilder()

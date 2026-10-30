@@ -1,5 +1,5 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution header only.
+// MoonValve modifications: attribution header only; MoonBit 0.10.18 formatter normalization (type names and optional parameter syntax).
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
@@ -33,12 +33,12 @@ fn xxh64_merge_round(acc : UInt64, val : UInt64) -> UInt64 {
 }
 
 ///|
-fn xxh64_rotl(val : UInt64, bits : Int) -> UInt64 {
+fn xxh64_rotl(val : UInt64, bits : Int32) -> UInt64 {
   (val << bits) | (val >> (64 - bits))
 }
 
 ///|
-fn xxh64_read32(data : BytesView, offset : Int) -> UInt64 {
+fn xxh64_read32(data : BytesView, offset : Int32) -> UInt64 {
   data.unsafe_get(offset).to_uint().to_uint64() |
   (data.unsafe_get(offset + 1).to_uint().to_uint64() << 8) |
   (data.unsafe_get(offset + 2).to_uint().to_uint64() << 16) |
@@ -46,7 +46,7 @@ fn xxh64_read32(data : BytesView, offset : Int) -> UInt64 {
 }
 
 ///|
-fn xxh64_read64(data : BytesView, offset : Int) -> UInt64 {
+fn xxh64_read64(data : BytesView, offset : Int32) -> UInt64 {
   data.unsafe_get(offset).to_uint().to_uint64() |
   (data.unsafe_get(offset + 1).to_uint().to_uint64() << 8) |
   (data.unsafe_get(offset + 2).to_uint().to_uint64() << 16) |
@@ -70,7 +70,7 @@ fn xxh64_avalanche(h_ : UInt64) -> UInt64 {
 
 ///|
 /// Computes XXH64 checksum of the given bytes in one shot.
-pub fn xxh64(data : BytesView, seed? : UInt64 = 0UL) -> UInt64 {
+pub fn xxh64(data : BytesView, seed~ : UInt64 = 0UL) -> UInt64 {
   let h = XXH64::new(seed~)
   h.update(data)
   h.checksum64()
@@ -86,12 +86,12 @@ pub struct XXH64 {
   mut v4 : UInt64
   mut total_len : UInt64
   buf : FixedArray[Byte]
-  mut buf_used : Int
+  mut buf_used : Int32
 }
 
 ///|
 /// Creates a new XXH64 hasher.
-pub fn XXH64::new(seed? : UInt64 = 0UL) -> XXH64 {
+pub fn XXH64::new(seed~ : UInt64 = 0UL) -> XXH64 {
   {
     seed,
     v1: seed + XXH64_PRIME1 + XXH64_PRIME2,
@@ -106,7 +106,7 @@ pub fn XXH64::new(seed? : UInt64 = 0UL) -> XXH64 {
 
 ///|
 /// Returns the hash output size in bytes.
-pub fn XXH64::size(_self : XXH64) -> Int {
+pub fn XXH64::size(_self : XXH64) -> Int32 {
   8
 }
 

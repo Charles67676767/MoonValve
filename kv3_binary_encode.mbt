@@ -8,14 +8,14 @@ priv struct KV3BinaryWriter {
   objects : @buffer.Buffer
   blobs : Array[Bytes]
   names : Array[String]
-  strings : Map[String, Int]
-  version : Int
+  strings : Map[String, Int32]
+  version : Int32
   options : BinaryOptions
-  mut nodes : Int
-  mut arrays : Int
-  mut object_count : Int
-  mut blob_bytes : Int
-  mut scalar_bytes : Int
+  mut nodes : Int32
+  mut arrays : Int32
+  mut object_count : Int32
+  mut blob_bytes : Int32
+  mut scalar_bytes : Int32
 }
 
 ///|
@@ -49,7 +49,7 @@ fn KV3BinaryWriter::string_id(
 fn KV3BinaryWriter::value(
   self : KV3BinaryWriter,
   value : KV3BinaryValue,
-  depth : Int,
+  depth : Int32,
   flag : String,
 ) -> Unit raise {
   if value is BFlag(annotation, inner) {
@@ -157,7 +157,7 @@ fn KV3BinaryWriter::value(
 }
 
 ///|
-fn kv3_write_lane(output : @buffer.Buffer, lane : Bytes, width : Int) -> Unit {
+fn kv3_write_lane(output : @buffer.Buffer, lane : Bytes, width : Int32) -> Unit {
   if lane.is_empty() {
     return
   }
@@ -172,9 +172,9 @@ fn kv3_write_lane(output : @buffer.Buffer, lane : Bytes, width : Int) -> Unit {
 /// and IEEE bits. Container layout is canonical; compressed bytes need not match.
 pub fn encode_kv3_binary(
   document : KV3BinaryDocument,
-  version? : Int = 5,
-  compression? : Int = 0,
-  options? : BinaryOptions = BinaryOptions::default(),
+  version~ : Int32 = 5,
+  compression~ : Int32 = 0,
+  options~ : BinaryOptions = BinaryOptions::default(),
 ) -> Bytes raise {
   check_binary_options(options)
   if (version != 4 && version != 5) || compression < 0 || compression > 2 {

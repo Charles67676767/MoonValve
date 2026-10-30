@@ -17,7 +17,7 @@ fn asset_output(bytes : Bytes, target : String?) -> Unit raise {
 }
 
 ///|
-fn asset_codec(raw : String) -> Int raise {
+fn asset_codec(raw : String) -> Int32 raise {
   match raw {
     "raw" | "0" => 0
     "lz4" | "1" => 1
@@ -55,9 +55,9 @@ fn asset_vpk(file : String) -> @valve.VPKArchive raise {
 ///|
 fn asset_vpk_range(
   file : String,
-  archive : Int,
-  offset : Int,
-  length : Int,
+  archive : Int32,
+  offset : Int32,
+  length : Int32,
 ) -> Bytes raise {
   let source = if archive == 32767 {
     file

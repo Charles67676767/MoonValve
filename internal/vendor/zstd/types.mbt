@@ -1,5 +1,5 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution header only.
+// MoonValve modifications: attribution header only; MoonBit 0.10.18 formatter normalization (type names and optional parameter syntax).
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
@@ -7,7 +7,7 @@
 pub(all) suberror ZstdError {
   InvalidHeader(String)
   CorruptData(String)
-  ChecksumMismatch(expected~ : UInt, got~ : UInt)
+  ChecksumMismatch(expected~ : UInt32, got~ : UInt32)
   WindowTooLarge(String)
   UnexpectedEOF
 } derive(Show)
@@ -44,27 +44,27 @@ pub(all) enum CompressionLevel {
   Fast
   Default
   Best
-  Level(Int)
+  Level(Int32)
 } derive(Eq, Show)
 
 ///|
 /// Zstandard frame magic number.
-const ZSTD_MAGIC : UInt = 0xFD2FB528_U
+const ZSTD_MAGIC : UInt32 = 0xFD2FB528_U
 
 ///|
 /// Block types in Zstandard.
-const BLOCK_TYPE_RAW : Int = 0
+const BLOCK_TYPE_RAW : Int32 = 0
 
 ///|
-const BLOCK_TYPE_RLE : Int = 1
+const BLOCK_TYPE_RLE : Int32 = 1
 
 ///|
-const BLOCK_TYPE_COMPRESSED : Int = 2
+const BLOCK_TYPE_COMPRESSED : Int32 = 2
 
 ///|
 /// Maximum window size we support (8 MB).
-const MAX_WINDOW_SIZE : Int = 8388608
+const MAX_WINDOW_SIZE : Int32 = 8388608
 
 ///|
 /// Maximum block size (128 KB).
-const MAX_BLOCK_SIZE : Int = 131072
+const MAX_BLOCK_SIZE : Int32 = 131072
