@@ -1,6 +1,6 @@
 # 验证与复现
 
-工具链：`moonc v0.10.14+7d59c7ec9`，同版本 `moonbitlang/core`。Zstandard 使用 `bikallem/compress` 0.3.4（Apache-2.0）；Python/.NET 参考测试不参与产品运行。新增格式验证命令见[资源指南](assets.md)。
+工具链：`moonc v0.10.14+7d59c7ec9`，同版本 `moonbitlang/core`。Zstandard 使用 `bikallem/compress` 0.3.4 的所需源码（Apache-2.0，来源与原始哈希见 `internal/vendor`）；Python/.NET 参考测试不参与产品运行。新增格式验证命令见[资源指南](assets.md)。
 
 ## 核心与命令行
 

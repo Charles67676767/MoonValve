@@ -1,0 +1,10 @@
+// Preserve upstream code; suppress only deprecated API/syntax diagnostics.
+warnings = "-20-27-79"
+
+options(
+  "native-stub": [ "blit_stub.c" ],
+  targets: {
+    "blit_native.mbt": [ "native" ],
+    "blit_non_native.mbt": [ "wasm", "wasm-gc", "js" ],
+  },
+)

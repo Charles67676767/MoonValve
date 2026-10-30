@@ -1,0 +1,2 @@
+// Preserve upstream code; suppress only its deprecated API/syntax diagnostics.
+warnings = "-20-27-79"

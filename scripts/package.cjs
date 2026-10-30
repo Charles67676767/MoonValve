@@ -16,6 +16,8 @@ copy(binary,path.join(destination,process.platform==='win32'?'moonvalve.exe':'mo
 copy(path.join(root,'_build/js/release/build/cmd/main/main.js'),path.join(destination,'moonvalve.cjs'));
 for(const file of ['LICENSE','NOTICE.md','pkg.generated.mbti'])copy(path.join(root,file),path.join(destination,file));
 copyTree(path.join(root,'licenses'),path.join(destination,'licenses'));
+copy(path.join(root,'internal/vendor/README.md'),path.join(destination,'licenses/compression-README.md'));
+copy(path.join(root,'internal/vendor/provenance.json'),path.join(destination,'licenses/compression-provenance.json'));
 copyTree(path.join(root,'docs'),path.join(destination,'docs'));
 copyTree(path.join(root,'fixtures'),path.join(destination,'fixtures'));
 copyTree(path.join(root,'web/editor'),path.join(destination,'web/editor'));

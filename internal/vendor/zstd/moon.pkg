@@ -1,0 +1,12 @@
+import {
+  "Charles67676767/moonvalve/internal/vendor/checksum",
+  "Charles67676767/moonvalve/internal/vendor/blit",
+}
+
+import {
+  "moonbitlang/core/encoding/utf8",
+} for "test"
+
+// Preserve upstream code; suppress only its deprecated API/syntax diagnostics.
+
+warnings = "-20-27-79"

@@ -11,7 +11,7 @@
 
 name = "Charles67676767/moonvalve"
 
-version = "0.8.0"
+version = "0.8.1"
 
 readme = "README.md"
 
@@ -24,7 +24,3 @@ keywords = [ "valve", "keyvalues", "vdf", "steam", "parser" ]
 preferred_target = "wasm-gc"
 
 description = "Ordered Valve KeyValues tooling, source editing, streaming and Steam metadata in MoonBit"
-
-import {
-  "bikallem/compress@0.3.4",
-}

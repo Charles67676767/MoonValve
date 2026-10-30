@@ -2,9 +2,9 @@
 
 **MoonBit 原生 Valve 数据工具库：KeyValues、VPK、VMT、本地化、DMX 与编辑器服务。**
 
-MoonValve 让 MoonBit 程序可以读取、查询和写出 Valve 配置与游戏资源，同时保留 KV1 键顺序和重复项、二进制数值位与 DMX 的 UUID 图身份。格式实现和命令行使用同一份 MoonBit 核心；Zstandard 使用 Apache-2.0 的 MoonBit 依赖 `bikallem/compress`，不调用 Python、Valve SDK 或外部解析器。Python/.NET 仅用于独立兼容性测试。
+MoonValve 让 MoonBit 程序可以读取、查询和写出 Valve 配置与游戏资源，同时保留 KV1 键顺序和重复项、二进制数值位与 DMX 的 UUID 图身份。格式实现和命令行使用同一份 MoonBit 核心；Zstandard 使用 Apache-2.0 的 MoonBit 实现 `bikallem/compress`（所需源码及归属记录见 `internal/vendor`），不调用 Python、Valve SDK 或外部解析器。Python/.NET 仅用于独立兼容性测试。
 
-当前版本为 `0.8.0`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
+当前版本为 `0.8.1`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
 
 新增查询表达式与快照批量修改、跨对象移动复制、批量编辑优化、文本 KV3、多文件引用重构及标准输入输出 LSP。详见 [进阶功能与边界](docs/advanced.md)，[VS Code 扩展](extensions/vscode/README.md) 可通过 VSIX 安装。
 

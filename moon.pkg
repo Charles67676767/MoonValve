@@ -1,5 +1,5 @@
 import {
-  "bikallem/compress/zstd",
+  "Charles67676767/moonvalve/internal/vendor/zstd",
   "moonbitlang/core/buffer",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/encoding/utf16",

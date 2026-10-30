@@ -29,6 +29,7 @@ jobs:
       - run: moon fmt --check
       - run: moon info
       - run: node scripts/check-api.cjs
+      - run: node scripts/check-vendor.cjs
       - run: moon check --target ${{ matrix.target }} --deny-warn
       - run: moon build --target ${{ matrix.target }}
       - run: moon test --target ${{ matrix.target }} --deny-warn
