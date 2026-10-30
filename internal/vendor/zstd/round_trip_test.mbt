@@ -1,5 +1,5 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution header only.
+// MoonValve modifications: attribution, formatting, and explicit try/catch replacing removed try? syntax.
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
@@ -172,7 +172,9 @@ test "round-trip: with raw dictionary" {
   let decompressed = @zstd.decompress(compressed_with_dict, dict~)
   assert_eq(decompressed, data)
   assert_true(compressed_with_dict.length() < compressed_no_dict.length())
-  let missing_dict = try? @zstd.decompress(compressed_with_dict)
+  let missing_dict = Result::Ok(@zstd.decompress(compressed_with_dict)) catch {
+    e => Result::Err(e)
+  }
   match missing_dict {
     Err(_) => ()
     Ok(_) => fail("expected dictionary-backed frame to require the dictionary")

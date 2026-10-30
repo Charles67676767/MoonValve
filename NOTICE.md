@@ -21,7 +21,8 @@ The Zstandard implementation is vendored from `bikallem/compress` 0.3.4
 `bikallem/blit` 0.2.2 (byte operations), under Apache-2.0. Sources and original
 tests are in `internal/vendor`; package imports/manifests are adapted. MoonBit
 formatting normalizes syntax (commas and explicit fn keywords), without algorithm
-changes. Deprecation warnings are scoped to the vendored packages.
+changes. Removed `try?` syntax is replaced with equivalent explicit Result
+try/catch expressions. Deprecation warnings are scoped to the vendored packages.
 `internal/vendor/provenance.json` records original file hashes, paths, versions
 and repository URLs. Both published packages declare Apache-2.0 in metadata and
 README; no additional upstream NOTICE is supplied. The full Apache-2.0 license

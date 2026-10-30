@@ -1,5 +1,5 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution header only.
+// MoonValve modifications: attribution, formatting, and explicit try/catch replacing removed try? syntax.
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
@@ -49,14 +49,14 @@ test "zstd round-trip binary data" {
 ///|
 test "zstd invalid magic" {
   let data : Bytes = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-  let result = try? @zstd.decompress(data)
+  let result = Result::Ok(@zstd.decompress(data)) catch { e => Result::Err(e) }
   guard result is Err(_) else { fail("expected error for invalid magic") }
 }
 
 ///|
 test "zstd truncated data" {
   let data : Bytes = [0x28, 0xB5, 0x2F, 0xFD]
-  let result = try? @zstd.decompress(data)
+  let result = Result::Ok(@zstd.decompress(data)) catch { e => Result::Err(e) }
   guard result is Err(_) else { fail("expected error for truncated data") }
 }
 
@@ -114,7 +114,9 @@ test "zstd frame checksum" {
       compressed[i]
     }
   })
-  let result = try? @zstd.decompress(corrupted)
+  let result = Result::Ok(@zstd.decompress(corrupted)) catch {
+    e => Result::Err(e)
+  }
   guard result is Err(_) else { fail("expected checksum mismatch error") }
 }
 
@@ -136,7 +138,9 @@ test "golden: decompress zstd CLI repeated abc" {
 ///|
 test "zstd reject unsupported sequence modes" {
   let compressed : Bytes = b"\x28\xb5\x2f\xfd\x24\x3c\x4d\x00\x00\x18\x61\x62\x63\x01\x01\xf6\x74\x43\x38\x4b\x20\x2f"
-  let result = try? @zstd.decompress(compressed)
+  let result = Result::Ok(@zstd.decompress(compressed)) catch {
+    e => Result::Err(e)
+  }
   guard result is Err(_) else {
     fail("expected error for unsupported sequence modes")
   }
@@ -306,10 +310,11 @@ test "zstd rejects formatted dictionary id mismatch" {
       dict[i]
     }
   })
-  let result = try? @zstd.decompress(
-    formatted_dict_fixture_compressed(),
-    dict=wrong,
-  )
+  let result = Result::Ok(
+    @zstd.decompress(formatted_dict_fixture_compressed(), dict=wrong),
+  ) catch {
+    e => Result::Err(e)
+  }
   match result {
     Err(_) => ()
     Ok(_) => fail("expected dictionary id mismatch")

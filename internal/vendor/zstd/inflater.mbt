@@ -1,5 +1,5 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution header only.
+// MoonValve modifications: attribution, formatting, and explicit try/catch replacing removed try? syntax.
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
@@ -35,7 +35,9 @@ struct Inflater(InflaterState)
 
 ///|
 pub fn Inflater::new(dict? : Bytes = Bytes::default()) -> Inflater {
-  let parsed = try? parse_dictionary_bytes(dict)
+  let parsed = Result::Ok(parse_dictionary_bytes(dict)) catch {
+    e => Result::Err(e)
+  }
   match parsed {
     Ok(dict) =>
       Inflater({
@@ -292,17 +294,21 @@ fn decode_compressed_block(
         ZstdError::CorruptData("compressed block without frame header"),
       )
   }
-  let result = try? decompress_block(
-    input[:],
-    s.input_pos,
-    block_size,
-    header.window_size,
-    s.history,
-    s.dict.content[:],
-    s.rep,
-    s.prev_lit_table,
-    s.prev_seq_tables,
-  )
+  let result = Result::Ok(
+    decompress_block(
+      input[:],
+      s.input_pos,
+      block_size,
+      header.window_size,
+      s.history,
+      s.dict.content[:],
+      s.rep,
+      s.prev_lit_table,
+      s.prev_seq_tables,
+    ),
+  ) catch {
+    e => Result::Err(e)
+  }
   match result {
     Err(e) => Err(e)
     Ok((block, next_lit, next_seq)) => {

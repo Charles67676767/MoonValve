@@ -1,5 +1,5 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution header only.
+// MoonValve modifications: attribution, formatting, and explicit try/catch replacing removed try? syntax.
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
@@ -104,7 +104,9 @@ fn parse_dictionary_bytes(dict : Bytes) -> ZstdDictionary raise ZstdError {
 
 ///|
 fn parse_dictionary_for_encoder(dict : Bytes) -> ZstdDictionary {
-  let parsed = try? parse_dictionary_bytes(dict)
+  let parsed = Result::Ok(parse_dictionary_bytes(dict)) catch {
+    e => Result::Err(e)
+  }
   match parsed {
     Ok(parsed) => parsed
     Err(_) => {

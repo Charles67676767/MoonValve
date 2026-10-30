@@ -9,6 +9,20 @@ permissions:
   contents: read
 
 jobs:
+  docs-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hustcer/setup-moonbit@v1
+        with:
+          version: '0.10.18+6c83a7f62'
+          core-version: '0.10.18+6c83a7f62'
+      - run: moon version --all
+      - run: moon update
+      - run: moon check --target js
+      - run: moon test --target js
+      - run: moon doc
+
   core:
     runs-on: ubuntu-latest
     strategy:
