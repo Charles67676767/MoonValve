@@ -1,3 +1,7 @@
+// Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
+// MoonValve modifications: attribution header only.
+// Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
+
 ///|
 priv enum InflatePhase {
   FrameHeader

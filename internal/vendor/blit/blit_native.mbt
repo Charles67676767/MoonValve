@@ -1,3 +1,7 @@
+// Vendored from bikallem/blit 0.2.2, licensed under Apache-2.0.
+// MoonValve modifications: attribution header only.
+// Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
+
 ///|
 /// Fast byte-level blit using libc memmove (vectorized).
 /// FixedArray[Byte] has the same memory layout as Bytes in native backend.

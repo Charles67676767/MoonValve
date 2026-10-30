@@ -1,3 +1,7 @@
+// Vendored from bikallem/blit 0.2.2, licensed under Apache-2.0.
+// MoonValve modifications: attribution header only.
+// Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
+
 ///|
 /// Copy `length` bytes from `src` (BytesView) at `src_offset` into `dst` (FixedArray) at `dst_offset`.
 /// Note: `src_offset` is relative to the underlying Bytes, not the view's start.

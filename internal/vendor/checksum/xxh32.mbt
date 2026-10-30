@@ -1,3 +1,7 @@
+// Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
+// MoonValve modifications: attribution header and moon fmt syntax/format normalization.
+// Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
+
 ///|
 /// XXH32 prime constants.
 const XXH32_PRIME1 : UInt = 0x9E3779B1_U

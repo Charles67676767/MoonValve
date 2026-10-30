@@ -6,7 +6,7 @@ These Apache-2.0 sources come from the published Mooncakes packages
 
 Their original module manifests use `moon.mod.json`, which the Mooncakes
 documentation builder no longer accepts. MoonValve uses local `moon.pkg`
-imports instead. The MoonBit formatter normalizes syntax and formatting (trailing commas and
+imports instead. Source files carry explicit attribution and modification notices. The MoonBit formatter normalizes syntax and formatting (trailing commas and
 explicit `fn` keywords); algorithms are unchanged. Deprecation diagnostics are
 scoped to these vendor packages. Original and vendored normalized-LF
 file hashes and paths are recorded in [provenance.json](provenance.json).

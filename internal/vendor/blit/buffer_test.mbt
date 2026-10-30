@@ -1,3 +1,7 @@
+// Vendored from bikallem/blit 0.2.2, licensed under Apache-2.0.
+// MoonValve modifications: attribution header only.
+// Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
+
 ///|
 test "Buffer::new creates empty buffer" {
   let buf = @blit.Buffer::new()

@@ -1,3 +1,7 @@
+// Vendored from bikallem/blit 0.2.2, licensed under Apache-2.0.
+// MoonValve modifications: attribution header and moon fmt syntax/format normalization.
+// Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
+
 ///|
 /// Growable byte buffer backed by FixedArray[Byte].
 /// All internal access is bounds-check free.

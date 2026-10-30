@@ -1,3 +1,7 @@
+// Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
+// MoonValve modifications: attribution header and moon fmt syntax/format normalization.
+// Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
+
 ///|
 /// Hasher is a trait for computing rolling checksums over byte data.
 /// Aligned with moonbitlang/x CryptoHasher but returns UInt for 32-bit checksums.

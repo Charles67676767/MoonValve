@@ -1,3 +1,7 @@
+// Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
+// MoonValve modifications: attribution header only.
+// Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
+
 ///|
 // XXH64 test vectors from the xxHash specification.
 // Reference: https://github.com/Cyan4973/xxHash/blob/dev/doc/xxhash_spec.md

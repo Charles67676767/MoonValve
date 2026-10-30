@@ -1,3 +1,7 @@
+// Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
+// MoonValve modifications: attribution header only.
+// Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
+
 ///|
 /// XXH64 prime constants.
 const XXH64_PRIME1 : UInt64 = 0x9E3779B185EBCA87UL
