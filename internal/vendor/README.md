@@ -19,4 +19,4 @@ Upstream repositories:
 
 Both package metadata and READMEs declare Apache-2.0; neither distributed
 an additional NOTICE file. The license is included in
-[Apache-2.0.txt](../../../licenses/Apache-2.0.txt).
+[Apache-2.0.txt](https://github.com/Charles67676767/MoonValve/blob/main/licenses/Apache-2.0.txt).
