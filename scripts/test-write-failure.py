@@ -13,7 +13,8 @@ if os.name != 'posix':
 import resource
 root = pathlib.Path(__file__).resolve().parents[1]
 native = '--native' in sys.argv
-command = [str(root / '_build/native/release/build/cmd/main/main')] if native else ['node', str(root / '_build/js/release/build/cmd/main/main.js')]
+native_binary = next((p for p in [root / '_build/native/release/build/cmd/main/main', root / '_build/native/release/build/cmd/main/main.exe'] if p.is_file()), None)
+command = [str(native_binary)] if native else ['node', str(root / '_build/js/release/build/cmd/main/main.js')]
 
 def limit_writes():
     resource.setrlimit(resource.RLIMIT_FSIZE, (64, 64))
