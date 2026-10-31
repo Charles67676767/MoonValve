@@ -1,11 +1,9 @@
+import {createCoreClient} from './worker-client.mjs';
 import {setupTools} from './tools.mjs';
 import {setupEditing} from './editing.mjs';
 const $=id=>document.getElementById(id),editor=$('editor');
-const worker=new Worker(new URL('./worker.mjs',import.meta.url),{type:'module'});
-const pending=new Map();let sequence=0;
-worker.onmessage=({data})=>{const promise=pending.get(data.id);if(!promise)return;pending.delete(data.id);data.response.ok?promise.resolve(data.response.result):promise.reject(data.response.error);};
-worker.onerror=event=>{for(const promise of pending.values())promise.reject({message:event.message||'解析器加载失败，请先构建编辑器'});pending.clear();};
-function core(request){return new Promise((resolve,reject)=>{const id=++sequence;pending.set(id,{resolve,reject});worker.postMessage({id,request},request.buffer?[request.buffer]:[]);});}
+const client=createCoreClient(()=>new Worker(new URL('./worker.mjs',import.meta.url),{type:'module'}));
+const core=request=>client.request(request);
 let tree=[],selected=null,filename='example.vdf',original='',history=[],previewValue=null,virtualFiles={},valid=false,timer,revision=0;
 let previewApply=null,origins=[],projectOriginals={};
 const subscribers=[];
@@ -29,17 +27,17 @@ function highlight(scalar){const offset=[...editor.value].slice(0,scalar).join('
 async function applyText(text){history.push(editor.value);if(history.length>20)history.shift();editor.value=text;$('undo').disabled=false;await validate();}
 function base64(bytes){let result='';for(let i=0;i<bytes.length;i+=32768)result+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(result);}
 function fromBase64(text){return Uint8Array.from(atob(text),c=>c.charCodeAt(0));}
-async function openFile(file){if(file.size>16*1024*1024)throw {message:'文件超过 16 MiB 限制'};const bytes=new Uint8Array(await file.arrayBuffer());if(bytes.includes(0)||bytes[0]===8){const result=await core({action:'binary-decode',base64:base64(bytes)});await load(JSON.stringify(result.tree,null,2),file.name,'binary');}else{const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);if(/\.kv3$/i.test(file.name)||text.trimStart().startsWith('<!-- kv3'))await tools.loadKV3(text,file.name);else {tools.show('config');await load(text,file.name);}}}
+async function openFile(file){valid=false;revision++;previewApply=null;previewValue=null;if(file.size>16*1024*1024)throw {message:'文件超过 16 MiB 限制'};const bytes=new Uint8Array(await file.arrayBuffer());if(bytes.includes(0)||bytes[0]===8){const result=await core({action:'binary-decode',base64:base64(bytes)});await load(JSON.stringify(result.tree,null,2),file.name,'binary');}else{const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);if(/\.kv3$/i.test(file.name)||text.trimStart().startsWith('<!-- kv3'))await tools.loadKV3(text,file.name);else {tools.show('config');await load(text,file.name);}}}
 async function previewChange(op){if(!valid||!selected)throw {message:'请先选择有效条目'};const entry=selected.length?getEntry(selected):{value:tree};let change={path:selectors(selected),op};if(op==='replace')change.value=$('value').value;if(op==='rename')change.key=$('key-name').value;if(op==='insert'){change.index=entry.value.length;change.entry={key:$('new-key').value,value:$('new-value').value};}
   if(typed()){const result=structuredClone(tree);let entries=result;for(const index of selected.slice(0,-1))entries=entries[index].value;const item=selected.length?entries[selected.at(-1)]:{value:result};if(op==='replace')item.value=$('value').value;if(op==='rename')item.key=$('key-name').value;if(op==='remove')entries.splice(selected.at(-1),1);if(op==='insert')item.value.push({key:$('new-key').value,type:'string',value:$('new-value').value});await core({action:'binary-encode',tree:result});showPreview(JSON.stringify(result,null,2));}
   else {const result=await core({action:'apply',text:editor.value,changes:[change],...options()});showPreview(result.text);}}
 function guarded(fn){return async(...args)=>{try{await fn(...args);}catch(error){status(error.message||String(error),true);}};}
 function download(bytes,name,type){const url=URL.createObjectURL(new Blob([bytes],{type}));const link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-$('open').onclick=()=>$('file-input').click();$('file-input').onchange=guarded(async event=>{if(event.target.files[0])await openFile(event.target.files[0]);event.target.value='';});
+$('open').onclick=()=>$('file-input').click();$('file-input').onchange=guarded(async event=>{try{if(event.target.files[0])await openFile(event.target.files[0]);}finally{event.target.value='';}});
 $('download').onclick=guarded(async()=>{if(!valid)throw {message:'请先修正错误并重新解析'};const result=typed()?fromBase64((await core({action:'binary-encode',tree:JSON.parse(editor.value)})).base64):new TextEncoder().encode(editor.value);download(result,filename.replace(/(\.[^.]*)?$/,'.edited$1'),'application/octet-stream');status('已生成下载副本 · 原始文件保持不变');});
 $('export-json').onclick=guarded(async()=>{await validate();if(!valid)return;download(JSON.stringify(tree,null,2),filename+'.json','application/json');});
 for(const op of ['replace','rename','remove','insert'])$(op).onclick=guarded(()=>previewChange(op));
-$('apply').onclick=guarded(async()=>{const apply=previewApply;$('preview').close();if(apply)await apply();else await applyText(previewValue);});
+$('apply').onclick=guarded(async()=>{const apply=previewApply;$('preview').close();if(apply)await apply();else {if(previewValue===null)throw new Error('输入已变化，请重新预览。');await applyText(previewValue);}});
 $('undo').onclick=guarded(async()=>{if(!history.length)return;editor.value=history.pop();$('undo').disabled=!history.length;await validate();});
 editor.oninput=()=>{valid=false;updateGutter();clearTimeout(timer);timer=setTimeout(validate,450);};editor.onscroll=()=>{$('gutter').scrollTop=editor.scrollTop;};
 editor.onkeydown=event=>{if(event.key==='Tab'){event.preventDefault();const start=editor.selectionStart;editor.setRangeText('  ',start,editor.selectionEnd,'end');editor.dispatchEvent(new Event('input'));}};

@@ -1,0 +1,14 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),os=require('node:os'),{spawnSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..'),native=process.argv.includes('--native'),exe=native?['_build/native/release/build/cmd/main/main.exe','_build/native/release/build/cmd/main/main'].map(n=>path.join(root,n)).find(fs.existsSync):path.join(root,'_build/js/release/build/cmd/main/main.js'),temp=fs.mkdtempSync(path.join(os.tmpdir(),'moonvalve-recovery-'));
+function run(args,status){const r=spawnSync(native?exe:process.execPath,native?args:[exe,...args],{timeout:20000,maxBuffer:8*1024*1024});if(r.error)throw r.error;assert.equal(r.status,status,r.stderr.toString());return r;}
+const write=(n,b)=>{const p=path.join(temp,n);fs.writeFileSync(p,b);return p;};
+try{
+  const catalog=JSON.parse(run(['capabilities'],0).stdout);assert.deepEqual(catalog,JSON.parse(fs.readFileSync(path.join(root,'capabilities.json'))));
+  const manifest=write('files.json',JSON.stringify({'a.txt':Buffer.from('first').toString('base64'),'z.txt':Buffer.from('last').toString('base64')})),valid=run(['vpk-create',manifest],0).stdout;
+  const corrupted=Buffer.from(valid);corrupted[corrupted.length-1]^=1;const file=write('bad_dir.vpk',corrupted),out=path.join(temp,'partial');run(['vpk-extract-all',file,out],2);assert.ok(!fs.existsSync(out),'CRC failure must leave no partial output directory');
+  const existing=write('existing.txt','DO NOT REPLACE'),good=write('good_dir.vpk',valid);run(['vpk-extract',good,'a.txt',existing],2);assert.equal(fs.readFileSync(existing,'utf8'),'DO NOT REPLACE');
+  const meta=Buffer.alloc(18);meta.writeUInt16LE(12,6);meta.writeUInt32LE(0x80000000,8);meta.writeUInt32LE(1,12);meta.writeUInt16LE(65535,16);const tree=Buffer.concat([Buffer.from('txt\0 \0huge\0'),meta,Buffer.from('\0\0\0')]),header=Buffer.alloc(12);header.writeUInt32LE(0x55aa1234);header.writeUInt32LE(1,4);header.writeUInt32LE(tree.length,8);const huge=write('huge_dir.vpk',Buffer.concat([header,tree]));const refused=run(['vpk-index',huge],2);assert.match(refused.stderr.toString(),/2147483647/);
+  const original=Buffer.from('root { k original }'),config=write('config.vdf',original),plan=write('plan.json',JSON.stringify([{path:[{key:'root',occurrence:0},{key:'k',occurrence:0}],op:'replace',value:'changed'}]));fs.mkdirSync(config+'.bak');run(['edit',config,plan,'--in-place'],2);assert.deepEqual(fs.readFileSync(config),original);assert.ok(fs.statSync(config+'.bak').isDirectory());
+  if(process.platform!=='win32'){const link=path.join(temp,'linked');fs.symlinkSync(temp,link,'dir');run(['vpk-extract-all',good,link],2);assert.deepEqual(fs.readFileSync(config),original);}
+  console.log('Capability identity, CRC rollback, no-overwrite, backup collision, VPK offset boundary and supported-platform link refusal passed ('+(native?'native':'js')+')');
+}finally{fs.rmSync(temp,{recursive:true,force:true});}

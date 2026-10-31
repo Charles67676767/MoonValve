@@ -135,12 +135,25 @@ fn host_save(
     @utf8.encode(path[:]).length() > 32767 {
     raise InvalidArgument("Saving requires a valid file path")
   }
-  if native_save(os_path(path), before, before.length(), after, after.length()) !=
-    0 {
-    raise InvalidArgument(
-      "Save failed: input changed, backup exists, or filesystem error",
-    )
+  let message = match
+    native_save(os_path(path), before, before.length(), after, after.length()) {
+    0 => return
+    1 =>
+      "Save failed: target must be a readable regular file; check the path and permissions"
+    2 =>
+      "Save refused: input changed or cannot be read; reload and preview again"
+    3 =>
+      "Save failed: cannot write temporary output; check free space, file-size limits and permissions"
+    4 =>
+      "Save refused: cannot create exclusive .bak backup; preserve any existing backup and use a new working copy"
+    5 =>
+      "Save failed: cannot write backup; incomplete owned files were cleaned; check free space and permissions"
+    6 =>
+      "Save refused: input changed before replacement; reload and preview again; completed backup retained"
+    _ =>
+      "Save failed: cannot replace target; check whether another application holds the file; completed backup retained"
   }
+  raise InvalidArgument(message)
 }
 
 ///|

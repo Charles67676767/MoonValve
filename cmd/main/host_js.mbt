@@ -203,7 +203,7 @@ extern "js" fn host_save_impl(
   after : Bytes,
 ) -> String =
   #| function(target,before,after) {
-  #|   const fs=require('node:fs'), crypto=require('node:crypto'); let temporary,backupCreated=false;
+  #|   const fs=require('node:fs'), crypto=require('node:crypto'); let temporary,backupCreated=false,backupComplete=false;
   #|   const backup=target+'.bak';
   #|   try {
   #|     const stat=fs.lstatSync(target); if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Target must be a regular file');
@@ -213,10 +213,11 @@ extern "js" fn host_save_impl(
   #|     try {fs.writeFileSync(fd,Buffer.from(after));fs.fchmodSync(fd,stat.mode);fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
   #|     const backupFd=fs.openSync(backup,'wx',stat.mode); backupCreated=true;
   #|     try {fs.writeFileSync(backupFd,Buffer.from(before));fs.fsyncSync(backupFd);} finally {fs.closeSync(backupFd);}
+  #|     backupComplete=true;
   #|     if (!fs.readFileSync(target).equals(Buffer.from(before))) throw new Error('Input changed before replacement');
   #|     fs.renameSync(temporary,target); temporary=undefined; return '';
   #|   } catch(e) {return e.message || 'Save failed';}
-  #|   finally {if(temporary) {try{fs.unlinkSync(temporary);}catch{}}}
+  #|   finally {if(temporary) {try{fs.unlinkSync(temporary);}catch{}}if(backupCreated&&!backupComplete){try{fs.unlinkSync(backup);}catch{}}}
   #| }
 
 ///|

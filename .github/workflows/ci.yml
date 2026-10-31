@@ -42,6 +42,8 @@ jobs:
       - run: moon update
       - run: moon fmt --check
       - run: moon info
+      - run: node scripts/check-doc-links.cjs
+      - run: node scripts/generate-capabilities.cjs --check
       - run: node scripts/check-api.cjs
       - run: node scripts/check-vendor.cjs
       - run: moon check --target ${{ matrix.target }} --deny-warn
@@ -54,6 +56,12 @@ jobs:
         run: moon build --target js --release
       - if: matrix.target == 'js'
         run: node scripts/test-cli.cjs
+      - if: matrix.target == 'js'
+        run: python3 scripts/test-write-failure.py
+      - if: matrix.target == 'js'
+        run: node scripts/test-recovery.cjs
+      - if: matrix.target == 'js'
+        run: node scripts/run-workflows.cjs all
       - if: matrix.target == 'js'
         run: node scripts/test-assets-cli.cjs
       - if: matrix.target == 'js'
@@ -76,6 +84,12 @@ jobs:
         run: moon build --target native --release
       - if: matrix.target == 'native'
         run: node scripts/test-cli.cjs --native
+      - if: matrix.target == 'native'
+        run: python3 scripts/test-write-failure.py --native
+      - if: matrix.target == 'native'
+        run: node scripts/test-recovery.cjs --native
+      - if: matrix.target == 'native'
+        run: node scripts/run-workflows.cjs all --native
       - if: matrix.target == 'native'
         run: node scripts/test-assets-cli.cjs --native
       - if: matrix.target == 'native'
@@ -135,6 +149,8 @@ jobs:
       - run: moon test --target js
       - run: moon build --target js --release
       - run: node scripts/test-cli.cjs
+      - run: node scripts/test-recovery.cjs
+      - run: node scripts/run-workflows.cjs all
       - run: node scripts/test-assets-cli.cjs
       - run: node scripts/test-lsp.cjs
       - run: node scripts/test-extension.cjs
@@ -143,6 +159,8 @@ jobs:
       - run: moon test --target native
       - run: moon build --target native --release
       - run: node scripts/test-cli.cjs --native
+      - run: node scripts/test-recovery.cjs --native
+      - run: node scripts/run-workflows.cjs all --native
       - run: node scripts/test-assets-cli.cjs --native
       - run: node scripts/test-lsp.cjs --native
       - run: node scripts/test-stream-pipe.cjs --native
@@ -190,6 +208,10 @@ jobs:
       - run: dotnet restore tools/reference-resources/Reference.csproj --locked-mode
       - run: dotnet build tools/reference-resources/Reference.csproj --no-restore -c Release
       - run: node scripts/check-binary-kv3.cjs
+      - run: node scripts/fetch-resource-fixtures.cjs
+      - run: node scripts/check-resource-fixtures.cjs
+        env:
+          MOONVALVE_RESOURCE_FIXTURES: _build/reference-resources
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -202,3 +224,21 @@ jobs:
       - run: node scripts/test-registry.cjs 0.4.0
       - run: moon package --list
       - run: python3 scripts/check-publish.py
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: hustcer/setup-moonbit@v1
+        with:
+          version: '0.10.18+6c83a7f62'
+          core-version: '0.10.18+6c83a7f62'
+      - run: moon update
+      - run: node scripts/build-editor.cjs
+      - run: npm ci --ignore-scripts
+        working-directory: tools/browser
+      - run: node tools/browser/node_modules/playwright/cli.js install --with-deps chromium
+      - run: node scripts/test-browser.cjs

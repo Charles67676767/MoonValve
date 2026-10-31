@@ -1,0 +1,53 @@
+{
+  "repository": "https://github.com/ValveResourceFormat/ValveResourceFormat",
+  "commit": "2a45474046bdb5eb62c5685cbfad9e085fd2d293",
+  "base_url": "https://raw.githubusercontent.com/ValveResourceFormat/ValveResourceFormat/2a45474046bdb5eb62c5685cbfad9e085fd2d293/",
+  "distribution": "Original game resources are not redistributed. Explicit download caches selected upstream test files outside the tracked source. No claim of a separate redistribution license for each game asset.",
+  "files": [
+    {
+      "path": "Tests/Files/ascent_zoom_kv3_v2_uncompressed.vpost_c",
+      "size": 133227,
+      "sha256": "e1accd8239961b300af4cc4dd0147d8c035498755e670807cafb48579bb3f9ab"
+    },
+    {
+      "path": "Tests/Files/axolotl_anim_model_kv3_v2_zstd.vmdl_c",
+      "size": 283271,
+      "sha256": "419afb7eb6cff4f696cae77337e115b81a9e7fd528124b4ba989c6c49f3fde2a"
+    },
+    {
+      "path": "Tests/Files/compute_reactive_mask_kv3_v3_lz4.vmat_c",
+      "size": 1322,
+      "sha256": "e1eaa2770ad63ae69274c4634e6dea89a4694b69dd94ecdf20161c79884286d4"
+    },
+    {
+      "path": "Tests/Files/default_ents_kv3_v0.vents_c",
+      "size": 3281,
+      "sha256": "1e4ffb557c4a0a8af5c3ac03d49695ec798c52f33793a2585b62ad0471aac42f"
+    },
+    {
+      "path": "Tests/Files/default_ents_kv3_v1.vents_c",
+      "size": 1811,
+      "sha256": "4396bbf578fcca0f4cf11c5f263ff1f551f88cc44c0bef8860eaa33f6e8a2f8b"
+    },
+    {
+      "path": "Tests/Files/default_ents_kv3_v4_zstd.vents_c",
+      "size": 50033,
+      "sha256": "e097c3158c2cb6973521ae32f6d7da57cdd4cb86d92849a437c8aa9ee64e089b"
+    },
+    {
+      "path": "Tests/Files/explosion_barrel_kv0_lz4.vpcf_c",
+      "size": 1291,
+      "sha256": "4e7278d29cebd30629518b587da6a8619e05496a433063b2971c709eae2152d4"
+    },
+    {
+      "path": "Tests/Files/player_start_kv3_v5.vmat_c",
+      "size": 3149,
+      "sha256": "afa11c919e63780cdc166fcb5bf95f89918e8885f67a804c422bbb5cd8022492"
+    },
+    {
+      "path": "Tests/Files/unnamed_15453_kv3_v5_lz4.vmdl_c",
+      "size": 4016,
+      "sha256": "9ab923c78bd2e54e0d8936ba28c06e200d2b2c719ec6b0e3d5eb71a74d7d6b55"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+"Patch" { "include" "materials/base.vmt" "replace" { "$color" "[1 1 1]" } }

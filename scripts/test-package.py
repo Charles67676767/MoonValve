@@ -41,6 +41,8 @@ with tempfile.TemporaryDirectory(prefix='moonvalve-package-') as temporary:
     assert tuple(map(int, build['minimum_moonc'].split('.'))) >= (0, 10, 16)
     assert json.loads(version.stdout)['version'] == json.loads((folder / 'BUILD.json').read_text())['version']
     assert json.loads(version.stdout)['version'] == module_version
+    capabilities = subprocess.run([str(binary), 'capabilities'], check=True, capture_output=True, encoding='utf-8')
+    assert json.loads(capabilities.stdout) == json.loads((root / 'capabilities.json').read_text(encoding='utf-8'))
     result = subprocess.run([str(binary), 'parse', '-'], input='root { key "中文😀" key two }', encoding='utf-8', check=True, capture_output=True)
     assert [row['value'] for row in json.loads(result.stdout)[0]['value']] == ['中文😀', 'two']
     assert (folder / 'web/editor/moonvalve.mjs').is_file()
@@ -80,4 +82,5 @@ with tempfile.TemporaryDirectory(prefix='moonvalve-package-') as temporary:
         assert bundle.testzip() is None
         assert 'extension/client.cjs' in bundle.namelist()
         assert not any('/node_modules/' in name for name in bundle.namelist())
-print('Package checksums, ZIP integrity, isolated native execution and bundled editor passed')
+    subprocess.run(['node', str(folder / 'scripts/run-workflows.cjs'), 'all', '--native'], cwd=folder, check=True, capture_output=True)
+print('Package checksums, ZIP integrity, isolated native execution, bundled editor and three packaged workflows passed')

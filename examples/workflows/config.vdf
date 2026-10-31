@@ -1,0 +1,7 @@
+// MoonValve workflow sample. Synthetic configuration, safe to copy.
+"root"
+{
+  "name" "Moon Harbor"
+  "tag" "singleplayer"
+  "tag" "controller"
+}

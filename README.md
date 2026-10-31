@@ -4,15 +4,26 @@
 
 MoonValve 让 MoonBit 程序可以读取、查询和写出 Valve 配置与游戏资源，同时保留 KV1 键顺序和重复项、二进制数值位与 DMX 的 UUID 图身份。格式实现和命令行使用同一份 MoonBit 核心；Zstandard 使用 Apache-2.0 的 MoonBit 实现 `bikallem/compress`（所需源码及归属记录见 `internal/vendor`），不调用 Python、Valve SDK 或外部解析器。Python/.NET 仅用于独立兼容性测试。
 
-当前版本为 `0.8.3`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
+当前版本为 `0.8.4`，提供库、命令行、本地可视化工作台和跨平台下载包。从 0.4.0 起已发布到 Mooncakes；[安装与独立验证](docs/publishing.md)说明版本依赖用法。
 
-新增查询表达式与快照批量修改、跨对象移动复制、批量编辑优化、文本 KV3、多文件引用重构及标准输入输出 LSP。详见 [进阶功能与边界](docs/advanced.md)，[VS Code 扩展](extensions/vscode/README.md) 可通过 VSIX 安装。
+已有查询表达式与快照批量修改、跨对象移动复制、批量编辑优化、文本 KV3、多文件引用重构及标准输入输出 LSP。详见 [进阶功能与边界](docs/advanced.md)，[VS Code 扩展](extensions/vscode/README.md) 可通过 VSIX 安装。
 
 ## 为什么需要它
 
 Steam 和 Source 生态使用 KeyValues 保存配置和资源信息。这种格式有嵌套对象，也允许重复键；把它直接转换成普通字典容易丢失信息。MoonValve 使用有序条目数组表示对象，方便游戏工具、资源处理程序和桌面应用复用。
 
-## 已实现
+## 从这里开始
+
+- [第一次使用：下载、启动与选择入口](docs/getting-started.md)
+- [三条完整任务：配置维护、模组打包、翻译更新](docs/workflows.md)
+- [统一支持矩阵：版本、读写、保留语义、限制与证据](docs/support.md)
+- [错误与恢复](docs/errors.md) · [验收路径](docs/acceptance.md) · [开发验证](docs/validation.md)
+
+MoonValve 是有明确子集的 Valve 数据工具。检查资源容器不等于完整重写编译资源；VPK文件CRC32不等于签名验证；静态依赖导出不等于游戏运行验证。读取和写出范围、库/CLI/浏览器预算分别说明。命令行运行 `moonvalve capabilities` 可查看与工作台和文档同步的资源能力说明。
+
+<details>
+<summary>完整功能索引</summary>
+
 
 - 二进制 KV3 0—5 读取、4/5 写出及无压缩/LZ4/Zstandard；精确类型查询编辑与 Source 2 DATA/RERL 检查。
 - VPK v1/v2 索引、按需提取、文件 CRC32 校验、v1 创建及显式目录/VPK 搜索路径挂载。
@@ -40,6 +51,9 @@ Steam 和 Source 生态使用 KeyValues 保存配置和资源信息。这种格�
 - 多文件工程切换、草稿快照、引用关系及展开字段到原文件行列的来源导航。
 
 完整格式边界见 [兼容性说明](docs/compatibility.md)，库接口见 [API 导览](docs/api.md)，工具用法见 [命令行](docs/commands.md)、[本地工作台](docs/editor.md) 和 [发行包](docs/distribution.md)。
+
+
+</details>
 
 ## 环境与获取代码
 

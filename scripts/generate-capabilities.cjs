@@ -1,0 +1,10 @@
+// One source of support boundaries; --check rejects stale published surfaces.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),c=JSON.parse(fs.readFileSync(path.join(root,'capabilities.json'),'utf8'));
+assert.equal(c.schema,1);assert.equal(new Set(c.tools.map(t=>t.id)).size,c.tools.length);
+for(const t of [...c.tools,...c.other_tools])for(const test of t.tests)assert.ok(fs.existsSync(path.join(root,test)),test);
+const json=JSON.stringify(c);
+const md=['# 能力、限制与验证证据','','此文件由 capabilities.json 生成；执行 node scripts/generate-capabilities.cjs 更新。','',...Object.entries(c.evidence_levels).map(([k,v])=>`- **${k}**：${v}`),'','## 资源与核心工具',...[...c.tools,...c.other_tools].flatMap(t=>['',`### ${t.name}`,'',`- 读取：${t.read}`,`- 写出：${t.write}`,`- 保留承诺：${t.preservation}`,`- 明确边界：${t.excluded}`,`- 回归入口：${t.tests.map(p=>`[${p}](https://github.com/Charles67676767/MoonValve/blob/main/${p})`).join('、')}`]),'','## KV3 版本与压缩组合','','| 版本 | 可读 | 可写 |','|---|---|---|',...c.kv3_matrix.map(m=>`| ${m.version} | ${m.read.join(' / ')} | ${m.write.join(' / ')||'不支持'} |`),'','## 资源限制','','浏览器文件/目录合计16MiB、目录最多2048文件；CLI资源单项/批量默认64MiB，VPK目录16MiB。VPK偏移/条目长度上限2147483647。文本字符计量、其他库选项及条件语义见[KV1兼容说明](compatibility.md)与[资源指南](assets.md)。','','这些上限不是压测结果；支持矩阵不等于每种组合都有真实生产文件回归，真实样本与生成样本应分开报告。',''].join('\n');
+const outputs={'docs/support.md':md,'web/editor/capabilities.mjs':`// Generated from capabilities.json.\nexport const capabilities=${json};\n`,'cmd/main/capability_data.mbt':`///|\n// Generated from capabilities.json; keep the CLI boundary report synchronized.\nfn capability_report() -> String {\n  (\n    #|${json}\n  )\n}\n`};
+for(const [name,data]of Object.entries(outputs)){const p=path.join(root,name);if(process.argv.includes('--check'))assert.ok(fs.readFileSync(p,'utf8').replace(/\r\n/g,'\n')===data,name+' is stale');else fs.writeFileSync(p,data);}
+console.log('Capability catalog, evidence paths and generated CLI/UI/docs are synchronized');

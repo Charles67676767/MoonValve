@@ -223,6 +223,10 @@ fn run(args : Array[String]) -> Unit raise {
   } else {
     args
   }
+  if args.length() == 3 && args[2] == "capabilities" {
+    println(capability_report())
+    return
+  }
   if args.length() > 2 && (args[2] == "version" || args[2] == "--version") {
     if args.length() != 3 {
       raise InvalidArgument("version accepts no arguments")
@@ -238,6 +242,9 @@ fn run(args : Array[String]) -> Unit raise {
   }
   if args.length() <= 2 || args[2] == "help" || args[2] == "--help" {
     help()
+    println(
+      "  capabilities            Show supported operations, limits and evidence",
+    )
     resource_help()
     println("  version                 Show version information")
     println(

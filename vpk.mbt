@@ -121,7 +121,14 @@ pub fn read_vpk(
         let crc32 = tree.uint(4).to_uint()
         let preload_size = tree.uint(2).to_int()
         let archive = tree.uint(2).to_int()
-        let offset = tree.count(2147483647)
+        let raw_offset = tree.uint(4)
+        if raw_offset > 2147483647UL {
+          raise InvalidBinary(
+            tree.pos - 4,
+            "VPK offset exceeds supported range 0..2147483647; larger offsets are not supported",
+          )
+        }
+        let offset = raw_offset.to_int()
         let length = tree.count(options.max_bytes)
         if length > options.max_bytes - preload_size ||
           offset > 2147483647 - length {

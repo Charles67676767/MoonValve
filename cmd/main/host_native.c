@@ -310,7 +310,7 @@ MOONBIT_FFI_EXPORT int moonvalve_save(moonbit_bytes_t path,moonbit_bytes_t befor
   char *temp=malloc(n+100),*backup=malloc(n+5);
   if(!temp || !backup) {free(temp);free(backup);return 1;}
   snprintf(backup,n+5,"%s.bak",(const char*)path);
-  int result=1,created=0;
+  int result=1,created=0,backup_created=0,backup_complete=0;
   FILE *original=NULL,*output=NULL,*backup_file=NULL;
 #ifdef _WIN32
   wchar_t *target=mv_wide((const char*)path),*temp_w=NULL,*backup_w=mv_wide(backup);
@@ -323,8 +323,10 @@ MOONBIT_FFI_EXPORT int moonvalve_save(moonbit_bytes_t path,moonbit_bytes_t befor
   if(lstat((const char*)path,&status) || !S_ISREG(status.st_mode)) goto done;
   original=fopen((const char*)path,"rb");
 #endif
+  result=2;
   if(!mv_matches(original,before,(size_t)old_length)) goto done;
   fclose(original);original=NULL;
+  result=3;
   for(int attempt=0;attempt<32;attempt++) {
 #ifdef _WIN32
     snprintf(temp,n+100,"%s.moonvalve-%lu-%u",(const char*)path,(unsigned long)GetCurrentProcessId(),++sequence);
@@ -339,19 +341,21 @@ MOONBIT_FFI_EXPORT int moonvalve_save(moonbit_bytes_t path,moonbit_bytes_t befor
   }
   if(!output || fwrite(after,1,(size_t)new_length,output)!=(size_t)new_length || !mv_flush_file(output)) goto done;
   if(fclose(output)) {output=NULL;goto done;} output=NULL;
+  result=4;
 #ifdef _WIN32
   int backup_fd=_wopen(backup_w,_O_WRONLY|_O_CREAT|_O_EXCL|_O_BINARY,_S_IREAD|_S_IWRITE);
-  if(backup_fd>=0) {backup_file=_fdopen(backup_fd,"wb");if(!backup_file) _close(backup_fd);}
+  if(backup_fd>=0) {backup_created=1;backup_file=_fdopen(backup_fd,"wb");if(!backup_file) _close(backup_fd);}
   original=_wfopen(target,L"rb");
 #else
   int backup_fd=open(backup,O_WRONLY|O_CREAT|O_EXCL,0600);
   if(backup_fd>=0) {fchmod(backup_fd,status.st_mode&0777);backup_file=fdopen(backup_fd,"wb");if(!backup_file) close(backup_fd);}
   original=fopen((const char*)path,"rb");
 #endif
+  if(backup_file) result=5;
   if(!backup_file || fwrite(before,1,(size_t)old_length,backup_file)!=(size_t)old_length || !mv_flush_file(backup_file)) goto done;
-  if(fclose(backup_file)) {backup_file=NULL;goto done;} backup_file=NULL;
+  if(fclose(backup_file)) {backup_file=NULL;goto done;} backup_file=NULL;backup_complete=1;result=6;
   if(!mv_matches(original,before,(size_t)old_length)) goto done;
-  fclose(original);original=NULL;
+  fclose(original);original=NULL;result=7;
 #ifdef _WIN32
   if(!ReplaceFileW(target,temp_w,NULL,0,NULL,NULL)) goto done;
 #else
@@ -366,9 +370,11 @@ done:
   if(backup_file) fclose(backup_file);
 #ifdef _WIN32
   if(created && temp_w) _wremove(temp_w);
+  if(backup_created && !backup_complete && backup_w) _wremove(backup_w);
   free(target);free(temp_w);free(backup_w);
 #else
   if(created) unlink(temp);
+  if(backup_created && !backup_complete) unlink(backup);
 #endif
   free(temp);free(backup);return result;
 }

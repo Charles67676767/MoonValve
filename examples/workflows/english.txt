@@ -1,0 +1,8 @@
+"lang"
+{
+  "Language" "English"
+  "Tokens"
+  {
+    "Moon_Hello" "Hello %s1"
+  }
+}

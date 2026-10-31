@@ -1,0 +1,5 @@
+{
+  "name": "moonvalve-browser-validation",
+  "private": true,
+  "devDependencies": {"playwright": "1.64.1"}
+}

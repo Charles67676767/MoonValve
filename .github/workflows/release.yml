@@ -1,0 +1,51 @@
+name: Publish verified release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        default: '0.8.4'
+        description: Exact version in moon.mod
+      ci_run_id:
+        required: true
+        description: Successful CI run for this exact commit
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VERSION: ${{ inputs.version }}
+      CI_RUN_ID: ${{ inputs.ci_run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify release identity and successful CI
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+          version = os.environ['VERSION']
+          assert re.fullmatch(r'\d+\.\d+\.\d+', version)
+          assert os.environ['CI_RUN_ID'].isdigit()
+          current = re.search(r'^version\s*=\s*"([^"]+)"', pathlib.Path('moon.mod').read_text(), re.M).group(1)
+          assert version == current
+          run = json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{os.environ["CI_RUN_ID"]}']))
+          assert run['conclusion'] == 'success' and run['status'] == 'completed'
+          assert run['path'] == '.github/workflows/ci.yml'
+          assert run['head_sha'] == subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.ci_run_id }}
+          pattern: moonvalve-*-x64
+          merge-multiple: true
+          path: _build/release
+      - run: python3 scripts/verify-release.py _build/release
+      - name: Publish immutable tagged assets
+        run: |
+          gh release create "v$VERSION" --target "$(git rev-parse HEAD)" --title "MoonValve $VERSION" --prerelease --notes-file "docs/releases/$VERSION.md" _build/release/*.zip _build/release/*.sha256
