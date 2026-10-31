@@ -32,6 +32,6 @@ with tempfile.TemporaryDirectory(prefix='moonvalve-write-failure-') as temp:
         result = subprocess.run(command + ['edit',str(source),str(plan),'--in-place'], capture_output=True, timeout=20, preexec_fn=limit_writes)
         assert result.returncode == 2, (mode, result.returncode, result.stderr)
         assert source.read_bytes() == before
-        assert not pathlib.Path(str(source)+'.bak').exists(), 'Incomplete owned backup must be removed'
+        assert not pathlib.Path(str(source)+'.bak').exists(), (mode, 'Incomplete owned backup must be removed', result.stderr)
         assert not list(folder.glob('*.moonvalve-*')), 'Incomplete temporary output must be removed'
 print('Temporary-output and backup-write failures preserve originals and leave no incomplete owned files ('+('native' if native else 'js')+')')

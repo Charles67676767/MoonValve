@@ -348,7 +348,7 @@ MOONBIT_FFI_EXPORT int moonvalve_save(moonbit_bytes_t path,moonbit_bytes_t befor
   original=_wfopen(target,L"rb");
 #else
   int backup_fd=open(backup,O_WRONLY|O_CREAT|O_EXCL,0600);
-  if(backup_fd>=0) {fchmod(backup_fd,status.st_mode&0777);backup_file=fdopen(backup_fd,"wb");if(!backup_file) close(backup_fd);}
+  if(backup_fd>=0) {backup_created=1;fchmod(backup_fd,status.st_mode&0777);backup_file=fdopen(backup_fd,"wb");if(!backup_file) close(backup_fd);}
   original=fopen((const char*)path,"rb");
 #endif
   if(backup_file) result=5;
