@@ -1,16 +1,18 @@
 ///|
+#derive(Debug)
 pub suberror AccessError {
   InvalidAccess(Array[Selector], String)
-} derive(Debug)
+}
 
 ///|
 pub extend AccessError with @debug.Debug::{to_repr}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct LocatedValue {
   path : Array[Selector]
   value : Value
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend LocatedValue with Eq::{equal, not_equal}

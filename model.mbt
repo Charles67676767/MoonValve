@@ -1,25 +1,29 @@
 ///|
 /// A KeyValues value. Objects are ordered lists, so duplicate keys are retained.
+#derive(Eq, Debug)
 pub(all) enum Value {
   Text(String)
   Object(Array[Entry])
-} derive(Eq, Debug)
+}
 
 ///|
 /// One key-value pair, in source order.
+#derive(Eq, Debug)
 pub(all) struct Entry {
   key : String
   value : Value
-} derive(Eq, Debug)
+}
 
 ///|
 /// A document can contain zero, one, or several top-level entries.
+#derive(Eq, Debug)
 pub(all) struct Document {
   entries : Array[Entry]
-} derive(Eq, Debug)
+}
 
 ///|
 /// Parsing limits apply to the whole document; depth counts nested objects.
+#derive(Eq, Debug)
 pub(all) struct ParseOptions {
   escape_sequences : Bool
   max_depth : Int32
@@ -27,7 +31,7 @@ pub(all) struct ParseOptions {
   max_input_chars : Int32
   max_token_chars : Int32
   conditions : Array[String]?
-} derive(Eq, Debug)
+}
 
 ///|
 /// Escapes are enabled for canonical output and Steam's escaped Windows paths.
@@ -44,18 +48,20 @@ pub fn ParseOptions::default() -> ParseOptions {
 
 ///|
 /// Offset is a zero-based Unicode scalar index; line and column are one-based.
+#derive(Eq, Debug)
 pub(all) struct Diagnostic {
   code : String
   message : String
   offset : Int32
   line : Int32
   column : Int32
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Debug)
 pub suberror ParseError {
   ParseError(Diagnostic)
-} derive(Debug)
+}
 
 ///|
 /// Look up the first exact, case-sensitive key match.

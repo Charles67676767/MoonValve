@@ -25,7 +25,7 @@ for archive in archives:
             assert name.startswith(prefix) and not p.is_absolute() and '..' not in p.parts
         build = json.loads(z.read(prefix + 'BUILD.json'))
         assert build['version'] == version and build['commit'] == commit
-        assert build['arch'] == 'x64' and build['toolchain'] == '0.10.18+6c83a7f62'
+        assert build['arch'] == 'x64' and build['toolchain'] == '0.10.20+65efd5b93'
         platforms.add(build['platform'])
         checks = z.read(prefix + 'SHA256SUMS').decode().splitlines()
         for line in checks:

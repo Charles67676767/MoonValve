@@ -2,8 +2,8 @@
   "module": "Charles67676767/moonvalve",
   "series": "0.8",
   "interface": "pkg.generated.mbti",
-  "sha256": "28984e31c4142261b8549d2ccf5ffb82ac7a3aa31a94d278dfd015fc028968a5",
-  "toolchain": "0.10.18+6c83a7f62",
+  "sha256": "2a532a7c545a0e5baf7c38114f98248f338a6b5b80d8e50b81dd7374660d34a7",
+  "toolchain": "0.10.20+65efd5b93",
   "previous": [
     {
       "series": "0.4",
@@ -34,7 +34,13 @@
       "baseline_commit": "1f3aef84d29b164785be934d18ebd8910c3e6a07",
       "interface": "docs/api-0.8.baseline.txt",
       "sha256": "9046ebab5287f526206c31c20c78f99287c8c3f3bd5821750a6c0c76ec9a7299"
+    },
+    {
+      "series": "0.8",
+      "baseline_commit": "948616f743d2b1350d8be6c89122a53bfbe2355a",
+      "interface": "docs/api-0.8.4.baseline.txt",
+      "sha256": "28984e31c4142261b8549d2ccf5ffb82ac7a3aa31a94d278dfd015fc028968a5"
     }
   ],
-  "baseline_version": "0.8.3"
+  "baseline_version": "0.8.5"
 }

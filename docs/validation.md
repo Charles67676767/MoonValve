@@ -1,6 +1,8 @@
 # 验证与复现
 
-工具链：`moonc v0.10.18+6c83a7f62`，同版本 `moonbitlang/core`。Zstandard 使用 `bikallem/compress` 0.3.4 的所需源码（Apache-2.0，来源与原始哈希见 `internal/vendor`）；Python/.NET 参考测试不参与产品运行。新增格式验证命令见[资源指南](assets.md)。
+工具链：`moonc v0.10.20+65efd5b93`，同版本 `moonbitlang/core`。Zstandard 使用 `bikallem/compress` 0.3.4 的所需源码（Apache-2.0，来源与原始哈希见 `internal/vendor`）；Python/.NET 参考测试不参与产品运行。新增格式验证命令见[资源指南](assets.md)。
+
+验证命令 `moon version --all` 记录 `moon` / `moonrun` 0.1.20261104（940aa18），`moonc` v0.10.20+65efd5b93（2026-11-05）。四后端为 wasm、wasm-gc、js、native。
 
 ## 核心与命令行
 
@@ -89,4 +91,4 @@ node scripts/fuzz-assets.cjs
 
 Linux干净环境安装浏览器可使用 `install --with-deps chromium`。Playwright仅用于测试，不进入工具运行依赖。浏览器结果保存在忽略的 `_build/browser-e2e.json`。真实资源获取与异常输入重放见[验收路径](acceptance.md)；旧版数量与测量移至[历史记录](validation-history.md)，不作为当前版本覆盖数量。
 
-主验证基线与文档构建统一使用 `moonc v0.10.18+6c83a7f62` 及同版本标准库，包含四后端检查、构建、测试、Windows 验证、参考实现测试和发布后独立安装验证。CI 的 `docs-compat` 作业补充检查文档生成。上游压缩源码的原始哈希、修改说明及当前哈希由 `node scripts/check-vendor.cjs` 核验；其测试与 MoonValve 自有测试分开计数。
+主验证基线与文档构建统一使用 `moonc v0.10.20+65efd5b93` 及同版本标准库，包含四后端检查、构建、测试、Windows 验证、参考实现测试和发布后独立安装验证。CI 的 `docs-compat` 作业补充检查文档生成。上游压缩源码的原始哈希、修改说明及当前哈希由 `node scripts/check-vendor.cjs` 核验；其测试与 MoonValve 自有测试分开计数。

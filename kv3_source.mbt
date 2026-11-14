@@ -16,13 +16,14 @@ struct KV3SourceDocument {
 }
 
 ///|
+#derive(Debug)
 pub(all) enum KV3Edit {
   KV3Replace(KV3Value)
   KV3Remove
   KV3Rename(String)
   KV3InsertField(Int32, String, KV3Value)
   KV3InsertElement(Int32, KV3Value)
-} derive(Debug)
+}
 
 ///|
 pub extend KV3Edit with @debug.Debug::{to_repr}
@@ -444,12 +445,13 @@ pub fn KV3SourceDocument::apply_json(
 
 ///|
 /// Zero-based Unicode scalar offsets, suitable for UTF-16 conversion by hosts.
+#derive(Eq, Debug)
 pub(all) struct KV3SourceRange {
   start : Int32
   end : Int32
   selection_start : Int32
   selection_end : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend KV3SourceRange with Eq::{equal, not_equal}

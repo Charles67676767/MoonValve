@@ -3,7 +3,9 @@ const root=path.resolve(__dirname,'..'),contract=JSON.parse(fs.readFileSync(path
 const read=name=>fs.readFileSync(path.join(root,name),'utf8').replace(/\r\n/g,'\n');
 const hash=source=>crypto.createHash('sha256').update(source).digest('hex');
 // MoonBit 0.10.18 prints the existing 32-bit Int/UInt aliases with explicit names.
-const canonical=source=>source.replace(/\bInt\b/g,'Int32').replace(/\bUInt\b/g,'UInt32');
+const canonical=source=>source.replace(/\bInt\b/g,'Int32').replace(/\bUInt\b/g,'UInt32')
+  .replace(/@json\.Json\b/g,'Json')
+  .replace(/^#derive\(([^\n]+)\)\n(pub[^\n]+\{\n[\s\S]*?^\})/gm,'$2 derive($1)');
 const version=/^version\s*=\s*"([^"]+)"/m.exec(read('moon.mod'))[1];
 assert.equal(version.split('.').slice(0,2).join('.'),contract.series,'Review the API contract before starting a new series');
 const source=read(contract.interface);

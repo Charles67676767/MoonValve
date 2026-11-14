@@ -1,8 +1,9 @@
 ///|
+#derive(Debug)
 pub(all) struct Change {
   path : Array[Selector]
   operation : Edit
-} derive(Debug)
+}
 
 ///|
 pub extend Change with @debug.Debug::{to_repr}

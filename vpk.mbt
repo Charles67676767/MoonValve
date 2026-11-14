@@ -1,4 +1,5 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct VPKEntry {
   path : String
   crc32 : UInt32
@@ -6,7 +7,7 @@ pub(all) struct VPKEntry {
   archive : Int32
   offset : Int32
   length : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend VPKEntry with Eq::{equal, not_equal}

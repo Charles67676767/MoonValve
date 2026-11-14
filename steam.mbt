@@ -1,25 +1,28 @@
 ///|
 /// A validated Steam app manifest. Decimal identifiers stay as strings.
+#derive(Eq, Debug)
 pub(all) struct SteamApp {
   app_id : String
   name : String
   install_dir : String
   size_on_disk : Int64?
   build_id : String?
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct SteamLibrary {
   index : String
   path : String
   label : String?
   app_ids : Array[String]
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Debug)
 pub suberror SteamError {
   InvalidManifest(String)
-} derive(Debug)
+}
 
 ///|
 fn steam_find(entries : Array[Entry], key : String) -> Value? {

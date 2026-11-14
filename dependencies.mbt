@@ -1,4 +1,5 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct AssetDependency {
   source : String
   reference : String
@@ -6,7 +7,7 @@ pub(all) struct AssetDependency {
   kind : String
   property : Array[String]
   status : String
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend AssetDependency with Eq::{equal, not_equal}

@@ -7,33 +7,37 @@ priv struct TraceNode {
 }
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct SourceLocation {
   source : String
   offset : Int32
   line : Int32
   column : Int32
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct ResolvedOrigin {
   path : Array[Selector]
   location : SourceLocation
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct ReferenceEdge {
   source : String
   target : String
   kind : String
   location : SourceLocation
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct ResolvedProject {
   document : Document
   origins : Array[ResolvedOrigin]
   references : Array[ReferenceEdge]
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend SourceLocation with Eq::{equal, not_equal}

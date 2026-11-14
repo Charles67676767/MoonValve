@@ -1,9 +1,10 @@
 ///|
 /// Select the zero-based occurrence of a key, preserving duplicate siblings.
+#derive(Eq, Debug)
 pub(all) struct Selector {
   key : String
   occurrence : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Selector with Eq::{equal, not_equal}
@@ -12,20 +13,22 @@ pub extend Selector with Eq::{equal, not_equal}
 pub extend Selector with @debug.Debug::{to_repr}
 
 ///|
+#derive(Debug)
 pub(all) enum Edit {
   Replace(Value)
   Remove
   Rename(String)
   Insert(Int32, Entry)
-} derive(Debug)
+}
 
 ///|
 pub extend Edit with @debug.Debug::{to_repr}
 
 ///|
+#derive(Debug)
 pub suberror EditError {
   InvalidEdit(String)
-} derive(Debug)
+}
 
 ///|
 pub extend EditError with @debug.Debug::{to_repr}

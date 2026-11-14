@@ -1,26 +1,29 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct VMTOrigin {
   path : Array[Int32]
   source : String
   operation : String
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct VMTMaterial {
   shader : String
   parameters : Array[Entry]
   origins : Array[VMTOrigin]
   includes : Array[String]
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct VMTTexture {
   path : Array[String]
   parameter : String
   value : String
   target : String?
   status : String
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend VMTOrigin with Eq::{equal, not_equal}

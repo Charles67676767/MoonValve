@@ -1,8 +1,9 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct KV3BinaryLocatedValue {
   path : Array[String]
   value : KV3BinaryValue
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend KV3BinaryLocatedValue with Eq::{equal, not_equal}

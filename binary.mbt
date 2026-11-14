@@ -1,6 +1,7 @@
 ///|
 /// Typed standard binary KV1. Floating-point payloads retain their exact bits,
 /// including NaN payloads and negative zero. Pointer values are data, never dereferenced.
+#derive(Eq, Debug)
 pub(all) enum BinaryValue {
   ObjectValue(Array[BinaryEntry])
   StringValue(String)
@@ -11,21 +12,23 @@ pub(all) enum BinaryValue {
   Color32(UInt32)
   UInt64Value(UInt64)
   Int64Value(Int64)
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct BinaryEntry {
   key : String
   value : BinaryValue
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct BinaryOptions {
   max_depth : Int32
   max_entries : Int32
   max_bytes : Int32
   max_string_bytes : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn BinaryOptions::default() -> BinaryOptions {
@@ -38,9 +41,10 @@ pub fn BinaryOptions::default() -> BinaryOptions {
 }
 
 ///|
+#derive(Debug)
 pub suberror BinaryError {
   InvalidBinary(Int32, String)
-} derive(Debug)
+}
 
 ///|
 pub extend BinaryValue with Eq::{equal, not_equal}

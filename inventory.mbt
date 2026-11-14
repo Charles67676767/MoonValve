@@ -1,23 +1,26 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct InventoryRecord {
   library : String
   manifest : String
   app : SteamApp
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct InventoryIssue {
   code : String
   library : String
   manifest : String?
   message : String
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct InventoryTotal {
   known_size_bytes : Int64
   unknown_size_count : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend InventoryRecord with Eq::{equal, not_equal}

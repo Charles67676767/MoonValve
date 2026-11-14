@@ -1,8 +1,9 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct LocalizationImport {
   document : Localization
   issues : Array[LocalizationIssue]
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend LocalizationImport with Eq::{equal, not_equal}

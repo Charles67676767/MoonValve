@@ -1,4 +1,5 @@
 ///|
+#derive(Eq, Debug)
 pub(all) enum KV3Value {
   KV3Null
   KV3Bool(Bool)
@@ -9,25 +10,28 @@ pub(all) enum KV3Value {
   KV3Array(Array[KV3Value])
   KV3Object(Array[KV3Entry])
   KV3Flag(String, KV3Value)
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct KV3Entry {
   key : String
   value : KV3Value
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct KV3Header {
   format_name : String
   format_id : String
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct KV3Document {
   header : KV3Header?
   root : KV3Value
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend KV3Value with Eq::{equal, not_equal}

@@ -2,12 +2,13 @@
 /// Raw SAX-style events. Conditions are validated and retained, never evaluated.
 /// Returning false for BeginObject suppresses descendants but still validates
 /// them and emits the matching EndObject. All other return values are ignored.
+#derive(Eq, Debug)
 pub(all) enum StreamEvent {
   Pair(String, String)
   BeginObject(String)
   EndObject
   Condition(String, String)
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend StreamEvent with Eq::{equal, not_equal}

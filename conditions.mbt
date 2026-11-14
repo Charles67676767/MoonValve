@@ -1,7 +1,8 @@
 ///|
+#derive(Debug)
 pub suberror ConditionError {
   InvalidCondition(String)
-} derive(Debug)
+}
 
 ///|
 pub extend ConditionError with @debug.Debug::{to_repr}

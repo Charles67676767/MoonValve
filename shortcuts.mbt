@@ -1,4 +1,5 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct SteamShortcut {
   index : String
   app_id : UInt32
@@ -7,7 +8,7 @@ pub(all) struct SteamShortcut {
   start_dir : String
   launch_options : String
   tags : Array[String]
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend SteamShortcut with Eq::{equal, not_equal}

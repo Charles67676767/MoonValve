@@ -1,4 +1,5 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct POEntry {
   context : String?
   id : String
@@ -7,13 +8,14 @@ pub(all) struct POEntry {
   comments : Array[String]
   flags : Array[String]
   obsolete : Bool
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct POCatalog {
   entries : Array[POEntry]
   trailing_comments : Array[String]
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend POEntry with Eq::{equal, not_equal}

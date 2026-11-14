@@ -24,7 +24,7 @@ node scripts/serve-editor.cjs
 
 ## 安装库
 
-使用 MoonBit 0.10.18+，当前验证工具链为 0.10.18+6c83a7f62 和同版本标准库。在已有 MoonBit 项目运行 `moon add Charles67676767/moonvalve`，按[安装指南](publishing.md)导入包；完整可运行示例位于 examples/demo。
+使用 MoonBit 0.10.20+，当前验证工具链为 0.10.20+65efd5b93 和同版本标准库。在已有 MoonBit 项目运行 `moon add Charles67676767/moonvalve`，按[安装指南](publishing.md)导入包；完整可运行示例位于 examples/demo。
 
 ## 接下来
 

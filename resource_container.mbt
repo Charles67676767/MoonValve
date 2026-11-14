@@ -1,23 +1,26 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct ResourceBlock {
   kind : String
   offset : Int32
   bytes : Bytes
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct ResourceContainer {
   version : Int32
   declared_size : Int32
   blocks : Array[ResourceBlock]
   trailing : Bytes
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct ResourceExternalReference {
   id : UInt64
   name : String
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend ResourceBlock with Eq::{equal, not_equal}

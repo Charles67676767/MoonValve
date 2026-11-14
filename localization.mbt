@@ -1,22 +1,25 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct LocalizationToken {
   name : String
   text : String
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Localization {
   language : String
   tokens : Array[LocalizationToken]
   encoding : String
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct LocalizationIssue {
   token : String
   code : String
   message : String
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend LocalizationToken with Eq::{equal, not_equal}

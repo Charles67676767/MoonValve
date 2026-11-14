@@ -1,7 +1,8 @@
 ///|
+#derive(Debug)
 pub suberror JsonImportError {
   InvalidJsonDocument(String)
-} derive(Debug)
+}
 
 ///|
 pub extend JsonImportError with @debug.Debug::{to_repr}

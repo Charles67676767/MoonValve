@@ -2,6 +2,7 @@
 /// Binary KV3 numbers retain their storage type and exact integer/IEEE bits.
 /// Tag numbers follow Valve KV3: int64=3, uint64=4, double=5, int32=11,
 /// uint32=12, float=19, int16=20, uint16=21, int8=22, uint8=23.
+#derive(Eq, Debug)
 pub(all) enum KV3BinaryValue {
   BNull
   BBool(Bool)
@@ -11,7 +12,7 @@ pub(all) enum KV3BinaryValue {
   BArray(Array[KV3BinaryValue])
   BObject(Array[(String, KV3BinaryValue)])
   BFlag(String, KV3BinaryValue)
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend KV3BinaryValue with Eq::{equal, not_equal}
@@ -20,12 +21,13 @@ pub extend KV3BinaryValue with Eq::{equal, not_equal}
 pub extend KV3BinaryValue with @debug.Debug::{to_repr}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct KV3BinaryDocument {
   version : Int32
   compression : Int32
   format_id : String
   root : KV3BinaryValue
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend KV3BinaryDocument with Eq::{equal, not_equal}

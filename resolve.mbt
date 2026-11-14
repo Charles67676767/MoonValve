@@ -1,7 +1,8 @@
 ///|
+#derive(Debug)
 pub suberror ResolveError {
   InvalidReference(String)
-} derive(Debug)
+}
 
 ///|
 pub extend ResolveError with @debug.Debug::{to_repr}

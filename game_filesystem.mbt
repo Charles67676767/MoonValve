@@ -5,19 +5,21 @@ pub(all) enum GameMount {
 }
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct MountedFile {
   path : String
   mount : String
   base_game : Bool
   bytes : Bytes
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct MountCandidate {
   mount : String
   base_game : Bool
   selected : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend MountedFile with Eq::{equal, not_equal}
@@ -127,11 +129,12 @@ pub fn GameFileSystem::read(
 }
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct GameSearchPath {
   ids : Array[String]
   directory : String
   wildcard : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend GameSearchPath with Eq::{equal, not_equal}

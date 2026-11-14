@@ -1,9 +1,10 @@
 ///|
+#derive(Eq)
 priv enum DMXToken {
   DToken(String)
   DPunctuation(Char)
   DEnd
-} derive(Eq)
+}
 
 ///|
 priv struct DMXTextReader {

@@ -1,8 +1,9 @@
 ///|
+#derive(Eq, Debug)
 pub(all) enum CacheFormat {
   AppInfo
   PackageInfo
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend CacheFormat with Eq::{equal, not_equal}
@@ -11,6 +12,7 @@ pub extend CacheFormat with Eq::{equal, not_equal}
 pub extend CacheFormat with @debug.Debug::{to_repr}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct CacheRecord {
   id : UInt32
   change_number : UInt32
@@ -21,7 +23,7 @@ pub(all) struct CacheRecord {
   last_updated : UInt32?
   offset : Int32
   length : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend CacheRecord with Eq::{equal, not_equal}

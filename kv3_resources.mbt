@@ -1,9 +1,10 @@
 ///|
 /// Map a resource path prefix to an explicit directory, never an inferred game root.
+#derive(Eq, Debug)
 pub(all) struct ResourceRoot {
   prefix : String
   directory : String
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend ResourceRoot with Eq::{equal, not_equal}
@@ -12,6 +13,7 @@ pub extend ResourceRoot with Eq::{equal, not_equal}
 pub extend ResourceRoot with @debug.Debug::{to_repr}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct ResourceReference {
   path : Array[String]
   resource : String
@@ -19,7 +21,7 @@ pub(all) struct ResourceReference {
   status : String
   start : Int32
   end : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend ResourceReference with Eq::{equal, not_equal}

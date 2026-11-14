@@ -1,19 +1,21 @@
 // Vendored from bikallem/compress 0.3.4, licensed under Apache-2.0.
-// MoonValve modifications: attribution header only; MoonBit 0.10.18 formatter normalization (type names and optional parameter syntax).
+// MoonValve modifications: attribution header only; MoonBit 0.10.18 formatter normalization (type names and optional parameter syntax) and 0.10.20 derive syntax migration.
 // Original source hashes and license: ../provenance.json and ../../../licenses/Apache-2.0.txt.
 
 ///|
 /// Zstandard compression error type.
+#derive(Show)
 pub(all) suberror ZstdError {
   InvalidHeader(String)
   CorruptData(String)
   ChecksumMismatch(expected~ : UInt32, got~ : UInt32)
   WindowTooLarge(String)
   UnexpectedEOF
-} derive(Show)
+}
 
 ///|
 /// Encoder signals — returned by Deflater::encode().
+#derive(Show)
 pub(all) enum Encode {
   /// Input consumed. Call encode(Some(more)) or encode(None) to finish.
   Ok
@@ -23,10 +25,11 @@ pub(all) enum Encode {
   End
   /// Unrecoverable error.
   Error(ZstdError)
-} derive(Show)
+}
 
 ///|
 /// Decoder signals — returned by Inflater::decode().
+#derive(Show)
 pub(all) enum Decode {
   /// Need input. Call src(bytes) then decode() again.
   Await
@@ -36,16 +39,17 @@ pub(all) enum Decode {
   End
   /// Unrecoverable format error.
   Error(ZstdError)
-} derive(Show)
+}
 
 ///|
 /// Compression level for Zstandard.
+#derive(Eq, Show)
 pub(all) enum CompressionLevel {
   Fast
   Default
   Best
   Level(Int32)
-} derive(Eq, Show)
+}
 
 ///|
 /// Zstandard frame magic number.

@@ -1,6 +1,7 @@
 ///|
 /// DMX is a UUID-addressed graph, independently typed from KV1 and KV3.
 /// Time uses 1/10000-second ticks; floating point components retain IEEE bits.
+#derive(Eq, Debug)
 pub(all) enum DMXValue {
   DElement(String?)
   DInt(Int32)
@@ -12,29 +13,32 @@ pub(all) enum DMXValue {
   DColor(UInt32)
   DVector(Int32, Array[UInt32])
   DArray(Int32, Array[DMXValue])
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct DMXAttribute {
   name : String
   value : DMXValue
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct DMXElement {
   id : String
   name : String
   kind : String
   attributes : Array[DMXAttribute]
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct DMXDocument {
   format_name : String
   format_version : Int32
   root : String
   elements : Array[DMXElement]
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend DMXValue with Eq::{equal, not_equal}

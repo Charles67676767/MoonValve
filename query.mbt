@@ -1,7 +1,8 @@
 ///|
+#derive(Debug)
 pub suberror QueryError {
   InvalidQuery(String)
-} derive(Debug)
+}
 
 ///|
 pub extend QueryError with @debug.Debug::{to_repr}
@@ -309,12 +310,13 @@ pub fn located_values_to_json(values : Array[LocatedValue]) -> Json {
 }
 
 ///|
+#derive(Debug)
 pub(all) enum QueryEdit {
   SetText(String)
   ReplacePrefix(String, String)
   RenameKey(String)
   RemoveMatches
-} derive(Debug)
+}
 
 ///|
 pub extend QueryEdit with @debug.Debug::{to_repr}

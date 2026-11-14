@@ -1,7 +1,8 @@
 ///|
+#derive(Debug)
 pub suberror WriteError {
   InvalidDocument(String)
-} derive(Debug)
+}
 
 ///|
 /// Canonical escaped KV1 text. All keys and strings are quoted; order and

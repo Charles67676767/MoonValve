@@ -1,8 +1,9 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct KV3LocatedValue {
   path : Array[String]
   value : KV3Value
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend KV3LocatedValue with Eq::{equal, not_equal}
@@ -359,12 +360,13 @@ pub fn kv3_located_values_to_json(values : Array[KV3LocatedValue]) -> Json {
 }
 
 ///|
+#derive(Debug)
 pub(all) enum KV3QueryEdit {
   KV3SetValue(KV3Value)
   KV3ReplacePrefix(String, String)
   KV3RenameMatches(String)
   KV3RemoveMatches
-} derive(Debug)
+}
 
 ///|
 pub extend KV3QueryEdit with @debug.Debug::{to_repr}
